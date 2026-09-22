@@ -802,7 +802,7 @@ export default function Dashboard() {
         <div className="dashboard-chart-box dashboard-status-card">
           <h2>Order Status</h2>
           <div className="dashboard-status-gauge">
-            <ResponsiveContainer width="100%" height={150}>
+            <ResponsiveContainer width="100%" height={210}>
               <PieChart>
                 <Pie
                   data={orderStatusBreakdown}
@@ -921,9 +921,18 @@ export default function Dashboard() {
       <div className="dashboard-chart-box restaurant-wide-chart">
         <h2>Total Sale & Total Order - Last 20 Days</h2>
         <ResponsiveContainer width="100%" height={330}>
-          <BarChart data={last20Days} barGap={4}>
+          <BarChart data={last20Days} barGap={4} margin={{ bottom: 24 }}>
             <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} vertical={false} />
-            <XAxis dataKey="name" tick={axisTick} axisLine={{ stroke: "#e2e8f0" }} tickLine={false} />
+            <XAxis
+              dataKey="name"
+              tick={{ ...axisTick, fontSize: 10.5 }}
+              axisLine={{ stroke: "#e2e8f0" }}
+              tickLine={false}
+              angle={-35}
+              textAnchor="end"
+              height={56}
+              interval="preserveStartEnd"
+            />
             <YAxis tick={axisTick} axisLine={false} tickLine={false} />
             <Tooltip
               formatter={(value, name) => (name === "sale" ? money(value) : value)}
@@ -1070,11 +1079,22 @@ function ChartBox({ title, children }) {
 function BarPanel({ data, dataKey, color, moneyTooltip = false, empty }) {
   if (!data.length) return <p>{empty}</p>;
 
+  const rotate = data.length > 4;
+
   return (
     <ResponsiveContainer width="100%" height={290}>
-      <BarChart data={data}>
+      <BarChart data={data} margin={{ bottom: rotate ? 28 : 0 }}>
         <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} vertical={false} />
-        <XAxis dataKey="name" tick={axisTick} axisLine={{ stroke: "#e2e8f0" }} tickLine={false} interval={0} angle={data.length > 6 ? -20 : 0} textAnchor={data.length > 6 ? "end" : "middle"} height={data.length > 6 ? 46 : 30} />
+        <XAxis
+          dataKey="name"
+          tick={{ ...axisTick, fontSize: 10.5 }}
+          axisLine={{ stroke: "#e2e8f0" }}
+          tickLine={false}
+          angle={rotate ? -35 : 0}
+          textAnchor={rotate ? "end" : "middle"}
+          height={rotate ? 60 : 30}
+          interval="preserveStartEnd"
+        />
         <YAxis tick={axisTick} axisLine={false} tickLine={false} />
         <Tooltip
           formatter={(value) => (moneyTooltip ? money(value) : value)}

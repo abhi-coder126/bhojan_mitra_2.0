@@ -1,18 +1,8 @@
-const nodemailer = require("nodemailer");
-
-const transporter = nodemailer.createTransport({
-  service: "gmail",
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_APP_PASSWORD,
-  },
-  // Without these, a bad app password or a blocked outbound connection (common on
-  // some hosts) leaves the SMTP handshake hanging indefinitely instead of failing
-  // fast with an error the OTP endpoint can report back to the user.
-  connectionTimeout: 10000,
-  greetingTimeout: 10000,
-  socketTimeout: 15000,
-});
+// Sends transactional email via Brevo's HTTPS API instead of raw SMTP. Render (and many
+// hosts) block or badly rate-limit outbound SMTP (ports 465/587), which made Gmail SMTP
+// hang until connectionTimeout and then fail with "Connection timeout" on every send.
+// Brevo's API runs over plain HTTPS (443), which is never blocked.
+const BREVO_API_URL = "https://api.brevo.com/v3/smtp/email";
 
 const otpEmailHtml = (code) => `
 <!DOCTYPE html>
@@ -64,13 +54,30 @@ const otpEmailHtml = (code) => `
 `;
 
 const sendOtpEmail = async (toEmail, code) => {
-  await transporter.sendMail({
-    from: `"BhojanMitra" <${process.env.EMAIL_USER}>`,
-    to: toEmail,
-    subject: `${code} is your BhojanMitra verification code`,
-    text: `Your BhojanMitra verification code is ${code}. It expires in 10 minutes. Never share this code with anyone.`,
-    html: otpEmailHtml(code),
+  if (!process.env.BREVO_API_KEY) {
+    throw new Error("Email service not configured (missing BREVO_API_KEY)");
+  }
+
+  const res = await fetch(BREVO_API_URL, {
+    method: "POST",
+    headers: {
+      "api-key": process.env.BREVO_API_KEY,
+      "Content-Type": "application/json",
+      Accept: "application/json",
+    },
+    body: JSON.stringify({
+      sender: { name: "BhojanMitra", email: process.env.EMAIL_USER },
+      to: [{ email: toEmail }],
+      subject: `${code} is your BhojanMitra verification code`,
+      htmlContent: otpEmailHtml(code),
+      textContent: `Your BhojanMitra verification code is ${code}. It expires in 10 minutes. Never share this code with anyone.`,
+    }),
   });
+
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(body.message || `Email send failed (${res.status})`);
+  }
 };
 
 module.exports = { sendOtpEmail };
