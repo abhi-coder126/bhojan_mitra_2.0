@@ -1,0 +1,21 @@
+const mongoose = require("mongoose");
+
+const rawMaterialSchema = new mongoose.Schema(
+  {
+    name: { type: String, required: true, trim: true },
+    branchId: { type: mongoose.Schema.Types.ObjectId, ref: "Branch", default: null },
+    unit: {
+      type: String,
+      enum: ["kg", "g", "litre", "ml", "pcs", "dozen", "pack"],
+      default: "kg",
+    },
+    stock: { type: Number, default: 0 },
+    costPerUnit: { type: Number, default: 0 },
+    lowStockThreshold: { type: Number, default: 5 },
+    vendorId: { type: mongoose.Schema.Types.ObjectId, ref: "Vendor" },
+    vendorName: String,
+  },
+  { timestamps: true }
+);
+
+module.exports = mongoose.model("RawMaterial", rawMaterialSchema);
