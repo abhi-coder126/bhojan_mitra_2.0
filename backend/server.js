@@ -29,6 +29,11 @@ const rewardRoutes = require("./routes/rewardRoutes");
 
 const app = express();
 
+// Render/most PaaS front the app with a reverse proxy -- without this, req.ip is the
+// proxy's own address instead of the real client, breaking IP capture on login (see
+// utils/auditLog.js getClientIp) and any other place that relies on req.ip.
+app.set("trust proxy", 1);
+
 connectDB();
 
 app.use(cors());

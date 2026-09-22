@@ -9,6 +9,11 @@ const auditLogSchema = new mongoose.Schema(
     field: { type: String, default: "" },
     oldValue: { type: mongoose.Schema.Types.Mixed, default: null },
     newValue: { type: mongoose.Schema.Types.Mixed, default: null },
+
+    // Populated for login_success/login_failed entries so Settings/Audit Log can show
+    // "who logged in from where" -- left blank for ordinary data-change entries.
+    ip: { type: String, default: "" },
+    userAgent: { type: String, default: "" },
   },
   { timestamps: true }
 );
