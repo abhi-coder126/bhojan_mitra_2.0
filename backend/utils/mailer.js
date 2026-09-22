@@ -6,6 +6,12 @@ const transporter = nodemailer.createTransport({
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_APP_PASSWORD,
   },
+  // Without these, a bad app password or a blocked outbound connection (common on
+  // some hosts) leaves the SMTP handshake hanging indefinitely instead of failing
+  // fast with an error the OTP endpoint can report back to the user.
+  connectionTimeout: 10000,
+  greetingTimeout: 10000,
+  socketTimeout: 15000,
 });
 
 const otpEmailHtml = (code) => `
