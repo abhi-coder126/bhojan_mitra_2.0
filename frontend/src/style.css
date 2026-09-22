@@ -4494,6 +4494,87 @@
   }
 }
 
+@keyframes couponPopIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.8) translateY(12px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes couponConfettiFall {
+  0% {
+    opacity: 0;
+    transform: translateY(-14px) rotate(0deg);
+  }
+  15% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(40px) rotate(60deg);
+  }
+}
+
+@layer components {
+  .coupon-saved-overlay {
+    @apply fixed inset-0 z-[100000] grid place-items-center bg-slate-950/55 p-4 backdrop-blur-sm;
+  }
+
+  .coupon-saved-card {
+    @apply relative grid justify-items-center gap-2 overflow-hidden rounded-[28px] bg-white px-7 py-8 text-center shadow-[0_30px_70px_rgba(15,23,42,0.35)];
+    animation: couponPopIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  }
+
+  .coupon-confetti {
+    @apply pointer-events-none absolute top-0 text-xl;
+    animation: couponConfettiFall 1.4s ease-in infinite;
+  }
+
+  .coupon-confetti.c1 {
+    left: 12%;
+    animation-delay: 0s;
+  }
+
+  .coupon-confetti.c2 {
+    left: 38%;
+    animation-delay: 0.25s;
+  }
+
+  .coupon-confetti.c3 {
+    right: 34%;
+    animation-delay: 0.5s;
+  }
+
+  .coupon-confetti.c4 {
+    right: 10%;
+    animation-delay: 0.75s;
+  }
+
+  .coupon-saved-icon {
+    @apply grid h-16 w-16 place-items-center rounded-full bg-emerald-100 text-emerald-600;
+  }
+
+  .coupon-saved-card h2 {
+    @apply m-0 text-2xl font-black text-slate-950;
+  }
+
+  .coupon-saved-card p {
+    @apply m-0 text-sm font-semibold text-slate-500;
+  }
+
+  .coupon-saved-card p b {
+    @apply text-[#84091e];
+  }
+
+  .coupon-saved-card button {
+    @apply mt-2 h-11 w-full rounded-xl bg-[#84091e] px-6 text-sm font-black text-white hover:bg-[#6b0718];
+  }
+}
+
 /* BhojanMitra red/white theme overrides */
 @layer components {
   body {

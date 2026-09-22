@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { BadgePercent, CheckCircle2, ChefHat, Clock, Flame, Gift, History, Leaf, Mail, MapPin, Minus, PackageCheck, Phone, Plus, Search, ShieldCheck, ShoppingBag, Soup, Sparkles, Star, Utensils } from "lucide-react";
+import { BadgePercent, CheckCircle2, ChefHat, Clock, Flame, Gift, History, Leaf, Mail, MapPin, Minus, PackageCheck, PartyPopper, Phone, Plus, Search, ShieldCheck, ShoppingBag, Soup, Sparkles, Star, Utensils } from "lucide-react";
 import { useParams } from "react-router-dom";
 import API from "../api/axios";
 import PhoneInput from "../components/PhoneInput";
@@ -34,6 +34,7 @@ export default function CustomerMenu() {
   const [couponCode, setCouponCode] = useState("");
   const [coupon, setCoupon] = useState(null);
   const [applyingCoupon, setApplyingCoupon] = useState(false);
+  const [couponSavedPopup, setCouponSavedPopup] = useState(null);
   const [customer, setCustomer] = useState({
     customerName: "",
     customerPhone: "",
@@ -547,10 +548,12 @@ export default function CustomerMenu() {
         code: couponCode.trim(),
         billAmount: grandTotal,
       });
+      const savedAmount = Number(res.data.discountAmount || 0);
       setCoupon({
         ...res.data.coupon,
-        discountAmount: Number(res.data.discountAmount || 0),
+        discountAmount: savedAmount,
       });
+      setCouponSavedPopup({ code: couponCode.trim().toUpperCase(), amount: savedAmount });
       showToast("Coupon applied", "success");
     } catch (error) {
       setCoupon(null);
@@ -1198,6 +1201,21 @@ export default function CustomerMenu() {
           onReveal={scratchRewardHandler}
           onClose={() => setPendingReward(null)}
         />
+      )}
+
+      {couponSavedPopup && (
+        <div className="coupon-saved-overlay" onClick={() => setCouponSavedPopup(null)}>
+          <div className="coupon-saved-card" onClick={(e) => e.stopPropagation()}>
+            <span className="coupon-confetti c1">🎉</span>
+            <span className="coupon-confetti c2">✨</span>
+            <span className="coupon-confetti c3">🎊</span>
+            <span className="coupon-confetti c4">✨</span>
+            <div className="coupon-saved-icon"><PartyPopper size={30} /></div>
+            <h2>You saved Rs {couponSavedPopup.amount.toFixed(0)}!</h2>
+            <p>Coupon <b>{couponSavedPopup.code}</b> applied successfully.</p>
+            <button type="button" onClick={() => setCouponSavedPopup(null)}>Yay, Continue</button>
+          </div>
+        </div>
       )}
     </div>
   );
