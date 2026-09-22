@@ -32,9 +32,23 @@ import {
 import API from "../api/axios";
 import { ToastViewport, useToast } from "../components/Toast";
 
-const chartColors = ["#f97316", "#eab308", "#3b82f6", "#a855f7", "#22c55e"];
-const categoryColors = ["#f97316", "#eab308", "#3b82f6", "#a855f7", "#22c55e", "#ec4899"];
+const chartColors = ["#e11d48", "#f59e0b", "#2563eb", "#7c3aed", "#0d9488"];
+const categoryColors = ["#e11d48", "#f59e0b", "#2563eb", "#7c3aed", "#0d9488", "#db2777"];
 const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+
+const tooltipContentStyle = {
+  borderRadius: 12,
+  border: "1px solid #e2e8f0",
+  boxShadow: "0 14px 34px rgba(15,23,42,0.14)",
+  padding: "10px 14px",
+  fontSize: 12.5,
+  fontWeight: 600,
+  color: "#0f172a",
+};
+const tooltipLabelStyle = { color: "#64748b", fontWeight: 700, marginBottom: 4 };
+const tooltipCursor = { fill: "rgba(148,163,184,0.12)" };
+const axisTick = { fontSize: 11, fontWeight: 600, fill: "#94a3b8" };
+const gridStroke = "#eef2f7";
 
 const formatDateInput = (date) => date.toISOString().slice(0, 10);
 
@@ -571,7 +585,7 @@ export default function Dashboard() {
           trend={saleTrend}
           trendLabel="vs Yesterday"
           sparkline={last7Days.map((d) => d.revenue)}
-          sparklineColor="#f97316"
+          sparklineColor="#e11d48"
         />
         <Kpi
           title="Total Orders"
@@ -648,20 +662,25 @@ export default function Dashboard() {
               <AreaChart data={revenueTrend}>
                 <defs>
                   <linearGradient id="revenueFill" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#f97316" stopOpacity={0.35} />
-                    <stop offset="100%" stopColor="#f97316" stopOpacity={0} />
+                    <stop offset="0%" stopColor="#e11d48" stopOpacity={0.3} />
+                    <stop offset="100%" stopColor="#e11d48" stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                <XAxis dataKey="name" tick={{ fontSize: 11, fill: "#94a3b8" }} />
-                <YAxis yAxisId="revenue" tick={{ fontSize: 11, fill: "#94a3b8" }} />
-                <YAxis yAxisId="orders" orientation="right" tick={{ fontSize: 11, fill: "#94a3b8" }} />
-                <Tooltip formatter={(value, name) => (name === "revenue" ? money(value) : value)} />
+                <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} vertical={false} />
+                <XAxis dataKey="name" tick={axisTick} axisLine={{ stroke: "#e2e8f0" }} tickLine={false} />
+                <YAxis yAxisId="revenue" tick={axisTick} axisLine={false} tickLine={false} />
+                <YAxis yAxisId="orders" orientation="right" tick={axisTick} axisLine={false} tickLine={false} />
+                <Tooltip
+                  formatter={(value, name) => (name === "revenue" ? money(value) : value)}
+                  contentStyle={tooltipContentStyle}
+                  labelStyle={tooltipLabelStyle}
+                  cursor={{ stroke: "#cbd5e1", strokeWidth: 1, strokeDasharray: "4 4" }}
+                />
                 <Area
                   yAxisId="revenue"
                   type="monotone"
                   dataKey="revenue"
-                  stroke="#f97316"
+                  stroke="#e11d48"
                   strokeWidth={2.5}
                   fill="url(#revenueFill)"
                 />
@@ -669,7 +688,7 @@ export default function Dashboard() {
                   yAxisId="orders"
                   type="monotone"
                   dataKey="orders"
-                  stroke="#22c55e"
+                  stroke="#0d9488"
                   strokeWidth={2.5}
                   dot={false}
                 />
@@ -719,10 +738,10 @@ export default function Dashboard() {
                       paddingAngle={2}
                     >
                       {categoryBreakdown.rows.map((row) => (
-                        <Cell key={row.name} fill={row.color} />
+                        <Cell key={row.name} fill={row.color} stroke="#fff" strokeWidth={2} />
                       ))}
                     </Pie>
-                    <Tooltip />
+                    <Tooltip contentStyle={tooltipContentStyle} labelStyle={tooltipLabelStyle} />
                   </PieChart>
                 </ResponsiveContainer>
                 <div className="dashboard-category-donut-center">
@@ -796,10 +815,10 @@ export default function Dashboard() {
                   paddingAngle={2}
                 >
                   {orderStatusBreakdown.map((entry) => (
-                    <Cell key={entry.name} fill={entry.color} />
+                    <Cell key={entry.name} fill={entry.color} stroke="#fff" strokeWidth={2} />
                   ))}
                 </Pie>
-                <Tooltip />
+                <Tooltip contentStyle={tooltipContentStyle} labelStyle={tooltipLabelStyle} />
               </PieChart>
             </ResponsiveContainer>
             <div className="dashboard-status-gauge-center">
@@ -847,15 +866,15 @@ export default function Dashboard() {
 
       <div className="dashboard-charts-grid restaurant-chart-grid">
         <ChartBox title="Peak Hours">
-          <BarPanel data={peakHours} dataKey="orders" color="#f97316" empty="No peak hour data" />
+          <BarPanel data={peakHours} dataKey="orders" color="#e11d48" empty="No peak hour data" />
         </ChartBox>
 
         <ChartBox title="Peak Days">
-          <BarPanel data={peakDays} dataKey="sale" color="#0f766e" moneyTooltip empty="No peak day data" />
+          <BarPanel data={peakDays} dataKey="sale" color="#0d9488" moneyTooltip empty="No peak day data" />
         </ChartBox>
 
         <ChartBox title="Top Best Item Sale">
-          <BarPanel data={topItems} dataKey="amount" color="#3b82f6" moneyTooltip empty="No item sale yet" />
+          <BarPanel data={topItems} dataKey="amount" color="#2563eb" moneyTooltip empty="No item sale yet" />
         </ChartBox>
 
         <ChartBox title="Payment Section">
@@ -864,12 +883,12 @@ export default function Dashboard() {
           ) : (
             <ResponsiveContainer width="100%" height={290}>
               <PieChart>
-                <Pie data={paymentData} dataKey="amount" nameKey="name" outerRadius={92}>
+                <Pie data={paymentData} dataKey="amount" nameKey="name" outerRadius={92} innerRadius={48} paddingAngle={2}>
                   {paymentData.map((_, index) => (
-                    <Cell key={index} fill={chartColors[index % chartColors.length]} />
+                    <Cell key={index} fill={chartColors[index % chartColors.length]} stroke="#fff" strokeWidth={2} />
                   ))}
                 </Pie>
-                <Tooltip formatter={(value) => money(value)} />
+                <Tooltip formatter={(value) => money(value)} contentStyle={tooltipContentStyle} labelStyle={tooltipLabelStyle} />
               </PieChart>
             </ResponsiveContainer>
           )}
@@ -902,13 +921,18 @@ export default function Dashboard() {
       <div className="dashboard-chart-box restaurant-wide-chart">
         <h2>Total Sale & Total Order - Last 20 Days</h2>
         <ResponsiveContainer width="100%" height={330}>
-          <BarChart data={last20Days}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-            <XAxis dataKey="name" tick={{ fontSize: 11, fill: "#64748b" }} />
-            <YAxis tick={{ fontSize: 12, fill: "#64748b" }} />
-            <Tooltip formatter={(value, name) => (name === "sale" ? money(value) : value)} />
-            <Bar dataKey="sale" fill="#f97316" radius={[8, 8, 0, 0]} />
-            <Bar dataKey="orders" fill="#0f766e" radius={[8, 8, 0, 0]} />
+          <BarChart data={last20Days} barGap={4}>
+            <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} vertical={false} />
+            <XAxis dataKey="name" tick={axisTick} axisLine={{ stroke: "#e2e8f0" }} tickLine={false} />
+            <YAxis tick={axisTick} axisLine={false} tickLine={false} />
+            <Tooltip
+              formatter={(value, name) => (name === "sale" ? money(value) : value)}
+              contentStyle={tooltipContentStyle}
+              labelStyle={tooltipLabelStyle}
+              cursor={tooltipCursor}
+            />
+            <Bar dataKey="sale" fill="#e11d48" radius={[6, 6, 0, 0]} maxBarSize={22} />
+            <Bar dataKey="orders" fill="#0d9488" radius={[6, 6, 0, 0]} maxBarSize={22} />
           </BarChart>
         </ResponsiveContainer>
       </div>
@@ -918,7 +942,7 @@ export default function Dashboard() {
           <BarPanel
             data={analytics.hourlyBreakdown.map((h) => ({ name: `${h.hour}:00`, amount: h.amount }))}
             dataKey="amount"
-            color="#f97316"
+            color="#e11d48"
             moneyTooltip
             empty="No hourly data"
           />
@@ -928,7 +952,7 @@ export default function Dashboard() {
           <BarPanel
             data={analytics.tablePerformance.map((t) => ({ name: `Table ${t.tableNo}`, revenue: t.revenue }))}
             dataKey="revenue"
-            color="#0f766e"
+            color="#0d9488"
             moneyTooltip
             empty="No table data"
           />
@@ -1049,11 +1073,16 @@ function BarPanel({ data, dataKey, color, moneyTooltip = false, empty }) {
   return (
     <ResponsiveContainer width="100%" height={290}>
       <BarChart data={data}>
-        <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-        <XAxis dataKey="name" tick={{ fontSize: 11, fill: "#64748b" }} />
-        <YAxis tick={{ fontSize: 12, fill: "#64748b" }} />
-        <Tooltip formatter={(value) => (moneyTooltip ? money(value) : value)} />
-        <Bar dataKey={dataKey} fill={color} radius={[8, 8, 0, 0]} />
+        <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} vertical={false} />
+        <XAxis dataKey="name" tick={axisTick} axisLine={{ stroke: "#e2e8f0" }} tickLine={false} interval={0} angle={data.length > 6 ? -20 : 0} textAnchor={data.length > 6 ? "end" : "middle"} height={data.length > 6 ? 46 : 30} />
+        <YAxis tick={axisTick} axisLine={false} tickLine={false} />
+        <Tooltip
+          formatter={(value) => (moneyTooltip ? money(value) : value)}
+          contentStyle={tooltipContentStyle}
+          labelStyle={tooltipLabelStyle}
+          cursor={tooltipCursor}
+        />
+        <Bar dataKey={dataKey} fill={color} radius={[6, 6, 0, 0]} maxBarSize={40} />
       </BarChart>
     </ResponsiveContainer>
   );

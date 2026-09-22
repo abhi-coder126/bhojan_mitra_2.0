@@ -1061,7 +1061,7 @@
   }
 
   .dashboard-stat-card {
-    @apply rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_10px_26px_rgba(15,23,42,0.06)];
+    @apply rounded-2xl border border-slate-200/80 bg-white p-4 shadow-[0_8px_22px_rgba(15,23,42,0.05)] transition-shadow duration-200 hover:shadow-[0_14px_30px_rgba(15,23,42,0.09)];
   }
 
   .dashboard-stat-card.kpi-primary {
@@ -1094,7 +1094,7 @@
 
   .dashboard-chart-box,
   .important-notices {
-    @apply overflow-hidden rounded-[20px] border border-slate-200 bg-white p-4 shadow-[0_12px_32px_rgba(15,23,42,0.07)];
+    @apply overflow-hidden rounded-[20px] border border-slate-200/80 bg-white p-4 shadow-[0_10px_28px_rgba(15,23,42,0.05)] transition-shadow duration-200 hover:shadow-[0_16px_36px_rgba(15,23,42,0.09)];
   }
 
   .dashboard-chart-box {
@@ -1103,7 +1103,7 @@
 
   .dashboard-chart-box h2,
   .important-notices h2 {
-    @apply mb-3 text-lg font-bold text-slate-900;
+    @apply relative mb-4 pl-3 text-[15px] font-bold tracking-[-0.01em] text-slate-900 before:absolute before:left-0 before:top-0.5 before:h-[16px] before:w-[3px] before:rounded-full before:bg-gradient-to-b before:from-rose-500 before:to-rose-300;
   }
 
   .dashboard-breakdown-grid {
@@ -4329,11 +4329,15 @@
   .sidebar-toggle-btn,
   .show-sidebar-btn,
   .sidebar-link {
-    @apply border-red-900/30 bg-[#3a0b12] hover:!bg-red-700;
+    @apply border-red-900/30 bg-[#3a0b12] !text-white hover:!bg-red-700;
   }
 
   .sidebar-link.active {
-    @apply !bg-red-600 shadow-[0_12px_28px_rgba(220,38,38,0.22)];
+    @apply !bg-red-600 !text-white shadow-[0_12px_28px_rgba(220,38,38,0.22)];
+  }
+
+  .sidebar-link span {
+    @apply !text-white;
   }
 
   .page-head,
