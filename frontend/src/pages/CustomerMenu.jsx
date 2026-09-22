@@ -375,6 +375,12 @@ export default function CustomerMenu() {
   const savedAddresses = customerAuth.profile?.addresses || [];
 
   const sendEmailOtpHandler = async () => {
+    if (!customer.customerName.trim()) {
+      return showToast("Enter your name first", "warning");
+    }
+    if (!customer.customerPhone.trim()) {
+      return showToast("Enter your phone number first", "warning");
+    }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
       return showToast("Enter a valid email first", "warning");
     }
@@ -1207,7 +1213,7 @@ export default function CustomerMenu() {
               {!emailOtp.sent ? (
                 <button
                   type="button"
-                  disabled={emailOtp.sending || !customer.customerName.trim() || !customer.customerPhone.trim()}
+                  disabled={emailOtp.sending}
                   onClick={sendEmailOtpHandler}
                 >
                   {emailOtp.sending ? "Sending..." : "Send OTP"}
