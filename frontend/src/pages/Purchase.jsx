@@ -34,7 +34,7 @@ export default function Purchase() {
     email: "",
     gstNumber: "",
     address: "",
-    openingBalance: 0,
+    openingBalance: "",
   });
 
   const [grnProductEdit, setGrnProductEdit] = useState({
@@ -124,7 +124,10 @@ export default function Purchase() {
     e.preventDefault();
 
     try {
-      const res = await API.post("/vendors", vendorForm);
+      const res = await API.post("/vendors", {
+        ...vendorForm,
+        openingBalance: Number(vendorForm.openingBalance || 0),
+      });
       const vendor = res.data.vendor;
 
       setSelectedVendor(vendor);
@@ -137,7 +140,7 @@ export default function Purchase() {
         email: "",
         gstNumber: "",
         address: "",
-        openingBalance: 0,
+        openingBalance: "",
       });
 
       fetchAll();

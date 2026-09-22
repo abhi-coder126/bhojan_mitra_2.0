@@ -6,8 +6,8 @@ const emptyCoupon = {
   code: "",
   discountType: "Amount",
   discountValue: "",
-  minimumBillAmount: 0,
-  usageLimit: 0,
+  minimumBillAmount: "",
+  usageLimit: "",
   startDate: "",
   endDate: "",
   status: "Active",
@@ -31,7 +31,12 @@ export default function Coupons() {
     e.preventDefault();
 
     try {
-      await API.post("/coupons", form);
+      await API.post("/coupons", {
+        ...form,
+        discountValue: Number(form.discountValue || 0),
+        minimumBillAmount: Number(form.minimumBillAmount || 0),
+        usageLimit: Number(form.usageLimit || 0),
+      });
       alert("Coupon created successfully");
       setForm(emptyCoupon);
       fetchCoupons();

@@ -13,7 +13,7 @@ export default function SmartInventory() {
   const [lowStock, setLowStock] = useState([]);
   const { toast, showToast } = useToast();
 
-  const [materialForm, setMaterialForm] = useState({ name: "", unit: "kg", stock: 0, costPerUnit: 0, lowStockThreshold: 5 });
+  const [materialForm, setMaterialForm] = useState({ name: "", unit: "kg", stock: "", costPerUnit: "", lowStockThreshold: 5 });
   const [recipeProductId, setRecipeProductId] = useState("");
   const [recipeItems, setRecipeItems] = useState([{ rawMaterialId: "", qtyPerUnit: "" }]);
 
@@ -43,8 +43,12 @@ export default function SmartInventory() {
   const addMaterial = async (e) => {
     e.preventDefault();
     try {
-      await API.post("/raw-materials", materialForm);
-      setMaterialForm({ name: "", unit: "kg", stock: 0, costPerUnit: 0, lowStockThreshold: 5 });
+      await API.post("/raw-materials", {
+        ...materialForm,
+        stock: Number(materialForm.stock || 0),
+        costPerUnit: Number(materialForm.costPerUnit || 0),
+      });
+      setMaterialForm({ name: "", unit: "kg", stock: "", costPerUnit: "", lowStockThreshold: 5 });
       showToast("Raw material added", "success");
       fetchAll();
     } catch (error) {

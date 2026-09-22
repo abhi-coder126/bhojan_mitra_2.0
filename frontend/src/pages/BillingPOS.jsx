@@ -307,9 +307,9 @@ export default function BillingPOS() {
   const [returnItems, setReturnItems] = useState([]);
 
   const [partialPayment, setPartialPayment] = useState({
-    cash: 0,
-    upi: 0,
-    card: 0,
+    cash: "",
+    upi: "",
+    card: "",
   });
 
   const [customer, setCustomer] = useState({
@@ -672,7 +672,7 @@ export default function BillingPOS() {
         customerRelationNo: "",
       });
 
-      setPartialPayment({ cash: 0, upi: 0, card: 0 });
+      setPartialPayment({ cash: "", upi: "", card: "" });
 
       fetchLatestInvoice();
     } catch (error) {

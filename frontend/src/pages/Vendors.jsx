@@ -11,7 +11,7 @@ export default function Vendors() {
     email: "",
     gstNumber: "",
     address: "",
-    openingBalance: 0,
+    openingBalance: "",
   });
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [ledgerVendor, setLedgerVendor] = useState(null);
@@ -28,8 +28,8 @@ export default function Vendors() {
 
   const submit = async (e) => {
     e.preventDefault();
-    await API.post("/vendors", form);
-    setForm({ name: "", phone: "", email: "", gstNumber: "", address: "", openingBalance: 0 });
+    await API.post("/vendors", { ...form, openingBalance: Number(form.openingBalance || 0) });
+    setForm({ name: "", phone: "", email: "", gstNumber: "", address: "", openingBalance: "" });
     fetchVendors();
   };
 
