@@ -2,22 +2,13 @@ const Sale = require("../models/Sale");
 const Product = require("../models/Product");
 const Customer = require("../models/Customer");
 const StockTransaction = require("../models/StockTransaction");
-const Counter = require("../models/Counter");
 const DeletionLog = require("../models/DeletionLog");
 const SalesReturn = require("../models/SalesReturn");
 const { verifyDeletePassword } = require("../utils/deleteAuth");
 const { nextCustomerCrn } = require("../utils/customerUpsert");
 const { deductRawMaterialsForItems } = require("./recipeController");
 const { earnLoyaltyPoints } = require("./customerController");
-
-const invoiceNo = async () => {
-  const counter = await Counter.findByIdAndUpdate(
-    "invoice",
-    { $inc: { seq: 1 } },
-    { new: true, upsert: true }
-  );
-  return `INV-${counter.seq}`;
-};
+const { nextInvoiceNo: invoiceNo } = require("../utils/invoiceNumber");
 
 const normalizeContact = (value) => String(value || "").trim();
 const normalizeEmail = (value) => String(value || "").trim().toLowerCase();

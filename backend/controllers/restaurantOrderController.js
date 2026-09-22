@@ -1,7 +1,6 @@
 const Product = require("../models/Product");
 const RestaurantOrder = require("../models/RestaurantOrder");
 const Coupon = require("../models/Coupon");
-const Counter = require("../models/Counter");
 const DeletionLog = require("../models/DeletionLog");
 const Otp = require("../models/Otp");
 const RewardTier = require("../models/RewardTier");
@@ -12,15 +11,7 @@ const { deductRawMaterialsForItems } = require("./recipeController");
 const { earnLoyaltyPoints } = require("./customerController");
 const { logAudit, getActor } = require("../utils/auditLog");
 const { upsertCustomerFromOrder } = require("../utils/customerUpsert");
-
-const nextInvoiceNo = async () => {
-  const counter = await Counter.findByIdAndUpdate(
-    "invoice",
-    { $inc: { seq: 1 } },
-    { new: true, upsert: true }
-  );
-  return `INV-${counter.seq}`;
-};
+const { nextInvoiceNo } = require("../utils/invoiceNumber");
 
 // Fires when a logged-in customer's delivery order is marked "served": count their
 // completed delivery orders, find the best-matching active tier they now qualify

@@ -5,6 +5,43 @@ import { ToastViewport, useToast } from "../components/Toast";
 import DeleteConfirmModal from "../components/DeleteConfirmModal";
 import ConfirmActionModal from "../components/ConfirmActionModal";
 
+const ONES = ["", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten", "Eleven", "Twelve", "Thirteen", "Fourteen", "Fifteen", "Sixteen", "Seventeen", "Eighteen", "Nineteen"];
+const TENS = ["", "", "Twenty", "Thirty", "Forty", "Fifty", "Sixty", "Seventy", "Eighty", "Ninety"];
+
+const threeDigitsToWords = (num) => {
+  let words = "";
+  if (num >= 100) {
+    words += `${ONES[Math.floor(num / 100)]} Hundred `;
+    num %= 100;
+  }
+  if (num >= 20) {
+    words += `${TENS[Math.floor(num / 10)]} `;
+    num %= 10;
+  }
+  if (num > 0) words += `${ONES[num]} `;
+  return words.trim();
+};
+
+// Converts a rupee amount into Indian numbering (lakh/crore) words for the invoice footer,
+// matching how real GST invoices print "Amount in Words".
+const amountInWords = (value) => {
+  const rupees = Math.floor(Number(value) || 0);
+  if (rupees === 0) return "Zero Rupees Only";
+
+  const crore = Math.floor(rupees / 10000000);
+  const lakh = Math.floor((rupees % 10000000) / 100000);
+  const thousand = Math.floor((rupees % 100000) / 1000);
+  const rest = rupees % 1000;
+
+  const parts = [];
+  if (crore) parts.push(`${threeDigitsToWords(crore)} Crore`);
+  if (lakh) parts.push(`${threeDigitsToWords(lakh)} Lakh`);
+  if (thousand) parts.push(`${threeDigitsToWords(thousand)} Thousand`);
+  if (rest) parts.push(threeDigitsToWords(rest));
+
+  return `${parts.join(" ")} Rupees Only`;
+};
+
 const statuses = ["new", "accepted", "preparing", "ready", "served", "cancelled"];
 const workflowStatuses = ["new", "accepted", "preparing", "ready", "served"];
 
@@ -930,6 +967,10 @@ export default function RestaurantOrders() {
                 <h2><span>Total Paid</span><b>Rs {Number(paidInvoice.grandTotal || 0).toFixed(2)}</b></h2>
               </div>
 
+              <p className="invoice-amount-words">
+                <span>Amount in Words:</span> {amountInWords(paidInvoice.grandTotal)}
+              </p>
+
               <div className="restaurant-invoice-policies">
                 {(orderSettings.showTerms ?? true) && (
                   <section>
@@ -945,12 +986,26 @@ export default function RestaurantOrders() {
                 )}
               </div>
 
+              <div className="invoice-signature-row">
+                <div>
+                  <span>Customer Signature</span>
+                </div>
+                <div>
+                  <b>For {orderSettings.storeName || "BhojanMitra"}</b>
+                  <span>Authorized Signatory</span>
+                </div>
+              </div>
+
               {(orderSettings.showThankYou ?? true) && (
                 <div className="restaurant-invoice-footer">
                   <p>{orderSettings.thankYouMessage || "Thank you for dining with us!"}</p>
                   <b>{orderSettings.storeName || "BhojanMitra"}</b>
                 </div>
               )}
+
+              <p className="invoice-authenticity-note">
+                This is a computer-generated invoice and does not require a physical stamp.
+              </p>
             </div>
 
             <button className="no-print" onClick={() => window.print()}>

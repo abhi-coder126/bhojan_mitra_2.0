@@ -3419,6 +3419,34 @@
     @apply rounded-full bg-white/10 px-3 py-1 text-xs font-black text-white;
   }
 
+  .invoice-amount-words {
+    @apply -mt-2 mb-3 rounded-xl border border-dashed border-slate-300 bg-slate-50 px-3 py-2 text-[12.5px] font-semibold capitalize text-slate-600;
+  }
+
+  .invoice-amount-words span {
+    @apply mr-1 font-black uppercase tracking-[0.04em] text-slate-500;
+  }
+
+  .invoice-signature-row {
+    @apply mb-3 mt-6 flex items-end justify-between gap-4;
+  }
+
+  .invoice-signature-row > div {
+    @apply w-[180px] border-t border-dashed border-slate-300 pt-1.5 text-center;
+  }
+
+  .invoice-signature-row span {
+    @apply block text-[11px] font-bold uppercase tracking-[0.06em] text-slate-500;
+  }
+
+  .invoice-signature-row b {
+    @apply block text-[12.5px] font-black text-slate-800;
+  }
+
+  .invoice-authenticity-note {
+    @apply mt-3 text-center text-[10.5px] font-semibold uppercase tracking-[0.04em] text-slate-400;
+  }
+
   .restaurant-invoice-policies {
     @apply grid grid-cols-2 gap-3;
   }
