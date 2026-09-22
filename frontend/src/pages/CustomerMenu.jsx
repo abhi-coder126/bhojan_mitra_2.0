@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { BadgePercent, CheckCircle2, ChefHat, Clock, Flame, Gift, History, Leaf, Mail, MapPin, Minus, PackageCheck, Phone, Plus, Search, ShieldCheck, ShoppingBag, Soup, Sparkles, Utensils } from "lucide-react";
+import { BadgePercent, CheckCircle2, ChefHat, Clock, Flame, Gift, History, Leaf, Mail, MapPin, Minus, PackageCheck, Phone, Plus, Search, ShieldCheck, ShoppingBag, Soup, Sparkles, Star, Utensils } from "lucide-react";
 import { useParams } from "react-router-dom";
 import API from "../api/axios";
 import PhoneInput from "../components/PhoneInput";
@@ -43,6 +43,9 @@ export default function CustomerMenu() {
   });
   const [placing, setPlacing] = useState(false);
   const [orderPlaced, setOrderPlaced] = useState(null);
+  const [itemRatings, setItemRatings] = useState({});
+  const [ratingSubmitted, setRatingSubmitted] = useState(false);
+  const [submittingRating, setSubmittingRating] = useState(false);
   const cartPanelRef = useRef(null);
   const { toast, showToast } = useToast();
 
@@ -167,6 +170,30 @@ export default function CustomerMenu() {
     }
   };
 
+  const offerProducts = useMemo(
+    () => products.filter((product) => Number(product.offerPercent || 0) > 0).slice(0, 10),
+    [products]
+  );
+
+  const submitRatings = async () => {
+    const ratings = Object.entries(itemRatings)
+      .filter(([, stars]) => stars > 0)
+      .map(([productId, stars]) => ({ productId, stars }));
+
+    if (ratings.length === 0) return showToast("Tap the stars to rate at least one item", "warning");
+
+    setSubmittingRating(true);
+    try {
+      await API.post(`/restaurant-orders/${orderPlaced._id}/rate`, { ratings });
+      setRatingSubmitted(true);
+      showToast("Thanks for rating your order!", "success");
+    } catch (error) {
+      showToast(error.response?.data?.message || "Could not submit rating");
+    } finally {
+      setSubmittingRating(false);
+    }
+  };
+
   const categoryStats = useMemo(() => {
     const stats = new Map();
     const filteredByFoodType = products.filter((product) => {
@@ -240,6 +267,10 @@ export default function CustomerMenu() {
       const existing = current.find((item) => item.productId === product._id);
 
       if (!existing && change > 0) {
+        const mrp = Number(product.mrp || product.sellingPrice || 0);
+        const offerPercent = Number(product.offerPercent || 0);
+        const rate = offerPercent > 0 ? mrp * (1 - offerPercent / 100) : mrp;
+
         return [
           ...current,
           {
@@ -248,7 +279,9 @@ export default function CustomerMenu() {
             image: product.image,
             category: product.category || "Recommended",
             qty: 1,
-            rate: Number(product.mrp || product.sellingPrice || 0),
+            rate,
+            originalRate: mrp,
+            offerPercent,
             gst: Number(product.gst || 0),
           },
         ];
@@ -476,6 +509,8 @@ export default function CustomerMenu() {
       );
 
       setOrderPlaced(res.data.order);
+      setItemRatings({});
+      setRatingSubmitted(false);
       setCart([]);
       setCheckoutStep("cart");
       setCoupon(null);
@@ -550,18 +585,35 @@ export default function CustomerMenu() {
           ) : (
             <span>{product.name?.slice(0, 1) || "M"}</span>
           )}
-          <span className={isNonVeg(product) ? "food-type non-veg" : "food-type veg"}>
-            {isNonVeg(product) ? <Flame size={9} /> : <Leaf size={9} />}
-            {isNonVeg(product) ? "Non-Veg" : "Veg"}
-          </span>
+          {product.itemType !== "beverage" && (
+            <span className={isNonVeg(product) ? "food-type non-veg" : "food-type veg"}>
+              {isNonVeg(product) ? <Flame size={9} /> : <Leaf size={9} />}
+              {isNonVeg(product) ? "Non-Veg" : "Veg"}
+            </span>
+          )}
           {product.isRecommended && <span className="recommended-chip"><Sparkles size={9} /> Best</span>}
+          {Number(product.offerPercent || 0) > 0 && (
+            <span className="foodora-offer-ribbon"><BadgePercent size={11} /> {product.offerPercent}% OFF</span>
+          )}
         </div>
         <div className="foodora-card-info">
           <span className="foodora-card-category">{product.category || "Recommended"}</span>
           <h2>{product.name}</h2>
+          {Number(product.ratingCount || 0) > 0 && (
+            <span className="foodora-card-rating">
+              <Sparkles size={11} /> {Number(product.ratingAvg).toFixed(1)} ({product.ratingCount})
+            </span>
+          )}
           {product.description && <p>{product.description}</p>}
           <div className="foodora-card-foot">
-            <strong>Rs {Number(product.mrp || product.sellingPrice || 0).toFixed(2)}</strong>
+            {Number(product.offerPercent || 0) > 0 ? (
+              <span className="foodora-card-price">
+                <strong>Rs {(Number(product.mrp || product.sellingPrice || 0) * (1 - product.offerPercent / 100)).toFixed(2)}</strong>
+                <s>Rs {Number(product.mrp || product.sellingPrice || 0).toFixed(2)}</s>
+              </span>
+            ) : (
+              <strong>Rs {Number(product.mrp || product.sellingPrice || 0).toFixed(2)}</strong>
+            )}
             <div className="menu-add-control">
               {cartItem ? (
                 <>
@@ -661,6 +713,38 @@ export default function CustomerMenu() {
         </div>
       </section>
 
+      {offerProducts.length > 0 && (
+        <section className="foodora-offers-strip">
+          <div className="foodora-offers-head">
+            <BadgePercent size={16} />
+            <h2>Offers for you</h2>
+          </div>
+          <div className="foodora-offers-row">
+            {offerProducts.map((product) => (
+              <button
+                key={product._id}
+                type="button"
+                className="foodora-offer-card"
+                onClick={() => {
+                  setActiveCategory(product.category || "Recommended");
+                  setSearch("");
+                }}
+              >
+                <div className="foodora-offer-card-media">
+                  {product.image ? <img src={product.image} alt={product.name} /> : <span>{product.name?.slice(0, 1) || "M"}</span>}
+                  <b>{product.offerPercent}% OFF</b>
+                </div>
+                <span>{product.name}</span>
+                <small>
+                  Rs {(Number(product.mrp || product.sellingPrice || 0) * (1 - product.offerPercent / 100)).toFixed(0)}{" "}
+                  <s>Rs {Number(product.mrp || product.sellingPrice || 0).toFixed(0)}</s>
+                </small>
+              </button>
+            ))}
+          </div>
+        </section>
+      )}
+
       {orderPlaced && (
         <section className={`order-tracking-panel ${orderPlaced.status}`}>
           <div className="order-placed-animation">
@@ -710,6 +794,40 @@ export default function CustomerMenu() {
               </p>
             ))}
           </div>
+
+          {orderPlaced.status === "served" && (
+            <div className="customer-rating-box">
+              {ratingSubmitted ? (
+                <p className="rating-thanks"><CheckCircle2 size={16} /> Thanks for rating your order!</p>
+              ) : (
+                <>
+                  <h3>Rate your order</h3>
+                  <div className="customer-rating-items">
+                    {orderPlaced.items?.map((item, index) => (
+                      <div className="customer-rating-row" key={`${item.productId}-${index}`}>
+                        <span>{item.name}</span>
+                        <div className="customer-rating-stars">
+                          {[1, 2, 3, 4, 5].map((star) => (
+                            <button
+                              key={star}
+                              type="button"
+                              className={(itemRatings[item.productId] || 0) >= star ? "star-active" : ""}
+                              onClick={() => setItemRatings((prev) => ({ ...prev, [item.productId]: star }))}
+                            >
+                              <Star size={18} fill={(itemRatings[item.productId] || 0) >= star ? "currentColor" : "none"} />
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <button type="button" className="submit-rating-btn" disabled={submittingRating} onClick={submitRatings}>
+                    {submittingRating ? "Submitting..." : "Submit Rating"}
+                  </button>
+                </>
+              )}
+            </div>
+          )}
         </section>
       )}
 
@@ -838,7 +956,15 @@ export default function CustomerMenu() {
               {cart.map((item) => (
                 <div key={item.productId}>
                   <span>{item.name}</span>
-                  <b>{item.qty} x Rs {item.rate}</b>
+                  <span className="cart-item-price">
+                    {item.offerPercent > 0 && (
+                      <>
+                        <s>Rs {Number(item.originalRate).toFixed(2)}</s>
+                        <small className="cart-item-offer">{item.offerPercent}% OFF</small>
+                      </>
+                    )}
+                    <b>{item.qty} x Rs {Number(item.rate).toFixed(2)}</b>
+                  </span>
                 </div>
               ))}
             </div>

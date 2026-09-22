@@ -1,5 +1,7 @@
+const mongoose = require("mongoose");
 const Product = require("../models/Product");
 const RestaurantOrder = require("../models/RestaurantOrder");
+const Rating = require("../models/Rating");
 const Coupon = require("../models/Coupon");
 const DeletionLog = require("../models/DeletionLog");
 const Otp = require("../models/Otp");
@@ -47,12 +49,58 @@ const grantRewardIfEarned = async (order) => {
 exports.getMenuProducts = async (req, res) => {
   try {
     const products = await Product.find({ stock: { $gt: 0 } })
-      .select("name barcode category foodType description spiceLevel isRecommended image unit sellingPrice mrp gst stock")
+      .select("name barcode category itemType foodType description spiceLevel isRecommended image unit sellingPrice mrp gst stock offerPercent ratingAvg ratingCount")
       .sort({ category: 1, name: 1 });
 
     res.json({ success: true, products });
   } catch (error) {
     res.status(error.statusCode || 500).json({ message: error.message });
+  }
+};
+
+// Public: a customer rates items from their own served order (CustomerMenu.jsx post-order
+// prompt). Only allowed once the order is served, and only for items actually on that order,
+// so ratings can't be spammed for arbitrary products. Recomputes each product's average
+// from the Rating collection rather than incrementing in place, since a resubmitted rating
+// for the same order+item upserts instead of double-counting.
+exports.rateOrderItems = async (req, res) => {
+  try {
+    const order = await RestaurantOrder.findById(req.params.id);
+    if (!order) return res.status(404).json({ message: "Order not found" });
+    if (order.status !== "served") {
+      return res.status(400).json({ message: "You can rate items once the order is served" });
+    }
+
+    const ratings = Array.isArray(req.body.ratings) ? req.body.ratings : [];
+    const orderProductIds = new Set((order.items || []).map((item) => String(item.productId)));
+
+    for (const entry of ratings) {
+      const productId = String(entry.productId || "");
+      const stars = Number(entry.stars);
+      if (!orderProductIds.has(productId) || !(stars >= 1 && stars <= 5)) continue;
+
+      await Rating.findOneAndUpdate(
+        { orderId: order._id, productId },
+        {
+          stars,
+          comment: String(entry.comment || "").slice(0, 300),
+          customerName: order.customerName || "",
+        },
+        { upsert: true, new: true }
+      );
+
+      const agg = await Rating.aggregate([
+        { $match: { productId: new mongoose.Types.ObjectId(productId) } },
+        { $group: { _id: null, avg: { $avg: "$stars" }, count: { $sum: 1 } } },
+      ]);
+
+      const { avg = 0, count = 0 } = agg[0] || {};
+      await Product.findByIdAndUpdate(productId, { ratingAvg: avg, ratingCount: count });
+    }
+
+    res.json({ success: true, message: "Thanks for rating your order!" });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
   }
 };
 

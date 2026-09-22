@@ -34,6 +34,10 @@ const productSchema = new mongoose.Schema(
     // % off the MRP shown to customers as a running offer (0 = no offer).
     offerPercent: { type: Number, default: 0, min: 0, max: 100 },
 
+    // Running average maintained incrementally as customer ratings come in (see Rating model).
+    ratingAvg: { type: Number, default: 0 },
+    ratingCount: { type: Number, default: 0 },
+
     unit: {
       type: String,
       enum: ["PCS", "Box", "KG", "Litre", "Plate", "Bowl", "Cup", "Glass", "Portion"],

@@ -16,6 +16,7 @@ const {
   mergeRestaurantOrders,
   splitRestaurantOrder,
   applyRestaurantOrderDiscount,
+  rateOrderItems,
 } = require("../controllers/restaurantOrderController");
 const { protect, requireRole } = require("../middleware/authMiddleware");
 const { attachCustomerIfPresent } = require("../utils/customerAuth");
@@ -29,6 +30,7 @@ const router = express.Router();
 router.get("/menu", getMenuProducts);
 router.post("/", attachCustomerIfPresent, createRestaurantOrder);
 router.get("/:id", getRestaurantOrderById);
+router.post("/:id/rate", rateOrderItems);
 
 // Everything else is staff-only.
 router.get("/", protect, getRestaurantOrders);

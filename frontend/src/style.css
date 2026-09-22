@@ -2570,6 +2570,10 @@
     @apply absolute right-1.5 top-1.5 !gap-0.5 !px-1.5 !py-0.5 !text-[9px] shadow-sm;
   }
 
+  .foodora-offer-ribbon {
+    @apply absolute bottom-1.5 left-1.5 inline-flex items-center gap-0.5 rounded-full bg-emerald-600 px-1.5 py-0.5 text-[9px] font-black text-white shadow-sm;
+  }
+
   .foodora-card-info {
     @apply grid gap-1 p-3;
   }
@@ -2582,6 +2586,10 @@
     @apply m-0 text-base font-black leading-snug text-slate-950;
   }
 
+  .foodora-card-rating {
+    @apply inline-flex w-fit items-center gap-1 text-[11px] font-bold text-amber-600;
+  }
+
   .foodora-card-info p {
     @apply line-clamp-2 text-xs text-slate-500;
   }
@@ -2592,6 +2600,63 @@
 
   .foodora-card-foot strong {
     @apply text-base font-black text-slate-950;
+  }
+
+  .foodora-card-price {
+    @apply flex items-baseline gap-1.5;
+  }
+
+  .foodora-card-price s {
+    @apply text-xs font-bold text-slate-400;
+  }
+
+  .foodora-offers-strip {
+    @apply mb-4 grid gap-2;
+  }
+
+  .foodora-offers-head {
+    @apply flex items-center gap-1.5 text-[#84091e];
+  }
+
+  .foodora-offers-head h2 {
+    @apply m-0 text-base font-black text-slate-950;
+  }
+
+  .foodora-offers-row {
+    @apply flex gap-3 overflow-x-auto pb-1;
+    scrollbar-width: none;
+  }
+
+  .foodora-offers-row::-webkit-scrollbar {
+    display: none;
+  }
+
+  .foodora-offer-card {
+    @apply grid w-[130px] shrink-0 gap-1 rounded-2xl border border-slate-200 bg-white p-2 text-left shadow-[0_8px_20px_rgba(15,23,42,0.06)] transition hover:-translate-y-0.5;
+  }
+
+  .foodora-offer-card-media {
+    @apply relative grid aspect-square place-items-center overflow-hidden rounded-xl bg-[#84091e]/[0.08] text-2xl font-black text-white;
+  }
+
+  .foodora-offer-card-media img {
+    @apply h-full w-full object-cover;
+  }
+
+  .foodora-offer-card-media b {
+    @apply absolute bottom-1 left-1 rounded-full bg-emerald-600 px-1.5 py-0.5 text-[9px] font-black text-white;
+  }
+
+  .foodora-offer-card > span {
+    @apply line-clamp-1 text-xs font-black text-slate-900;
+  }
+
+  .foodora-offer-card small {
+    @apply text-xs font-bold text-emerald-700;
+  }
+
+  .foodora-offer-card small s {
+    @apply ml-1 font-semibold text-slate-400;
   }
 
   .customer-item-badges {
@@ -2670,6 +2735,58 @@
   .menu-total-lines b,
   .restaurant-order-items b {
     @apply text-sm font-black text-slate-950;
+  }
+
+  .cart-item-price {
+    @apply flex items-center gap-1.5;
+  }
+
+  .cart-item-price s {
+    @apply text-xs font-semibold text-slate-400;
+  }
+
+  .cart-item-offer {
+    @apply rounded-full bg-emerald-100 px-1.5 py-0.5 text-[10px] font-black text-emerald-700;
+  }
+
+  .customer-rating-box {
+    @apply mt-3 rounded-2xl border border-amber-200 bg-amber-50/50 p-4;
+  }
+
+  .customer-rating-box h3 {
+    @apply m-0 mb-3 text-base font-black text-slate-900;
+  }
+
+  .customer-rating-items {
+    @apply grid gap-2.5;
+  }
+
+  .customer-rating-row {
+    @apply flex items-center justify-between gap-3;
+  }
+
+  .customer-rating-row span {
+    @apply text-sm font-semibold text-slate-700;
+  }
+
+  .customer-rating-stars {
+    @apply flex items-center gap-0.5;
+  }
+
+  .customer-rating-stars button {
+    @apply grid h-7 w-7 place-items-center rounded-full p-0 text-slate-300 hover:text-amber-400;
+  }
+
+  .customer-rating-stars button.star-active {
+    @apply text-amber-500;
+  }
+
+  .submit-rating-btn {
+    @apply mt-3 h-11 w-full rounded-xl bg-amber-500 text-sm font-black text-white hover:bg-amber-600 disabled:opacity-60;
+  }
+
+  .rating-thanks {
+    @apply m-0 flex items-center gap-2 text-sm font-bold text-emerald-700;
   }
 
   .menu-total-lines {
