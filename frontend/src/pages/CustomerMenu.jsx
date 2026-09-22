@@ -434,9 +434,17 @@ export default function CustomerMenu() {
       setPhoneOtp({ sent: true, code: "", verified: false, sending: false, verifying: false });
       showToast("OTP sent to your phone", "success");
     } catch (error) {
+      // eslint-disable-next-line no-console -- surfaced on purpose while diagnosing
+      // Firebase phone-auth failures in production; the toast alone hides the real
+      // error code (e.g. auth/invalid-app-credential, auth/billing-not-enabled).
+      console.error("Phone OTP send failed:", error.code, error.message, error);
       resetRecaptchaVerifier();
       setPhoneOtp((prev) => ({ ...prev, sending: false }));
-      showToast(error.message?.includes("too-many-requests") ? "Too many attempts, try again later" : "Could not send phone OTP");
+      showToast(
+        error.code === "auth/too-many-requests"
+          ? "Too many attempts, try again later"
+          : `Could not send phone OTP (${error.code || "unknown error"})`
+      );
     }
   };
 
