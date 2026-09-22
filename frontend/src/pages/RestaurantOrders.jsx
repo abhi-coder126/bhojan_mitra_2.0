@@ -94,6 +94,14 @@ export default function RestaurantOrders() {
   const [splitSelected, setSplitSelected] = useState([]);
   const [mergeOrder, setMergeOrder] = useState(null);
   const [mergeTargetId, setMergeTargetId] = useState("");
+  const [products, setProducts] = useState([]);
+  const [newOrderOpen, setNewOrderOpen] = useState(false);
+  const [newOrderTable, setNewOrderTable] = useState("1");
+  const [newOrderIsDelivery, setNewOrderIsDelivery] = useState(false);
+  const [newOrderCustomerName, setNewOrderCustomerName] = useState("");
+  const [newOrderSearch, setNewOrderSearch] = useState("");
+  const [newOrderCart, setNewOrderCart] = useState([]);
+  const [placingNewOrder, setPlacingNewOrder] = useState(false);
   const knownOrderIds = useRef(new Set());
   const initialLoadDone = useRef(false);
   const ringTimer = useRef(null);
@@ -145,6 +153,9 @@ export default function RestaurantOrders() {
 
   useEffect(() => {
     fetchOrderSettings();
+    API.get("/products")
+      .then((res) => setProducts(res.data.products || []))
+      .catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -250,6 +261,75 @@ export default function RestaurantOrders() {
       showToast("Order status updated", "success");
     } catch (error) {
       showToast(error.response?.data?.message || "Status update failed");
+    }
+  };
+
+  // Waiter/captain flow: staff picks a table and items directly from this screen
+  // instead of the customer having to scan the QR menu themselves.
+  const newOrderFilteredProducts = useMemo(() => {
+    const q = newOrderSearch.toLowerCase().trim();
+    if (!q) return products;
+    return products.filter(
+      (p) => p.name?.toLowerCase().includes(q) || p.category?.toLowerCase().includes(q)
+    );
+  }, [products, newOrderSearch]);
+
+  const newOrderCartQty = newOrderCart.reduce((sum, item) => sum + item.qty, 0);
+  const newOrderCartTotal = newOrderCart.reduce((sum, item) => sum + item.rate * item.qty, 0);
+
+  const changeNewOrderQty = (product, delta) => {
+    setNewOrderCart((current) => {
+      const existing = current.find((item) => item.productId === product._id);
+      if (!existing && delta > 0) {
+        return [
+          ...current,
+          {
+            productId: product._id,
+            name: product.name,
+            rate: Number(product.mrp || product.sellingPrice || 0),
+            gst: Number(product.gst || 0),
+            qty: 1,
+          },
+        ];
+      }
+      return current
+        .map((item) => (item.productId === product._id ? { ...item, qty: item.qty + delta } : item))
+        .filter((item) => item.qty > 0);
+    });
+  };
+
+  const resetNewOrderForm = () => {
+    setNewOrderTable("1");
+    setNewOrderIsDelivery(false);
+    setNewOrderCustomerName("");
+    setNewOrderSearch("");
+    setNewOrderCart([]);
+  };
+
+  const submitNewOrder = async () => {
+    if (newOrderCart.length === 0) return showToast("Add at least one item", "warning");
+    if (newOrderIsDelivery && !newOrderCustomerName.trim()) {
+      return showToast("Customer name required for delivery orders", "warning");
+    }
+
+    setPlacingNewOrder(true);
+    try {
+      await API.post("/restaurant-orders", {
+        orderType: newOrderIsDelivery ? "delivery" : "dine-in",
+        tableNo: newOrderIsDelivery ? "" : newOrderTable,
+        orderSource: "captain",
+        customerName: newOrderCustomerName.trim() || "Walk-in Customer",
+        customerPhone: "",
+        items: newOrderCart.map((item) => ({ productId: item.productId, qty: item.qty })),
+      });
+      showToast("Order placed", "success");
+      setNewOrderOpen(false);
+      resetNewOrderForm();
+      fetchOrders();
+    } catch (error) {
+      showToast(error.response?.data?.message || "Could not place order");
+    } finally {
+      setPlacingNewOrder(false);
     }
   };
 
@@ -454,6 +534,17 @@ export default function RestaurantOrders() {
           <p>When a QR order arrives, the table will highlight and the counter alert will play.</p>
         </div>
         <div className="restaurant-head-actions">
+          <button
+            type="button"
+            className="captain-new-order-btn"
+            onClick={() => {
+              resetNewOrderForm();
+              setNewOrderOpen(true);
+            }}
+          >
+            <Utensils size={17} />
+            New Order
+          </button>
           <button onClick={() => window.location.reload()}>
             <RefreshCcw size={17} />
             Refresh
@@ -1113,6 +1204,123 @@ export default function RestaurantOrders() {
         onCancel={() => setStatusTarget(null)}
         onConfirm={confirmStatusUpdate}
       />
+
+      {newOrderOpen && (
+        <div className="product-modal-overlay">
+          <div className="modal-card large captain-order-modal">
+            <div className="product-modal-head">
+              <h2>New Order -- Table Side</h2>
+              <button onClick={() => setNewOrderOpen(false)}>x</button>
+            </div>
+
+            <div className="captain-order-body">
+              <div className="captain-order-left">
+                <div className="captain-order-toggle">
+                  <button
+                    type="button"
+                    className={!newOrderIsDelivery ? "active" : ""}
+                    onClick={() => setNewOrderIsDelivery(false)}
+                  >
+                    Dine-in
+                  </button>
+                  <button
+                    type="button"
+                    className={newOrderIsDelivery ? "active" : ""}
+                    onClick={() => setNewOrderIsDelivery(true)}
+                  >
+                    Delivery
+                  </button>
+                </div>
+
+                {newOrderIsDelivery ? (
+                  <input
+                    placeholder="Customer name *"
+                    value={newOrderCustomerName}
+                    onChange={(e) => setNewOrderCustomerName(e.target.value)}
+                  />
+                ) : (
+                  <>
+                    <label className="captain-order-table-select">
+                      <span>Table</span>
+                      <select value={newOrderTable} onChange={(e) => setNewOrderTable(e.target.value)}>
+                        {Array.from({ length: tableCount }, (_, i) => i + 1).map((n) => (
+                          <option key={n} value={n}>{n}</option>
+                        ))}
+                      </select>
+                    </label>
+                    <input
+                      placeholder="Customer name (optional)"
+                      value={newOrderCustomerName}
+                      onChange={(e) => setNewOrderCustomerName(e.target.value)}
+                    />
+                  </>
+                )}
+
+                <input
+                  placeholder="Search menu item..."
+                  value={newOrderSearch}
+                  onChange={(e) => setNewOrderSearch(e.target.value)}
+                />
+
+                <div className="captain-order-item-list">
+                  {newOrderFilteredProducts.map((product) => {
+                    const inCart = newOrderCart.find((item) => item.productId === product._id);
+                    return (
+                      <div className="captain-order-item-row" key={product._id}>
+                        <div>
+                          <b>{product.name}</b>
+                          <span>Rs {Number(product.mrp || product.sellingPrice || 0).toFixed(2)}</span>
+                        </div>
+                        <div className="menu-add-control">
+                          {inCart ? (
+                            <>
+                              <button type="button" onClick={() => changeNewOrderQty(product, -1)}>-</button>
+                              <b>{inCart.qty}</b>
+                              <button type="button" onClick={() => changeNewOrderQty(product, 1)}>+</button>
+                            </>
+                          ) : (
+                            <button type="button" onClick={() => changeNewOrderQty(product, 1)}>Add</button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="captain-order-right">
+                <h3>Order Summary</h3>
+                {newOrderCart.length === 0 ? (
+                  <p className="empty-cart-copy">No items added yet.</p>
+                ) : (
+                  <div className="menu-cart-items">
+                    {newOrderCart.map((item) => (
+                      <div key={item.productId}>
+                        <span>{item.name}</span>
+                        <b>{item.qty} x Rs {item.rate.toFixed(2)}</b>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <div className="captain-order-total">
+                  <span>{newOrderCartQty} items</span>
+                  <b>Rs {newOrderCartTotal.toFixed(2)}</b>
+                </div>
+
+                <button
+                  type="button"
+                  className="captain-order-submit-btn"
+                  disabled={placingNewOrder || newOrderCart.length === 0}
+                  onClick={submitNewOrder}
+                >
+                  {placingNewOrder ? "Placing..." : "Place Order"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

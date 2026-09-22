@@ -67,6 +67,18 @@ export default function KDS() {
     }
   };
 
+  const markAllItems = async (order, itemStatus) => {
+    try {
+      await API.patch(`/restaurant-orders/${order._id}/item-status`, {
+        itemStatus,
+        applyToAll: true,
+      });
+      fetchOrders();
+    } catch (error) {
+      showToast(error.response?.data?.message || "Could not update items", "error");
+    }
+  };
+
   return (
     <div>
       <ToastViewport toast={toast} />
@@ -115,6 +127,29 @@ export default function KDS() {
                 <button style={{ margin: "10px 0", width: "100%" }} onClick={() => sendKOT(order)}>
                   Send KOT to Kitchen
                 </button>
+              )}
+
+              {order.kotSentAt && (
+                <div style={{ display: "flex", gap: "6px", margin: "10px 0" }}>
+                  {["COOKING", "READY", "SERVED"].map((status) => (
+                    <button
+                      key={status}
+                      style={{
+                        flex: 1,
+                        fontSize: "11px",
+                        padding: "8px 4px",
+                        background: itemStatusColors[status],
+                        color: "#fff",
+                        border: "none",
+                        borderRadius: "6px",
+                        fontWeight: 700,
+                      }}
+                      onClick={() => markAllItems(order, status)}
+                    >
+                      Mark all {status}
+                    </button>
+                  ))}
+                </div>
               )}
 
               <ul style={{ listStyle: "none", padding: 0, margin: "10px 0" }}>

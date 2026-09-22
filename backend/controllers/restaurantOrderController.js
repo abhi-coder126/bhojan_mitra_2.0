@@ -123,8 +123,14 @@ exports.createRestaurantOrder = async (req, res) => {
       return res.status(400).json({ message: "Table number required" });
     }
 
-    if (!customerName || !customerPhone) {
-      return res.status(400).json({ message: "Customer name and contact number required" });
+    // A waiter placing a dine-in order from the POS screen (orderSource "captain")
+    // usually won't have the customer's phone handy -- only require it for delivery
+    // (needed for dispatch) and customer self-service QR orders.
+    const phoneRequired = orderType === "delivery" || orderSource === "qr";
+    if (!customerName || (phoneRequired && !customerPhone)) {
+      return res.status(400).json({
+        message: phoneRequired ? "Customer name and contact number required" : "Customer name required",
+      });
     }
 
     if (orderType === "delivery" && !deliveryAddress) {
@@ -539,7 +545,7 @@ exports.sendKOT = async (req, res) => {
 // --- KDS: update a single item's kitchen status ---
 exports.updateOrderItemStatus = async (req, res) => {
   try {
-    const { itemIndex, itemStatus } = req.body;
+    const { itemIndex, itemStatus, applyToAll } = req.body;
     const allowed = ["NEW", "ACCEPTED", "COOKING", "READY", "SERVED"];
     if (!allowed.includes(itemStatus)) {
       return res.status(400).json({ message: "Invalid item status" });
@@ -548,11 +554,18 @@ exports.updateOrderItemStatus = async (req, res) => {
     const order = await RestaurantOrder.findById(req.params.id);
     if (!order) return res.status(404).json({ message: "Order not found" });
 
-    if (!order.items[itemIndex]) {
-      return res.status(400).json({ message: "Invalid item index" });
+    // KDS "mark all" action -- bumps every item on the KOT to the same status in one
+    // tap instead of clicking through each item individually.
+    if (applyToAll) {
+      order.items.forEach((item) => {
+        item.itemStatus = itemStatus;
+      });
+    } else {
+      if (!order.items[itemIndex]) {
+        return res.status(400).json({ message: "Invalid item index" });
+      }
+      order.items[itemIndex].itemStatus = itemStatus;
     }
-
-    order.items[itemIndex].itemStatus = itemStatus;
 
     const allStatuses = order.items.map((item) => item.itemStatus);
     if (allStatuses.every((s) => s === "SERVED")) order.status = "served";

@@ -66,6 +66,24 @@ const settingSchema = new mongoose.Schema(
       enum: ["light", "dark"],
       default: "light",
     },
+
+    currencySymbol: { type: String, default: "Rs" },
+    dateFormat: {
+      type: String,
+      enum: ["DD-MM-YYYY", "MM-DD-YYYY", "YYYY-MM-DD"],
+      default: "DD-MM-YYYY",
+    },
+    timezone: { type: String, default: "Asia/Kolkata" },
+
+    whatsappNumber: { type: String, default: "" },
+    businessOpenTime: { type: String, default: "09:00" },
+    businessCloseTime: { type: String, default: "23:00" },
+
+    // Session auto-logout, in minutes -- staff-side idle logout, separate from the
+    // JWT's own 7-day expiry (see authController.login).
+    sessionTimeoutMinutes: { type: Number, default: 60 },
+    autoAcceptOrders: { type: Boolean, default: false },
+    maintenanceMode: { type: Boolean, default: false },
   },
   { timestamps: true }
 );

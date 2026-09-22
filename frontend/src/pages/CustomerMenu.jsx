@@ -1,11 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { BadgePercent, CheckCircle2, ChefHat, Clock, Flame, Gift, History, Leaf, Mail, MapPin, Minus, PackageCheck, PartyPopper, Phone, Plus, Search, ShieldCheck, ShoppingBag, Soup, Sparkles, Star, Utensils } from "lucide-react";
+import { BadgePercent, CheckCircle2, ChefHat, Clock, Flame, Gift, History, Leaf, LogOut, Mail, MapPin, Minus, PackageCheck, PartyPopper, Plus, Search, ShieldCheck, ShoppingBag, Soup, Sparkles, Star, UserCircle2, Utensils, X } from "lucide-react";
 import { useParams } from "react-router-dom";
 import API from "../api/axios";
 import PhoneInput from "../components/PhoneInput";
 import PublicLottie from "../components/PublicLottie";
 import { ToastViewport, useToast } from "../components/Toast";
-import { resetRecaptchaVerifier, sendPhoneOtp } from "../firebase";
 import ScratchCard from "../components/ScratchCard";
 
 const CUSTOMER_TOKEN_KEY = "bhojan_customer_token";
@@ -21,12 +20,24 @@ const loadStoredCustomerAuth = () => {
   }
 };
 
+// Cart survives a page refresh but not a closed tab -- sessionStorage is exactly
+// that lifetime, and keying by table keeps separate QR tables from mixing carts.
+const cartStorageKey = (tableNo) => `bhojan_cart_${tableNo}`;
+
+const loadStoredCart = (tableNo) => {
+  try {
+    return JSON.parse(sessionStorage.getItem(cartStorageKey(tableNo)) || "[]");
+  } catch {
+    return [];
+  }
+};
+
 export default function CustomerMenu() {
   const { tableNo } = useParams();
   const isDelivery = tableNo === "delivery";
   const [products, setProducts] = useState([]);
   const [menuLoading, setMenuLoading] = useState(true);
-  const [cart, setCart] = useState([]);
+  const [cart, setCart] = useState(() => loadStoredCart(tableNo));
   const [activeCategory, setActiveCategory] = useState("All");
   const [activeFoodType, setActiveFoodType] = useState("all");
   const [checkoutStep, setCheckoutStep] = useState("cart");
@@ -50,18 +61,20 @@ export default function CustomerMenu() {
   const cartPanelRef = useRef(null);
   const { toast, showToast } = useToast();
 
-  // Delivery orders require both email and phone verification before checkout.
+  // Delivery orders require email verification before checkout. Phone is collected
+  // as plain contact info (not SMS-verified) -- verifying it required Firebase's
+  // reCAPTCHA challenge, which was unreliable and confusing on the checkout screen,
+  // so email OTP alone is the verified channel now.
   const [emailOtp, setEmailOtp] = useState({ sent: false, code: "", verified: false, sending: false, verifying: false });
-  const [phoneOtp, setPhoneOtp] = useState({ sent: false, code: "", verified: false, sending: false, verifying: false });
-  const [confirmationResult, setConfirmationResult] = useState(null);
   const [verifiedEmail, setVerifiedEmail] = useState("");
-  const [verifiedPhone, setVerifiedPhone] = useState("");
 
   // Customer account (email-OTP login) -- persisted so a delivery customer isn't
   // asked to re-verify or retype their address on their next visit. Dine-in login
   // is optional (a "save my order & earn rewards" prompt, never required).
   const [customerAuth, setCustomerAuth] = useState({ token: "", profile: null });
   const [optionalLoginOpen, setOptionalLoginOpen] = useState(false);
+  const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [profileModalOpen, setProfileModalOpen] = useState(false);
   const [addressLabel, setAddressLabel] = useState("Home");
   const [addingAddress, setAddingAddress] = useState(false);
   const [orderHistory, setOrderHistory] = useState(null);
@@ -342,6 +355,14 @@ export default function CustomerMenu() {
     if (cart.length === 0) setCheckoutStep("cart");
   }, [cart.length]);
 
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(cartStorageKey(tableNo), JSON.stringify(cart));
+    } catch {
+      // Storage unavailable (e.g. private mode) -- cart just won't survive a refresh.
+    }
+  }, [cart, tableNo]);
+
   const normalizedEmail = customer.customerEmail.trim().toLowerCase();
   // A returning logged-in customer whose form still matches their saved profile
   // skips OTP entirely -- that's the "don't ask again" behaviour for repeat visits.
@@ -351,7 +372,6 @@ export default function CustomerMenu() {
     customer.customerPhone !== "" &&
     (customerAuth.profile?.email === normalizedEmail || !normalizedEmail);
   const isEmailVerified = isReturningCustomer || (emailOtp.verified && verifiedEmail === normalizedEmail && normalizedEmail !== "");
-  const isPhoneVerified = isReturningCustomer || (phoneOtp.verified && verifiedPhone === customer.customerPhone && customer.customerPhone !== "");
   const savedAddresses = customerAuth.profile?.addresses || [];
 
   const sendEmailOtpHandler = async () => {
@@ -385,45 +405,12 @@ export default function CustomerMenu() {
       setEmailOtp((prev) => ({ ...prev, verified: true, verifying: false }));
       if (res.data.token) {
         persistCustomerAuth(res.data.token, res.data.customer);
+        setAuthModalOpen(false);
       }
       showToast("Email verified", "success");
     } catch (error) {
       setEmailOtp((prev) => ({ ...prev, verifying: false }));
       showToast(error.response?.data?.message || "Incorrect OTP");
-    }
-  };
-
-  const sendPhoneOtpHandler = async () => {
-    if (customer.customerPhone.length !== 10) {
-      return showToast("Enter a valid 10-digit phone number first", "warning");
-    }
-
-    setPhoneOtp((prev) => ({ ...prev, sending: true }));
-    try {
-      const result = await sendPhoneOtp(`+91${customer.customerPhone}`, "recaptcha-container");
-      setConfirmationResult(result);
-      setPhoneOtp({ sent: true, code: "", verified: false, sending: false, verifying: false });
-      showToast("OTP sent to your phone", "success");
-    } catch (error) {
-      resetRecaptchaVerifier();
-      setPhoneOtp((prev) => ({ ...prev, sending: false }));
-      showToast(error.message?.includes("too-many-requests") ? "Too many attempts, try again later" : "Could not send phone OTP");
-    }
-  };
-
-  const verifyPhoneOtpHandler = async () => {
-    if (!confirmationResult) return showToast("Send the phone OTP first", "warning");
-    if (!phoneOtp.code.trim()) return showToast("Enter the OTP sent to your phone", "warning");
-
-    setPhoneOtp((prev) => ({ ...prev, verifying: true }));
-    try {
-      await confirmationResult.confirm(phoneOtp.code.trim());
-      setVerifiedPhone(customer.customerPhone);
-      setPhoneOtp((prev) => ({ ...prev, verified: true, verifying: false }));
-      showToast("Phone verified", "success");
-    } catch {
-      setPhoneOtp((prev) => ({ ...prev, verifying: false }));
-      showToast("Incorrect OTP");
     }
   };
 
@@ -489,9 +476,6 @@ export default function CustomerMenu() {
     if (isDelivery && !isEmailVerified) {
       return showToast("Please verify your email OTP first", "warning");
     }
-    if (isDelivery && !isPhoneVerified) {
-      return showToast("Please verify your phone OTP first", "warning");
-    }
 
     setPlacing(true);
 
@@ -522,10 +506,7 @@ export default function CustomerMenu() {
       if (!customerAuth.token) {
         setCustomer({ customerName: "", customerPhone: "", customerEmail: "", deliveryAddress: "", note: "" });
         setEmailOtp({ sent: false, code: "", verified: false, sending: false, verifying: false });
-        setPhoneOtp({ sent: false, code: "", verified: false, sending: false, verifying: false });
-        setConfirmationResult(null);
         setVerifiedEmail("");
-        setVerifiedPhone("");
       } else {
         setCustomer((prev) => ({ ...prev, note: "" }));
       }
@@ -692,6 +673,18 @@ export default function CustomerMenu() {
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
+          {customerAuth.token ? (
+            <button type="button" className="foodora-profile-chip" onClick={() => setProfileModalOpen(true)}>
+              <UserCircle2 size={18} />
+              <span>{customerAuth.profile?.name?.split(" ")[0] || "Profile"}</span>
+            </button>
+          ) : (
+            <button type="button" className="foodora-login-chip" onClick={() => setAuthModalOpen(true)}>
+              <UserCircle2 size={18} />
+              <span>Login</span>
+            </button>
+          )}
+
           <div className="foodora-cart-chip">
             <ShoppingBag size={18} />
             <b>{cartQty}</b>
@@ -995,47 +988,9 @@ export default function CustomerMenu() {
               <PhoneInput
                 placeholder="Contact number"
                 value={customer.customerPhone}
-                onChange={(value) => {
-                  setCustomer({ ...customer, customerPhone: value });
-                  setPhoneOtp({ sent: false, code: "", verified: false, sending: false, verifying: false });
-                }}
+                onChange={(value) => setCustomer({ ...customer, customerPhone: value })}
                 required
               />
-
-              {isDelivery && (
-                <div className="otp-verify-box">
-                  <div className="otp-verify-head">
-                    <Phone size={15} /> <span>Phone verification</span>
-                    {isPhoneVerified && <b className="otp-verified-tag"><ShieldCheck size={13} /> Verified</b>}
-                  </div>
-                  {!isPhoneVerified && (
-                    <div className="otp-verify-row">
-                      {!phoneOtp.sent ? (
-                        <button type="button" disabled={phoneOtp.sending} onClick={sendPhoneOtpHandler}>
-                          {phoneOtp.sending ? "Sending..." : "Send OTP"}
-                        </button>
-                      ) : (
-                        <>
-                          <input
-                            inputMode="numeric"
-                            maxLength={6}
-                            placeholder="Enter OTP"
-                            value={phoneOtp.code}
-                            onChange={(e) => setPhoneOtp((prev) => ({ ...prev, code: e.target.value.replace(/\D/g, "") }))}
-                          />
-                          <button type="button" disabled={phoneOtp.verifying} onClick={verifyPhoneOtpHandler}>
-                            {phoneOtp.verifying ? "Checking..." : "Verify"}
-                          </button>
-                          <button type="button" className="otp-resend-btn" disabled={phoneOtp.sending} onClick={sendPhoneOtpHandler}>
-                            Resend
-                          </button>
-                        </>
-                      )}
-                    </div>
-                  )}
-                  <div id="recaptcha-container" />
-                </div>
-              )}
 
               <input
                 placeholder={isDelivery ? "Email *" : "Email optional"}
@@ -1162,7 +1117,7 @@ export default function CustomerMenu() {
             </button>
           ) : (
             <button
-              disabled={placing || cart.length === 0 || (isDelivery && (!isEmailVerified || !isPhoneVerified))}
+              disabled={placing || cart.length === 0 || (isDelivery && !isEmailVerified)}
               onClick={placeOrder}
             >
               {placing ? "Sending..." : "Place Order"}
@@ -1184,7 +1139,7 @@ export default function CustomerMenu() {
           ) : (
             <button
               type="button"
-              disabled={placing || (isDelivery && (!isEmailVerified || !isPhoneVerified))}
+              disabled={placing || (isDelivery && !isEmailVerified)}
               onClick={placeOrder}
             >
               {placing ? "Sending..." : "Place Order"}
@@ -1214,6 +1169,157 @@ export default function CustomerMenu() {
             <h2>You saved Rs {couponSavedPopup.amount.toFixed(0)}!</h2>
             <p>Coupon <b>{couponSavedPopup.code}</b> applied successfully.</p>
             <button type="button" onClick={() => setCouponSavedPopup(null)}>Yay, Continue</button>
+          </div>
+        </div>
+      )}
+
+      {authModalOpen && (
+        <div className="customer-auth-overlay" onClick={() => setAuthModalOpen(false)}>
+          <div className="customer-auth-card" onClick={(e) => e.stopPropagation()}>
+            <div className="customer-auth-head">
+              <div>
+                <h2>Login / Sign up</h2>
+                <p>One email OTP logs you in -- new here? It creates your account automatically.</p>
+              </div>
+              <button type="button" onClick={() => setAuthModalOpen(false)}><X size={18} /></button>
+            </div>
+
+            <input
+              placeholder="Your name *"
+              value={customer.customerName}
+              onChange={(e) => setCustomer({ ...customer, customerName: e.target.value })}
+            />
+            <PhoneInput
+              placeholder="Contact number *"
+              value={customer.customerPhone}
+              onChange={(value) => setCustomer({ ...customer, customerPhone: value })}
+            />
+            <input
+              placeholder="Email *"
+              value={customer.customerEmail}
+              onChange={(e) => {
+                setCustomer({ ...customer, customerEmail: e.target.value });
+                if (emailOtp.sent) setEmailOtp({ sent: false, code: "", verified: false, sending: false, verifying: false });
+              }}
+            />
+
+            <div className="otp-verify-row">
+              {!emailOtp.sent ? (
+                <button
+                  type="button"
+                  disabled={emailOtp.sending || !customer.customerName.trim() || !customer.customerPhone.trim()}
+                  onClick={sendEmailOtpHandler}
+                >
+                  {emailOtp.sending ? "Sending..." : "Send OTP"}
+                </button>
+              ) : (
+                <>
+                  <input
+                    inputMode="numeric"
+                    maxLength={6}
+                    placeholder="Enter OTP"
+                    value={emailOtp.code}
+                    onChange={(e) => setEmailOtp((prev) => ({ ...prev, code: e.target.value.replace(/\D/g, "") }))}
+                  />
+                  <button type="button" disabled={emailOtp.verifying} onClick={verifyEmailOtpHandler}>
+                    {emailOtp.verifying ? "Checking..." : "Verify & Login"}
+                  </button>
+                  <button type="button" className="otp-resend-btn" disabled={emailOtp.sending} onClick={sendEmailOtpHandler}>
+                    Resend
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {profileModalOpen && customerAuth.token && (
+        <div className="customer-auth-overlay" onClick={() => setProfileModalOpen(false)}>
+          <div className="customer-auth-card" onClick={(e) => e.stopPropagation()}>
+            <div className="customer-auth-head">
+              <div>
+                <h2>{customerAuth.profile?.name || "My Profile"}</h2>
+                <p>{customerAuth.profile?.contact} {customerAuth.profile?.email ? `· ${customerAuth.profile.email}` : ""}</p>
+              </div>
+              <button type="button" onClick={() => setProfileModalOpen(false)}><X size={18} /></button>
+            </div>
+
+            <div className="customer-profile-stats">
+              <div>
+                <span>Loyalty Points</span>
+                <b>{customerAuth.profile?.loyaltyPoints || 0}</b>
+              </div>
+              <div>
+                <span>Total Visits</span>
+                <b>{customerAuth.profile?.totalVisits || 0}</b>
+              </div>
+            </div>
+
+            <div className="verified-customer-strip">
+              {isDelivery && (
+                <button type="button" onClick={fetchOrderHistory}>
+                  <History size={13} /> My Orders
+                </button>
+              )}
+              <button type="button" onClick={fetchMyRewards}>
+                <Gift size={13} /> My Rewards
+              </button>
+            </div>
+
+            {historyOpen && orderHistory && (
+              <div className="order-history-list">
+                {orderHistory.length === 0 ? (
+                  <p>No past delivery orders yet.</p>
+                ) : (
+                  orderHistory.map((order) => (
+                    <div key={order._id}>
+                      <span>{order.orderNo}</span>
+                      <b>Rs {Number(order.grandTotal || 0).toFixed(2)}</b>
+                      <small className={`status-tag ${order.status}`}>{order.status}</small>
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
+
+            {rewardsOpen && rewardsList && (
+              <div className="order-history-list">
+                {rewardsList.length === 0 ? (
+                  <p>No rewards yet -- complete a delivery order to win one.</p>
+                ) : (
+                  rewardsList.map((reward) => (
+                    <div key={reward.id}>
+                      <span>{reward.title}</span>
+                      <b>{reward.scratched ? reward.offerText : "Not opened"}</b>
+                      <small className={`status-tag ${reward.expired ? "cancelled" : "served"}`}>
+                        {reward.expired ? "Expired" : `Till ${new Date(reward.expiresAt).toLocaleDateString("en-IN")}`}
+                      </small>
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
+
+            {savedAddresses.length > 0 && (
+              <div className="customer-profile-addresses">
+                <h3>Saved Addresses</h3>
+                {savedAddresses.map((addr, index) => (
+                  <p key={index}><MapPin size={13} /> <b>{addr.label}</b> -- {addr.address}</p>
+                ))}
+              </div>
+            )}
+
+            <button
+              type="button"
+              className="customer-logout-btn"
+              onClick={() => {
+                clearCustomerAuth();
+                setProfileModalOpen(false);
+              }}
+            >
+              <LogOut size={15} /> Logout
+            </button>
           </div>
         </div>
       )}

@@ -25,6 +25,39 @@ exports.registerAdmin = async (req, res) => {
   }
 };
 
+exports.changePassword = async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ message: "Current and new password are required" });
+    }
+    if (String(newPassword).length < 6) {
+      return res.status(400).json({ message: "New password must be at least 6 characters" });
+    }
+
+    const user = await User.findById(req.user.id).select("password name role");
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    const match = await bcrypt.compare(currentPassword, user.password);
+    if (!match) return res.status(400).json({ message: "Current password is incorrect" });
+
+    user.password = await bcrypt.hash(newPassword, 10);
+    await user.save();
+
+    await logAudit({
+      actor: `${user.name} (${user.role})`,
+      action: "password_changed",
+      entity: "Auth",
+      ip: getClientIp(req),
+      userAgent: req.headers["user-agent"] || "",
+    });
+
+    res.json({ success: true, message: "Password updated successfully" });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 exports.login = async (req, res) => {
   const ip = getClientIp(req);
   const userAgent = req.headers["user-agent"] || "";
