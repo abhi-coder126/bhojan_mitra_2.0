@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { BadgePercent, CheckCircle2, ChefHat, Clock, Flame, Gift, History, Leaf, LogOut, Mail, MapPin, Minus, PackageCheck, PartyPopper, Plus, Search, ShieldCheck, ShoppingBag, Soup, Sparkles, Star, UserCircle2, Utensils, X } from "lucide-react";
+import { BadgePercent, CheckCircle2, ChefHat, Clock, Flame, Gift, History, Leaf, LogOut, Mail, MapPin, Minus, PackageCheck, PartyPopper, Phone, Plus, Search, ShieldCheck, ShoppingBag, Soup, Sparkles, Star, UserCircle2, Utensils, X } from "lucide-react";
 import { useParams } from "react-router-dom";
 import API from "../api/axios";
 import PhoneInput from "../components/PhoneInput";
 import PublicLottie from "../components/PublicLottie";
 import { ToastViewport, useToast } from "../components/Toast";
+import { resetRecaptchaVerifier, sendPhoneOtp } from "../firebase";
 import ScratchCard from "../components/ScratchCard";
 
 const CUSTOMER_TOKEN_KEY = "bhojan_customer_token";
@@ -61,12 +62,12 @@ export default function CustomerMenu() {
   const cartPanelRef = useRef(null);
   const { toast, showToast } = useToast();
 
-  // Delivery orders require email verification before checkout. Phone is collected
-  // as plain contact info (not SMS-verified) -- verifying it required Firebase's
-  // reCAPTCHA challenge, which was unreliable and confusing on the checkout screen,
-  // so email OTP alone is the verified channel now.
+  // Delivery orders require both email and phone verification before checkout.
   const [emailOtp, setEmailOtp] = useState({ sent: false, code: "", verified: false, sending: false, verifying: false });
+  const [phoneOtp, setPhoneOtp] = useState({ sent: false, code: "", verified: false, sending: false, verifying: false });
+  const [confirmationResult, setConfirmationResult] = useState(null);
   const [verifiedEmail, setVerifiedEmail] = useState("");
+  const [verifiedPhone, setVerifiedPhone] = useState("");
 
   // Customer account (email-OTP login) -- persisted so a delivery customer isn't
   // asked to re-verify or retype their address on their next visit. Dine-in login
@@ -372,6 +373,7 @@ export default function CustomerMenu() {
     customer.customerPhone !== "" &&
     (customerAuth.profile?.email === normalizedEmail || !normalizedEmail);
   const isEmailVerified = isReturningCustomer || (emailOtp.verified && verifiedEmail === normalizedEmail && normalizedEmail !== "");
+  const isPhoneVerified = isReturningCustomer || (phoneOtp.verified && verifiedPhone === customer.customerPhone && customer.customerPhone !== "");
   const savedAddresses = customerAuth.profile?.addresses || [];
 
   const sendEmailOtpHandler = async () => {
@@ -417,6 +419,40 @@ export default function CustomerMenu() {
     } catch (error) {
       setEmailOtp((prev) => ({ ...prev, verifying: false }));
       showToast(error.response?.data?.message || "Incorrect OTP");
+    }
+  };
+
+  const sendPhoneOtpHandler = async () => {
+    if (customer.customerPhone.length !== 10) {
+      return showToast("Enter a valid 10-digit phone number first", "warning");
+    }
+
+    setPhoneOtp((prev) => ({ ...prev, sending: true }));
+    try {
+      const result = await sendPhoneOtp(`+91${customer.customerPhone}`, "recaptcha-container");
+      setConfirmationResult(result);
+      setPhoneOtp({ sent: true, code: "", verified: false, sending: false, verifying: false });
+      showToast("OTP sent to your phone", "success");
+    } catch (error) {
+      resetRecaptchaVerifier();
+      setPhoneOtp((prev) => ({ ...prev, sending: false }));
+      showToast(error.message?.includes("too-many-requests") ? "Too many attempts, try again later" : "Could not send phone OTP");
+    }
+  };
+
+  const verifyPhoneOtpHandler = async () => {
+    if (!confirmationResult) return showToast("Send the phone OTP first", "warning");
+    if (!phoneOtp.code.trim()) return showToast("Enter the OTP sent to your phone", "warning");
+
+    setPhoneOtp((prev) => ({ ...prev, verifying: true }));
+    try {
+      await confirmationResult.confirm(phoneOtp.code.trim());
+      setVerifiedPhone(customer.customerPhone);
+      setPhoneOtp((prev) => ({ ...prev, verified: true, verifying: false }));
+      showToast("Phone verified", "success");
+    } catch {
+      setPhoneOtp((prev) => ({ ...prev, verifying: false }));
+      showToast("Incorrect OTP");
     }
   };
 
@@ -482,6 +518,9 @@ export default function CustomerMenu() {
     if (isDelivery && !isEmailVerified) {
       return showToast("Please verify your email OTP first", "warning");
     }
+    if (isDelivery && !isPhoneVerified) {
+      return showToast("Please verify your phone OTP first", "warning");
+    }
 
     setPlacing(true);
 
@@ -512,7 +551,10 @@ export default function CustomerMenu() {
       if (!customerAuth.token) {
         setCustomer({ customerName: "", customerPhone: "", customerEmail: "", deliveryAddress: "", note: "" });
         setEmailOtp({ sent: false, code: "", verified: false, sending: false, verifying: false });
+        setPhoneOtp({ sent: false, code: "", verified: false, sending: false, verifying: false });
+        setConfirmationResult(null);
         setVerifiedEmail("");
+        setVerifiedPhone("");
       } else {
         setCustomer((prev) => ({ ...prev, note: "" }));
       }
@@ -994,9 +1036,47 @@ export default function CustomerMenu() {
               <PhoneInput
                 placeholder="Contact number"
                 value={customer.customerPhone}
-                onChange={(value) => setCustomer({ ...customer, customerPhone: value })}
+                onChange={(value) => {
+                  setCustomer({ ...customer, customerPhone: value });
+                  setPhoneOtp({ sent: false, code: "", verified: false, sending: false, verifying: false });
+                }}
                 required
               />
+
+              {isDelivery && (
+                <div className="otp-verify-box">
+                  <div className="otp-verify-head">
+                    <Phone size={15} /> <span>Phone verification</span>
+                    {isPhoneVerified && <b className="otp-verified-tag"><ShieldCheck size={13} /> Verified</b>}
+                  </div>
+                  {!isPhoneVerified && (
+                    <div className="otp-verify-row">
+                      {!phoneOtp.sent ? (
+                        <button type="button" disabled={phoneOtp.sending} onClick={sendPhoneOtpHandler}>
+                          {phoneOtp.sending ? "Sending..." : "Send OTP"}
+                        </button>
+                      ) : (
+                        <>
+                          <input
+                            inputMode="numeric"
+                            maxLength={6}
+                            placeholder="Enter OTP"
+                            value={phoneOtp.code}
+                            onChange={(e) => setPhoneOtp((prev) => ({ ...prev, code: e.target.value.replace(/\D/g, "") }))}
+                          />
+                          <button type="button" disabled={phoneOtp.verifying} onClick={verifyPhoneOtpHandler}>
+                            {phoneOtp.verifying ? "Checking..." : "Verify"}
+                          </button>
+                          <button type="button" className="otp-resend-btn" disabled={phoneOtp.sending} onClick={sendPhoneOtpHandler}>
+                            Resend
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  )}
+                  <div id="recaptcha-container" />
+                </div>
+              )}
 
               <input
                 placeholder={isDelivery ? "Email *" : "Email optional"}
@@ -1123,7 +1203,7 @@ export default function CustomerMenu() {
             </button>
           ) : (
             <button
-              disabled={placing || cart.length === 0 || (isDelivery && !isEmailVerified)}
+              disabled={placing || cart.length === 0 || (isDelivery && (!isEmailVerified || !isPhoneVerified))}
               onClick={placeOrder}
             >
               {placing ? "Sending..." : "Place Order"}
@@ -1145,7 +1225,7 @@ export default function CustomerMenu() {
           ) : (
             <button
               type="button"
-              disabled={placing || (isDelivery && !isEmailVerified)}
+              disabled={placing || (isDelivery && (!isEmailVerified || !isPhoneVerified))}
               onClick={placeOrder}
             >
               {placing ? "Sending..." : "Place Order"}
