@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
-import { Eye, Flame, ImagePlus, Leaf, Pencil, Sparkles, Trash2, Utensils } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Eye, Flame, ImagePlus, Leaf, Pencil, Sparkles, Trash2, Upload, Utensils } from "lucide-react";
 import API from "../api/axios";
 import { ToastViewport, useToast } from "../components/Toast";
 import DeleteConfirmModal from "../components/DeleteConfirmModal";
@@ -8,12 +8,14 @@ const emptyForm = {
   name: "",
   image: "",
   category: "",
+  itemType: "food",
   foodType: "veg",
   description: "",
   spiceLevel: "medium",
   isRecommended: false,
   mrp: "",
   gst: "",
+  offerPercent: "",
 };
 
 const defaultCategories = [
@@ -25,6 +27,29 @@ const defaultCategories = [
   "Beverages",
 ];
 
+const itemTypes = [
+  { value: "food", label: "Food" },
+  { value: "beverage", label: "Beverage / Drink" },
+  { value: "dessert", label: "Dessert" },
+];
+
+const csvColumns = ["name", "category", "itemType", "foodType", "spiceLevel", "description", "mrp", "gst", "offerPercent"];
+
+const parseCsv = (text) => {
+  const lines = text.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+  if (lines.length < 2) return [];
+
+  const header = lines[0].split(",").map((h) => h.trim());
+  return lines.slice(1).map((line) => {
+    const cells = line.split(",").map((c) => c.trim());
+    const row = {};
+    header.forEach((key, index) => {
+      row[key] = cells[index] ?? "";
+    });
+    return row;
+  });
+};
+
 export default function Products() {
   const [items, setItems] = useState([]);
   const [search, setSearch] = useState("");
@@ -34,6 +59,8 @@ export default function Products() {
   const [showView, setShowView] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [importing, setImporting] = useState(false);
+  const fileInputRef = useRef(null);
   const { toast, showToast } = useToast();
 
   const fetchItems = async () => {
@@ -72,13 +99,15 @@ export default function Products() {
     name: form.name.trim(),
     image: form.image.trim(),
     category: form.category.trim(),
+    itemType: form.itemType || "food",
     foodType: form.foodType || "veg",
     description: form.description.trim(),
-    spiceLevel: form.spiceLevel || "medium",
+    spiceLevel: form.itemType === "food" ? form.spiceLevel || "medium" : "mild",
     isRecommended: Boolean(form.isRecommended),
     mrp: Number(form.mrp || 0),
     sellingPrice: Number(form.mrp || 0),
     gst: Number(form.gst || 0),
+    offerPercent: Math.min(100, Math.max(0, Number(form.offerPercent || 0))),
     purchasePrice: 0,
     openingStock: 9999,
     stock: 9999,
@@ -109,12 +138,14 @@ export default function Products() {
       name: item.name || "",
       image: item.image || "",
       category: item.category || "",
+      itemType: item.itemType || "food",
       foodType: item.foodType || "veg",
       description: item.description || "",
       spiceLevel: item.spiceLevel || "medium",
       isRecommended: Boolean(item.isRecommended),
       mrp: item.mrp || item.sellingPrice || "",
       gst: item.gst || "",
+      offerPercent: item.offerPercent || "",
     });
     setShowEdit(true);
   };
@@ -131,6 +162,47 @@ export default function Products() {
       fetchItems();
     } catch (error) {
       showToast(error.response?.data?.message || "Menu item update failed");
+    }
+  };
+
+  const downloadCsvTemplate = () => {
+    const csv = `${csvColumns.join(",")}\nMasala Chai,Beverages,beverage,veg,mild,Hot spiced tea,49,0,10\nPaneer Tikka,Starters,food,veg,spicy,Grilled cottage cheese,220,5,0`;
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "menu-items-template.csv";
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const importCsv = async (file) => {
+    if (!file) return;
+
+    try {
+      const text = await file.text();
+      const rows = parseCsv(text);
+
+      if (rows.length === 0) {
+        showToast("No rows found in file", "warning");
+        return;
+      }
+
+      setImporting(true);
+      const res = await API.post("/products/bulk-import", { items: rows });
+      const { created, skipped } = res.data;
+      showToast(
+        skipped?.length
+          ? `${created} item(s) imported, ${skipped.length} skipped`
+          : `${created} item(s) imported`,
+        "success"
+      );
+      fetchItems();
+    } catch (error) {
+      showToast(error.response?.data?.message || "Import failed");
+    } finally {
+      setImporting(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };
 
@@ -159,15 +231,35 @@ export default function Products() {
           <h1>Menu Items</h1>
           <p>Add items by category with photo, MRP and optional GST for clean invoice breakup.</p>
         </div>
-        <button
-          className="add-product-main-btn"
-          onClick={() => {
-            setForm(emptyForm);
-            setShowAdd(true);
-          }}
-        >
-          + Add Item
-        </button>
+        <div className="menu-management-head-actions">
+          <button className="menu-upload-btn" type="button" onClick={downloadCsvTemplate}>
+            Download Template
+          </button>
+          <button
+            className="menu-upload-btn"
+            type="button"
+            disabled={importing}
+            onClick={() => fileInputRef.current?.click()}
+          >
+            <Upload size={16} /> {importing ? "Importing..." : "Upload Items (CSV)"}
+          </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".csv"
+            className="hidden-file-input"
+            onChange={(e) => importCsv(e.target.files?.[0])}
+          />
+          <button
+            className="add-product-main-btn"
+            onClick={() => {
+              setForm(emptyForm);
+              setShowAdd(true);
+            }}
+          >
+            + Add Item
+          </button>
+        </div>
       </div>
 
       <div className="menu-admin-toolbar">
@@ -214,13 +306,25 @@ export default function Products() {
                     <div className="menu-admin-card-body">
                       <span>{item.category || "Uncategorized"}</span>
                       <h3>{item.name}</h3>
-                      <small className={item.foodType === "non-veg" ? "food-type non-veg" : "food-type veg"}>
-                        {item.foodType === "non-veg" ? <Flame size={12} /> : <Leaf size={12} />}
-                        {item.foodType === "non-veg" ? "Non-Veg" : "Veg"}
-                      </small>
+                      {item.itemType !== "beverage" && (
+                        <small className={item.foodType === "non-veg" ? "food-type non-veg" : "food-type veg"}>
+                          {item.foodType === "non-veg" ? <Flame size={12} /> : <Leaf size={12} />}
+                          {item.foodType === "non-veg" ? "Non-Veg" : "Veg"}
+                        </small>
+                      )}
                       {item.description && <em>{item.description}</em>}
                       <p>
-                        <b>MRP Rs {Number(item.mrp || item.sellingPrice || 0).toFixed(2)}</b>
+                        {Number(item.offerPercent || 0) > 0 ? (
+                          <>
+                            <b className="offer-final-price">
+                              Rs {(Number(item.mrp || item.sellingPrice || 0) * (1 - item.offerPercent / 100)).toFixed(2)}
+                            </b>
+                            <s className="offer-strike-price">Rs {Number(item.mrp || item.sellingPrice || 0).toFixed(2)}</s>
+                            <small className="offer-chip">{item.offerPercent}% OFF</small>
+                          </>
+                        ) : (
+                          <b>MRP Rs {Number(item.mrp || item.sellingPrice || 0).toFixed(2)}</b>
+                        )}
                         {Number(item.gst || 0) > 0 && <small>{item.gst}% GST included</small>}
                         {item.isRecommended && <small className="recommended-chip"><Sparkles size={12} /> Recommended</small>}
                       </p>
@@ -286,8 +390,16 @@ export default function Products() {
               {selectedItem.description && <p className="menu-item-detail-description">{selectedItem.description}</p>}
 
               <div className="menu-item-detail-grid">
-                <InfoTile label="Spice" value={selectedItem.spiceLevel || "Medium"} />
+                {selectedItem.itemType === "food" && (
+                  <InfoTile label="Spice" value={selectedItem.spiceLevel || "Medium"} />
+                )}
                 <InfoTile label="MRP" value={`Rs ${Number(selectedItem.mrp || selectedItem.sellingPrice || 0).toFixed(2)}`} />
+                {Number(selectedItem.offerPercent || 0) > 0 && (
+                  <InfoTile
+                    label="Offer Price"
+                    value={`Rs ${(Number(selectedItem.mrp || selectedItem.sellingPrice || 0) * (1 - selectedItem.offerPercent / 100)).toFixed(2)} (${selectedItem.offerPercent}% off)`}
+                  />
+                )}
                 <InfoTile
                   label="GST"
                   value={Number(selectedItem.gst || 0) > 0 ? `${selectedItem.gst}% included` : "Not applied"}
@@ -391,24 +503,39 @@ function MenuItemForm({ form, setForm, categories, submit, buttonText }) {
         />
       </div>
 
-      <div className="food-type-row">
-        <button
-          type="button"
-          className={form.foodType !== "non-veg" ? "active veg" : ""}
-          onClick={() => setForm({ ...form, foodType: "veg" })}
-        >
-          <Leaf size={16} />
-          Veg
-        </button>
-        <button
-          type="button"
-          className={form.foodType === "non-veg" ? "active non-veg" : ""}
-          onClick={() => setForm({ ...form, foodType: "non-veg" })}
-        >
-          <Flame size={16} />
-          Non-Veg
-        </button>
+      <div className="item-type-row">
+        {itemTypes.map((type) => (
+          <button
+            key={type.value}
+            type="button"
+            className={form.itemType === type.value ? "active" : ""}
+            onClick={() => setForm({ ...form, itemType: type.value })}
+          >
+            {type.label}
+          </button>
+        ))}
       </div>
+
+      {form.itemType !== "beverage" && (
+        <div className="food-type-row">
+          <button
+            type="button"
+            className={form.foodType !== "non-veg" ? "active veg" : ""}
+            onClick={() => setForm({ ...form, foodType: "veg" })}
+          >
+            <Leaf size={16} />
+            Veg
+          </button>
+          <button
+            type="button"
+            className={form.foodType === "non-veg" ? "active non-veg" : ""}
+            onClick={() => setForm({ ...form, foodType: "non-veg" })}
+          >
+            <Flame size={16} />
+            Non-Veg
+          </button>
+        </div>
+      )}
 
       <textarea
         placeholder="Short item description for customer menu"
@@ -417,14 +544,20 @@ function MenuItemForm({ form, setForm, categories, submit, buttonText }) {
       />
 
       <div className="category-input-row">
-        <select
-          value={form.spiceLevel}
-          onChange={(e) => setForm({ ...form, spiceLevel: e.target.value })}
-        >
-          <option value="mild">Mild</option>
-          <option value="medium">Medium Spice</option>
-          <option value="spicy">Spicy</option>
-        </select>
+        {form.itemType === "food" ? (
+          <select
+            value={form.spiceLevel}
+            onChange={(e) => setForm({ ...form, spiceLevel: e.target.value })}
+          >
+            <option value="mild">Mild</option>
+            <option value="medium">Medium Spice</option>
+            <option value="spicy">Spicy</option>
+          </select>
+        ) : (
+          <span className="item-type-hint">
+            {form.itemType === "beverage" ? "Spice level not applicable to beverages" : "Spice level not applicable to desserts"}
+          </span>
+        )}
         <label className="recommended-toggle">
           <input
             type="checkbox"
@@ -460,6 +593,23 @@ function MenuItemForm({ form, setForm, categories, submit, buttonText }) {
           value={form.gst}
           onChange={(e) => setForm({ ...form, gst: e.target.value })}
         />
+      </div>
+
+      <div className="price-tax-row">
+        <input
+          type="number"
+          min="0"
+          max="100"
+          step="1"
+          placeholder="Offer % optional (e.g. 10)"
+          value={form.offerPercent}
+          onChange={(e) => setForm({ ...form, offerPercent: e.target.value })}
+        />
+        {Number(form.offerPercent || 0) > 0 && Number(form.mrp || 0) > 0 && (
+          <span className="item-type-hint offer-preview">
+            Customer pays Rs {(Number(form.mrp) * (1 - Number(form.offerPercent) / 100)).toFixed(2)}
+          </span>
+        )}
       </div>
 
       <button>{buttonText}</button>

@@ -3664,6 +3664,18 @@
     @apply bg-white text-slate-950 hover:bg-slate-100;
   }
 
+  .menu-management-head-actions {
+    @apply flex flex-wrap items-center justify-end gap-2;
+  }
+
+  .menu-upload-btn {
+    @apply inline-flex items-center gap-1.5 whitespace-nowrap !bg-white/15 !text-white hover:!bg-white/25 disabled:cursor-not-allowed disabled:opacity-60;
+  }
+
+  .hidden-file-input {
+    @apply hidden;
+  }
+
   .menu-admin-toolbar {
     @apply grid grid-cols-[1fr_150px_150px] gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_12px_28px_rgba(15,23,42,0.07)];
   }
@@ -3827,6 +3839,38 @@
 
   .food-type-row button.active.non-veg {
     @apply bg-rose-600 text-white;
+  }
+
+  .item-type-row {
+    @apply grid grid-cols-3 gap-2;
+  }
+
+  .item-type-row button {
+    @apply inline-flex min-h-11 items-center justify-center rounded-xl bg-slate-100 px-3 py-2 text-[13px] font-black text-slate-700;
+  }
+
+  .item-type-row button.active {
+    @apply bg-slate-900 text-white;
+  }
+
+  .item-type-hint {
+    @apply flex min-h-11 items-center rounded-xl bg-slate-50 px-3 text-xs font-semibold italic text-slate-400;
+  }
+
+  .offer-preview {
+    @apply !not-italic !text-emerald-600;
+  }
+
+  .offer-final-price {
+    @apply text-base font-black text-emerald-700;
+  }
+
+  .offer-strike-price {
+    @apply text-xs font-bold text-slate-400;
+  }
+
+  .offer-chip {
+    @apply !bg-emerald-100 !text-emerald-700;
   }
 
   .recommended-toggle {

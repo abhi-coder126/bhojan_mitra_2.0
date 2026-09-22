@@ -10,6 +10,13 @@ const productSchema = new mongoose.Schema(
     barcode: { type: String, required: true },
     sku: String,
     category: String,
+    // Drives which fields make sense on this item -- e.g. spice level and veg/non-veg
+    // are meaningless for a beverage, so the admin form hides them based on this.
+    itemType: {
+      type: String,
+      enum: ["food", "beverage", "dessert"],
+      default: "food",
+    },
     foodType: {
       type: String,
       enum: ["veg", "non-veg"],
@@ -23,6 +30,9 @@ const productSchema = new mongoose.Schema(
     },
     isRecommended: { type: Boolean, default: false },
     image: String,
+
+    // % off the MRP shown to customers as a running offer (0 = no offer).
+    offerPercent: { type: Number, default: 0, min: 0, max: 100 },
 
     unit: {
       type: String,

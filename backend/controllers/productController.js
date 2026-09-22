@@ -21,6 +21,7 @@ exports.createProduct = async (req, res) => {
       sellingPrice: Number(req.body.sellingPrice || mrp),
       mrp,
       gst: Number(req.body.gst || 0),
+      offerPercent: Math.min(100, Math.max(0, Number(req.body.offerPercent || 0))),
       unit: req.body.unit || "Plate",
       stock: Number(req.body.openingStock || req.body.stock || 9999),
       lowStockLimit: Number(req.body.lowStockLimit || 0),
@@ -75,6 +76,7 @@ exports.updateProduct = async (req, res) => {
       sellingPrice: Number(req.body.sellingPrice || mrp),
       mrp,
       gst: Number(req.body.gst || 0),
+      offerPercent: Math.min(100, Math.max(0, Number(req.body.offerPercent || 0))),
       unit: req.body.unit || "Plate",
     };
 
@@ -118,6 +120,59 @@ exports.deleteProduct = async (req, res) => {
     res.json({ success: true, message: "Product deleted" });
   } catch (error) {
     res.status(error.statusCode || 500).json({ message: error.message });
+  }
+};
+
+// Bulk-imports menu items from a parsed CSV/sheet upload. Each row is created with the
+// same defaults as a single add; rows missing a name or valid price are skipped rather
+// than failing the whole batch, since a large sheet will usually have a few bad rows.
+exports.bulkImportProducts = async (req, res) => {
+  try {
+    const rows = Array.isArray(req.body.items) ? req.body.items : [];
+    const branchId = req.body.branchId || req.query.branchId || undefined;
+
+    let created = 0;
+    const skipped = [];
+
+    for (const row of rows) {
+      const name = String(row.name || "").trim();
+      const mrp = Number(row.mrp || row.sellingPrice || 0);
+
+      if (!name || !(mrp > 0)) {
+        skipped.push(row.name || "(unnamed row)");
+        continue;
+      }
+
+      const barcode = `MENU-${Date.now()}-${created}-${Math.floor(Math.random() * 1000)}`;
+
+      try {
+        await Product.create({
+          name,
+          branchId,
+          barcode,
+          category: String(row.category || "").trim(),
+          itemType: ["food", "beverage", "dessert"].includes(row.itemType) ? row.itemType : "food",
+          foodType: row.foodType === "non-veg" ? "non-veg" : "veg",
+          description: String(row.description || "").trim(),
+          spiceLevel: ["mild", "medium", "spicy"].includes(row.spiceLevel) ? row.spiceLevel : "medium",
+          isRecommended: String(row.isRecommended).toLowerCase() === "true",
+          image: String(row.image || "").trim(),
+          mrp,
+          sellingPrice: mrp,
+          gst: Number(row.gst || 0),
+          offerPercent: Math.min(100, Math.max(0, Number(row.offerPercent || 0))),
+          unit: "Plate",
+          stock: 9999,
+        });
+        created += 1;
+      } catch {
+        skipped.push(name);
+      }
+    }
+
+    res.json({ success: true, created, skipped });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
   }
 };
 
