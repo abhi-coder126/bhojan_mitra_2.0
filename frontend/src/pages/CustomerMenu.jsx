@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { BadgePercent, CheckCircle2, ChefHat, Clock, Flame, Gift, History, Leaf, LogOut, Mail, MapPin, Minus, PackageCheck, PartyPopper, Phone, Plus, Search, ShieldCheck, ShoppingBag, Soup, Sparkles, Star, UserCircle2, Utensils, X } from "lucide-react";
+import { BadgePercent, CheckCircle2, ChefHat, Clock, Flame, Gift, Heart, History, Leaf, LogOut, Mail, MapPin, Minus, PackageCheck, PartyPopper, Phone, Plus, Search, ShieldCheck, ShoppingBag, Sparkles, Star, UserCircle2, Utensils, X } from "lucide-react";
 import { useParams } from "react-router-dom";
 import API from "../api/axios";
 import PhoneInput from "../components/PhoneInput";
@@ -7,6 +7,7 @@ import PublicLottie from "../components/PublicLottie";
 import { ToastViewport, useToast } from "../components/Toast";
 import { resetRecaptchaVerifier, sendPhoneOtp } from "../firebase";
 import ScratchCard from "../components/ScratchCard";
+import StatusBadge from "../components/StatusBadge";
 
 const CUSTOMER_TOKEN_KEY = "bhojan_customer_token";
 const CUSTOMER_PROFILE_KEY = "bhojan_customer_profile";
@@ -43,6 +44,7 @@ export default function CustomerMenu() {
   const [activeFoodType, setActiveFoodType] = useState("all");
   const [checkoutStep, setCheckoutStep] = useState("cart");
   const [search, setSearch] = useState("");
+  const [favoriteItems, setFavoriteItems] = useState(() => new Set());
   const [couponCode, setCouponCode] = useState("");
   const [coupon, setCoupon] = useState(null);
   const [applyingCoupon, setApplyingCoupon] = useState(false);
@@ -75,6 +77,10 @@ export default function CustomerMenu() {
   const [customerAuth, setCustomerAuth] = useState({ token: "", profile: null });
   const [optionalLoginOpen, setOptionalLoginOpen] = useState(false);
   const [authModalOpen, setAuthModalOpen] = useState(false);
+  // "otp" (email OTP, no password) or "password" (email/phone + password) --
+  // alternate login/signup path, kept separate from the OTP-driven `customer` form fields.
+  const [authMode, setAuthMode] = useState("otp");
+  const [passwordAuth, setPasswordAuth] = useState({ mode: "login", identifier: "", password: "", loading: false });
   const [profileModalOpen, setProfileModalOpen] = useState(false);
   const [addressLabel, setAddressLabel] = useState("Home");
   const [addingAddress, setAddingAddress] = useState(false);
@@ -373,7 +379,11 @@ export default function CustomerMenu() {
     customer.customerPhone !== "" &&
     (customerAuth.profile?.email === normalizedEmail || !normalizedEmail);
   const isEmailVerified = isReturningCustomer || (emailOtp.verified && verifiedEmail === normalizedEmail && normalizedEmail !== "");
-  const isPhoneVerified = isReturningCustomer || (phoneOtp.verified && verifiedPhone === customer.customerPhone && customer.customerPhone !== "");
+  // Phone OTP verification is disabled for now (Firebase phone auth needs a
+  // Blaze billing plan we haven't enabled yet) -- treat every phone as verified
+  // so checkout isn't blocked. Re-enable by restoring the check below once billing is set up:
+  // isReturningCustomer || (phoneOtp.verified && verifiedPhone === customer.customerPhone && customer.customerPhone !== "");
+  const isPhoneVerified = true;
   const savedAddresses = customerAuth.profile?.addresses || [];
 
   const sendEmailOtpHandler = async () => {
@@ -419,6 +429,58 @@ export default function CustomerMenu() {
     } catch (error) {
       setEmailOtp((prev) => ({ ...prev, verifying: false }));
       showToast(error.response?.data?.message || "Incorrect OTP");
+    }
+  };
+
+  const passwordLoginHandler = async () => {
+    if (!passwordAuth.identifier.trim() || !passwordAuth.password) {
+      return showToast("Enter your email/phone and password", "warning");
+    }
+    setPasswordAuth((prev) => ({ ...prev, loading: true }));
+    try {
+      const res = await API.post("/customer-auth/login", {
+        identifier: passwordAuth.identifier.trim(),
+        password: passwordAuth.password,
+      });
+      persistCustomerAuth(res.data.token, res.data.customer);
+      setCustomer((prev) => ({
+        ...prev,
+        customerName: prev.customerName || res.data.customer.name || "",
+        customerPhone: prev.customerPhone || res.data.customer.contact || "",
+        customerEmail: prev.customerEmail || res.data.customer.email || "",
+      }));
+      setPasswordAuth({ mode: "login", identifier: "", password: "", loading: false });
+      setAuthModalOpen(false);
+      showToast("Logged in", "success");
+    } catch (error) {
+      setPasswordAuth((prev) => ({ ...prev, loading: false }));
+      showToast(error.response?.data?.message || "Could not log in");
+    }
+  };
+
+  const passwordSignupHandler = async () => {
+    if (!customer.customerName.trim()) return showToast("Enter your name first", "warning");
+    if (customer.customerPhone.length !== 10) return showToast("Enter a valid 10-digit phone first", "warning");
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customer.customerEmail.trim())) {
+      return showToast("Enter a valid email first", "warning");
+    }
+    if (passwordAuth.password.length < 6) return showToast("Password must be at least 6 characters", "warning");
+
+    setPasswordAuth((prev) => ({ ...prev, loading: true }));
+    try {
+      const res = await API.post("/customer-auth/signup", {
+        name: customer.customerName.trim(),
+        phone: customer.customerPhone,
+        email: customer.customerEmail.trim(),
+        password: passwordAuth.password,
+      });
+      persistCustomerAuth(res.data.token, res.data.customer);
+      setPasswordAuth({ mode: "login", identifier: "", password: "", loading: false });
+      setAuthModalOpen(false);
+      showToast("Account created", "success");
+    } catch (error) {
+      setPasswordAuth((prev) => ({ ...prev, loading: false }));
+      showToast(error.response?.data?.message || "Could not create account");
     }
   };
 
@@ -618,7 +680,7 @@ export default function CustomerMenu() {
     const hue = ["#84091e", "#b3132c", "#7c3aed", "#0f766e", "#b45309"][index % 5];
 
     return (
-      <article className="foodora-card" key={product._id}>
+      <article className="foodora-card group" key={product._id}>
         <div className="foodora-card-media" style={{ backgroundColor: product.image ? "#ffffff" : hue }}>
           {product.image ? (
             <img src={product.image} alt={product.name} />
@@ -635,6 +697,20 @@ export default function CustomerMenu() {
           {Number(product.offerPercent || 0) > 0 && (
             <span className="foodora-offer-ribbon"><BadgePercent size={11} /> {product.offerPercent}% OFF</span>
           )}
+          <button
+            type="button"
+            className={`foodora-favorite-btn ${favoriteItems.has(product._id) ? "active" : ""}`}
+            aria-label={favoriteItems.has(product._id) ? `Remove ${product.name} from favorites` : `Add ${product.name} to favorites`}
+            aria-pressed={favoriteItems.has(product._id)}
+            onClick={() => setFavoriteItems((current) => {
+              const next = new Set(current);
+              if (next.has(product._id)) next.delete(product._id);
+              else next.add(product._id);
+              return next;
+            })}
+          >
+            <Heart size={18} fill={favoriteItems.has(product._id) ? "currentColor" : "none"} />
+          </button>
         </div>
         <div className="foodora-card-info">
           <span className="foodora-card-category">{product.category || "Recommended"}</span>
@@ -666,7 +742,14 @@ export default function CustomerMenu() {
                   </button>
                 </>
               ) : (
-                <button onClick={() => updateCart(product, 1)}>Add</button>
+                <button
+                  className="menu-add-button"
+                  onClick={() => updateCart(product, 1)}
+                  title={`Add ${product.name}`}
+                  aria-label={`Add ${product.name}`}
+                >
+                  <Plus size={18} />
+                </button>
               )}
             </div>
           </div>
@@ -714,13 +797,35 @@ export default function CustomerMenu() {
 
       <header className="foodora-topbar">
         <div className="foodora-topbar-inner">
-          <div className="foodora-brand">
-            <Utensils size={20} />
-            <span>BhojanMitra</span>
+          <div className="foodora-topbar-row">
+            <div className="foodora-brand">
+              <Utensils size={20} />
+              <div className="foodora-brand-text">
+                <span>BhojanMitra</span>
+                <small>{isDelivery ? "Delivery order" : `Table ${tableNo}`}</small>
+              </div>
+            </div>
+
+            <div className="foodora-topbar-actions">
+              {customerAuth.token ? (
+                <button type="button" className="foodora-profile-chip" onClick={() => setProfileModalOpen(true)}>
+                  <UserCircle2 size={18} />
+                  <span>{customerAuth.profile?.name?.split(" ")[0] || "Profile"}</span>
+                </button>
+              ) : (
+                <button type="button" className="foodora-login-chip" onClick={() => setAuthModalOpen(true)}>
+                  <UserCircle2 size={18} />
+                  <span>Login</span>
+                </button>
+              )}
+
+              <div className="foodora-cart-chip">
+                <ShoppingBag size={18} />
+                <b>{cartQty}</b>
+              </div>
+            </div>
           </div>
-          <div className="foodora-location">
-            <span>{isDelivery ? "Delivery" : `Table ${tableNo}`}</span>
-          </div>
+
           <div className="menu-search">
             <Search size={18} />
             <input
@@ -728,22 +833,6 @@ export default function CustomerMenu() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
-          </div>
-          {customerAuth.token ? (
-            <button type="button" className="foodora-profile-chip" onClick={() => setProfileModalOpen(true)}>
-              <UserCircle2 size={18} />
-              <span>{customerAuth.profile?.name?.split(" ")[0] || "Profile"}</span>
-            </button>
-          ) : (
-            <button type="button" className="foodora-login-chip" onClick={() => setAuthModalOpen(true)}>
-              <UserCircle2 size={18} />
-              <span>Login</span>
-            </button>
-          )}
-
-          <div className="foodora-cart-chip">
-            <ShoppingBag size={18} />
-            <b>{cartQty}</b>
           </div>
         </div>
       </header>
@@ -809,12 +898,12 @@ export default function CustomerMenu() {
                 {orderPlaced.status === "cancelled"
                   ? "Order cancelled"
                   : orderPlaced.status === "served"
-                    ? "Order served"
+                    ? (orderPlaced.orderType === "delivery" ? "Order delivered" : "Order served")
                     : "Order status"}
               </h2>
               <p>{orderPlaced.orderType === "delivery" ? "Delivery order" : `Table ${orderPlaced.tableNo}`} | Live updates will appear here.</p>
             </div>
-            <b>{orderPlaced.status}</b>
+            <StatusBadge status={orderPlaced.status} orderType={orderPlaced.orderType} />
           </div>
 
           <div className="customer-status-timeline">
@@ -914,23 +1003,16 @@ export default function CustomerMenu() {
         </div>
 
         <nav className="foodora-categories-row">
-          {categoryStats.map((category, index) => {
-            const hue = ["#fff1e6", "#fef2f2", "#eef2ff", "#ecfdf5", "#fdf4ff", "#fefce8"][index % 6];
-            return (
+          {categoryStats.map((category) => (
               <button
                 key={category.name}
                 className={activeCategory === category.name ? "active" : ""}
                 onClick={() => setActiveCategory(category.name)}
                 type="button"
               >
-                <span className="foodora-cat-icon" style={{ backgroundColor: hue }}>
-                  <Soup size={22} />
-                </span>
                 <b>{category.name}</b>
-                <small>{category.count} items</small>
               </button>
-            );
-          })}
+          ))}
         </nav>
       </section>
 
@@ -976,7 +1058,7 @@ export default function CustomerMenu() {
                   <div key={order._id}>
                     <span>{order.orderNo}</span>
                     <b>Rs {Number(order.grandTotal || 0).toFixed(2)}</b>
-                    <small className={`status-tag ${order.status}`}>{order.status}</small>
+                    <StatusBadge status={order.status} orderType={order.orderType} className="!px-2 !py-0.5 !text-[10px]" />
                   </div>
                 ))
               )}
@@ -1050,41 +1132,6 @@ export default function CustomerMenu() {
                 }}
                 required
               />
-
-              {isDelivery && (
-                <div className="otp-verify-box">
-                  <div className="otp-verify-head">
-                    <Phone size={15} /> <span>Phone verification</span>
-                    {isPhoneVerified && <b className="otp-verified-tag"><ShieldCheck size={13} /> Verified</b>}
-                  </div>
-                  {!isPhoneVerified && (
-                    <div className="otp-verify-row">
-                      {!phoneOtp.sent ? (
-                        <button type="button" disabled={phoneOtp.sending} onClick={sendPhoneOtpHandler}>
-                          {phoneOtp.sending ? "Sending..." : "Send OTP"}
-                        </button>
-                      ) : (
-                        <>
-                          <input
-                            inputMode="numeric"
-                            maxLength={6}
-                            placeholder="Enter OTP"
-                            value={phoneOtp.code}
-                            onChange={(e) => setPhoneOtp((prev) => ({ ...prev, code: e.target.value.replace(/\D/g, "") }))}
-                          />
-                          <button type="button" disabled={phoneOtp.verifying} onClick={verifyPhoneOtpHandler}>
-                            {phoneOtp.verifying ? "Checking..." : "Verify"}
-                          </button>
-                          <button type="button" className="otp-resend-btn" disabled={phoneOtp.sending} onClick={sendPhoneOtpHandler}>
-                            Resend
-                          </button>
-                        </>
-                      )}
-                    </div>
-                  )}
-                  <div id="recaptcha-container" />
-                </div>
-              )}
 
               <input
                 placeholder={isDelivery ? "Email *" : "Email optional"}
@@ -1273,57 +1320,135 @@ export default function CustomerMenu() {
             <div className="customer-auth-head">
               <div>
                 <h2>Login / Sign up</h2>
-                <p>One email OTP logs you in -- new here? It creates your account automatically.</p>
+                <p>
+                  {authMode === "otp"
+                    ? "One email OTP logs you in -- new here? It creates your account automatically."
+                    : passwordAuth.mode === "login"
+                      ? "Log in with the email/phone and password you set earlier."
+                      : "Create a password so you can log in directly next time, no OTP needed."}
+                </p>
               </div>
-              <button type="button" onClick={() => setAuthModalOpen(false)}><X size={18} /></button>
+              <button type="button" onClick={() => setAuthModalOpen(false)} aria-label="Close"><X size={18} /></button>
             </div>
 
-            <input
-              placeholder="Your name *"
-              value={customer.customerName}
-              onChange={(e) => setCustomer({ ...customer, customerName: e.target.value })}
-            />
-            <PhoneInput
-              placeholder="Contact number *"
-              value={customer.customerPhone}
-              onChange={(value) => setCustomer({ ...customer, customerPhone: value })}
-            />
-            <input
-              placeholder="Email *"
-              value={customer.customerEmail}
-              onChange={(e) => {
-                setCustomer({ ...customer, customerEmail: e.target.value });
-                if (emailOtp.sent) setEmailOtp({ sent: false, code: "", verified: false, sending: false, verifying: false });
-              }}
-            />
-
-            <div className="otp-verify-row">
-              {!emailOtp.sent ? (
-                <button
-                  type="button"
-                  disabled={emailOtp.sending}
-                  onClick={sendEmailOtpHandler}
-                >
-                  {emailOtp.sending ? "Sending..." : "Send OTP"}
-                </button>
-              ) : (
-                <>
-                  <input
-                    inputMode="numeric"
-                    maxLength={6}
-                    placeholder="Enter OTP"
-                    value={emailOtp.code}
-                    onChange={(e) => setEmailOtp((prev) => ({ ...prev, code: e.target.value.replace(/\D/g, "") }))}
-                  />
-                  <button type="button" disabled={emailOtp.verifying} onClick={verifyEmailOtpHandler}>
-                    {emailOtp.verifying ? "Checking..." : "Verify & Login"}
-                  </button>
-                  <button type="button" className="otp-resend-btn" disabled={emailOtp.sending} onClick={sendEmailOtpHandler}>
-                    Resend
-                  </button>
-                </>
-              )}
+            <div className="auth-mode-tabs">
+              <button type="button" className={authMode === "otp" ? "active" : ""} onClick={() => setAuthMode("otp")}>
+                Email OTP
+              </button>
+              <button type="button" className={authMode === "password" ? "active" : ""} onClick={() => setAuthMode("password")}>
+                Password
+              </button>
             </div>
+
+            {authMode === "otp" ? (
+              <>
+                <input
+                  placeholder="Your name *"
+                  value={customer.customerName}
+                  onChange={(e) => setCustomer({ ...customer, customerName: e.target.value })}
+                />
+                <PhoneInput
+                  placeholder="Contact number *"
+                  value={customer.customerPhone}
+                  onChange={(value) => setCustomer({ ...customer, customerPhone: value })}
+                />
+                <input
+                  placeholder="Email *"
+                  value={customer.customerEmail}
+                  onChange={(e) => {
+                    setCustomer({ ...customer, customerEmail: e.target.value });
+                    if (emailOtp.sent) setEmailOtp({ sent: false, code: "", verified: false, sending: false, verifying: false });
+                  }}
+                />
+
+                <div className="otp-verify-row">
+                  {!emailOtp.sent ? (
+                    <button
+                      type="button"
+                      disabled={emailOtp.sending}
+                      onClick={sendEmailOtpHandler}
+                    >
+                      {emailOtp.sending ? "Sending..." : "Send OTP"}
+                    </button>
+                  ) : (
+                    <>
+                      <input
+                        inputMode="numeric"
+                        maxLength={6}
+                        placeholder="Enter OTP"
+                        value={emailOtp.code}
+                        onChange={(e) => setEmailOtp((prev) => ({ ...prev, code: e.target.value.replace(/\D/g, "") }))}
+                      />
+                      <button type="button" disabled={emailOtp.verifying} onClick={verifyEmailOtpHandler}>
+                        {emailOtp.verifying ? "Checking..." : "Verify & Login"}
+                      </button>
+                      <button type="button" className="otp-resend-btn" disabled={emailOtp.sending} onClick={sendEmailOtpHandler}>
+                        Resend
+                      </button>
+                    </>
+                  )}
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="auth-mode-tabs secondary">
+                  <button type="button" className={passwordAuth.mode === "login" ? "active" : ""} onClick={() => setPasswordAuth((prev) => ({ ...prev, mode: "login" }))}>
+                    Log in
+                  </button>
+                  <button type="button" className={passwordAuth.mode === "signup" ? "active" : ""} onClick={() => setPasswordAuth((prev) => ({ ...prev, mode: "signup" }))}>
+                    Create account
+                  </button>
+                </div>
+
+                {passwordAuth.mode === "signup" && (
+                  <>
+                    <input
+                      placeholder="Your name *"
+                      value={customer.customerName}
+                      onChange={(e) => setCustomer({ ...customer, customerName: e.target.value })}
+                    />
+                    <PhoneInput
+                      placeholder="Contact number *"
+                      value={customer.customerPhone}
+                      onChange={(value) => setCustomer({ ...customer, customerPhone: value })}
+                    />
+                    <input
+                      placeholder="Email *"
+                      value={customer.customerEmail}
+                      onChange={(e) => setCustomer({ ...customer, customerEmail: e.target.value })}
+                    />
+                    <input
+                      type="password"
+                      placeholder="Create a password (min 6 chars) *"
+                      value={passwordAuth.password}
+                      onChange={(e) => setPasswordAuth((prev) => ({ ...prev, password: e.target.value }))}
+                    />
+                    <button type="button" disabled={passwordAuth.loading} onClick={passwordSignupHandler}>
+                      {passwordAuth.loading ? "Creating..." : "Create account"}
+                    </button>
+                  </>
+                )}
+
+                {passwordAuth.mode === "login" && (
+                  <>
+                    <input
+                      placeholder="Email or phone *"
+                      value={passwordAuth.identifier}
+                      onChange={(e) => setPasswordAuth((prev) => ({ ...prev, identifier: e.target.value }))}
+                    />
+                    <input
+                      type="password"
+                      placeholder="Password *"
+                      value={passwordAuth.password}
+                      onChange={(e) => setPasswordAuth((prev) => ({ ...prev, password: e.target.value }))}
+                    />
+                    <button type="button" disabled={passwordAuth.loading} onClick={passwordLoginHandler}>
+                      {passwordAuth.loading ? "Logging in..." : "Log in"}
+                    </button>
+                  </>
+                )}
+              </>
+            )}
           </div>
         </div>
       )}
@@ -1336,7 +1461,7 @@ export default function CustomerMenu() {
                 <h2>{customerAuth.profile?.name || "My Profile"}</h2>
                 <p>{customerAuth.profile?.contact} {customerAuth.profile?.email ? `· ${customerAuth.profile.email}` : ""}</p>
               </div>
-              <button type="button" onClick={() => setProfileModalOpen(false)}><X size={18} /></button>
+              <button type="button" onClick={() => setProfileModalOpen(false)} aria-label="Close"><X size={18} /></button>
             </div>
 
             <div className="customer-profile-stats">
@@ -1370,7 +1495,7 @@ export default function CustomerMenu() {
                     <div key={order._id}>
                       <span>{order.orderNo}</span>
                       <b>Rs {Number(order.grandTotal || 0).toFixed(2)}</b>
-                      <small className={`status-tag ${order.status}`}>{order.status}</small>
+                      <StatusBadge status={order.status} orderType={order.orderType} className="!px-2 !py-0.5 !text-[10px]" />
                     </div>
                   ))
                 )}

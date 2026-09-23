@@ -824,7 +824,7 @@
   }
 
   .dashboard-page {
-    @apply min-h-screen rounded-[22px] bg-[linear-gradient(180deg,#f8fbff_0%,#eef3f9_100%)] p-1;
+    @apply min-h-screen bg-slate-50 p-1;
   }
 
   .dashboard-header {
@@ -840,11 +840,11 @@
   }
 
   .dashboard-greeting-header {
-    @apply flex flex-wrap items-center justify-between gap-4 bg-white text-slate-950 shadow-[0_12px_32px_rgba(15,23,42,0.07)];
+    @apply flex flex-wrap items-center justify-between gap-4 rounded-xl border border-slate-200 bg-white px-5 py-4 text-slate-950 shadow-none;
   }
 
   .dashboard-greeting-header h1 {
-    @apply text-[26px] font-black text-slate-950;
+    @apply text-2xl font-bold tracking-tight text-slate-950;
   }
 
   .dashboard-greeting-header p {
@@ -852,7 +852,7 @@
   }
 
   .dashboard-greeting-date {
-    @apply inline-flex rounded-full bg-slate-100 px-3 py-1 text-xs font-black uppercase tracking-[0.06em] text-slate-500;
+    @apply mb-1 inline-flex text-xs font-semibold uppercase tracking-[0.06em] text-slate-500;
   }
 
   .dashboard-header-actions {
@@ -860,11 +860,11 @@
   }
 
   .dashboard-btn-ghost {
-    @apply inline-flex items-center gap-2 rounded-xl border border-orange-200 bg-orange-50 px-4 py-2.5 text-sm font-black text-orange-700 hover:bg-orange-100;
+    @apply inline-flex min-h-10 items-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-none hover:border-slate-400 hover:bg-slate-50;
   }
 
   .dashboard-btn-solid {
-    @apply inline-flex items-center gap-2 rounded-xl bg-orange-600 px-4 py-2.5 text-sm font-black text-white shadow-[0_10px_24px_rgba(234,88,12,0.28)] hover:bg-orange-700;
+    @apply inline-flex min-h-10 items-center gap-2 rounded-lg bg-[#84091e] px-4 py-2 text-sm font-semibold text-white shadow-none hover:bg-[#6b0718];
   }
 
   .kpi-iconed {
@@ -876,23 +876,23 @@
   }
 
   .kpi-icon-chip {
-    @apply grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-slate-100 text-slate-600;
+    @apply grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-[#84091e]/[0.07] text-[#84091e];
   }
 
   .kpi-icon-chip.tone-orange {
-    @apply bg-orange-50 text-orange-600;
+    @apply bg-[#84091e]/[0.07] text-[#84091e];
   }
 
   .kpi-icon-chip.tone-blue {
-    @apply bg-blue-50 text-blue-600;
+    @apply bg-[#84091e]/[0.07] text-[#84091e];
   }
 
   .kpi-icon-chip.tone-green {
-    @apply bg-emerald-50 text-emerald-600;
+    @apply bg-[#84091e]/[0.07] text-[#84091e];
   }
 
   .kpi-icon-chip.tone-purple {
-    @apply bg-violet-50 text-violet-600;
+    @apply bg-[#84091e]/[0.07] text-[#84091e];
   }
 
   .kpi-body {
@@ -945,15 +945,15 @@
   }
 
   .dashboard-trend-tabs {
-    @apply flex gap-1.5 rounded-xl bg-slate-100 p-1;
+    @apply flex gap-1 rounded-lg border border-slate-200 bg-slate-50 p-1;
   }
 
   .dashboard-trend-tabs button {
-    @apply rounded-lg px-3 py-1.5 text-xs font-black text-slate-500 hover:text-slate-800;
+    @apply rounded-md px-3 py-1.5 text-xs font-semibold text-slate-500 hover:bg-white hover:text-slate-800;
   }
 
   .dashboard-trend-tabs button.active {
-    @apply bg-white text-orange-600 shadow-sm;
+    @apply bg-white text-[#84091e] shadow-none ring-1 ring-slate-200;
   }
 
   .dashboard-trend-strip {
@@ -1009,7 +1009,7 @@
   }
 
   .dashboard-category-top {
-    @apply mt-3 flex items-center gap-2 rounded-xl bg-orange-50 p-2.5 text-xs font-semibold text-orange-800;
+    @apply mt-3 flex items-center gap-2 rounded-lg border border-[#84091e]/10 bg-[#84091e]/[0.04] p-2.5 text-xs font-semibold text-[#84091e];
   }
 
   .dashboard-dish-list {
@@ -1017,7 +1017,7 @@
   }
 
   .dashboard-dish-row {
-    @apply flex items-center gap-3 rounded-xl border border-slate-100 p-2.5;
+    @apply flex items-center gap-3 border-b border-slate-100 px-1 py-3 last:border-b-0;
   }
 
   .dashboard-dish-avatar {
@@ -1061,7 +1061,7 @@
   }
 
   .dashboard-status-chip {
-    @apply grid place-items-center gap-0.5 rounded-xl bg-slate-50 p-2.5 text-center;
+    @apply grid place-items-center gap-0.5 rounded-lg border border-slate-100 bg-slate-50 p-2.5 text-center;
   }
 
   .dashboard-status-chip b {
@@ -1077,7 +1077,7 @@
   }
 
   .dashboard-insights-card {
-    @apply mb-4 rounded-[20px] border border-slate-200 bg-white p-4 shadow-[0_12px_32px_rgba(15,23,42,0.07)];
+    @apply mb-4 rounded-xl border border-slate-200 bg-white p-4 shadow-none;
   }
 
   .dashboard-insights-card h2 {
@@ -1089,7 +1089,7 @@
   }
 
   .dashboard-insights-grid > div {
-    @apply grid gap-1 rounded-xl bg-slate-50 p-3;
+    @apply grid gap-1 border-l-2 border-slate-200 px-3 py-1 first:border-[#84091e];
   }
 
   .dashboard-insights-grid span {
@@ -1109,7 +1109,7 @@
   }
 
   .dashboard-filter-card {
-    @apply flex flex-wrap items-center gap-2.5 rounded-2xl border-white/80 bg-white/90 p-3.5 shadow-[0_10px_28px_rgba(15,23,42,0.06)] backdrop-blur;
+    @apply flex flex-wrap items-center gap-2.5 rounded-xl border border-slate-200 bg-white p-3 shadow-none;
   }
 
   .dashboard-filter-card input {
@@ -1117,7 +1117,7 @@
   }
 
   .dashboard-filter-card button.active {
-    @apply bg-slate-900;
+    @apply bg-[#84091e];
   }
 
   .dashboard-stats-grid {
@@ -1125,11 +1125,11 @@
   }
 
   .dashboard-stat-card {
-    @apply rounded-2xl border border-slate-200/80 bg-white p-4 shadow-[0_8px_22px_rgba(15,23,42,0.05)] transition-shadow duration-200 hover:shadow-[0_14px_30px_rgba(15,23,42,0.09)];
+    @apply rounded-xl border border-slate-200 bg-white p-4 shadow-none;
   }
 
   .dashboard-stat-card.kpi-primary {
-    @apply border-0 bg-slate-900 text-white shadow-[0_18px_42px_rgba(15,23,42,0.16)];
+    @apply border-slate-800 bg-slate-900 text-white shadow-none;
   }
 
   .dashboard-stat-card span {
@@ -1158,7 +1158,7 @@
 
   .dashboard-chart-box,
   .important-notices {
-    @apply overflow-hidden rounded-[20px] border border-slate-200/80 bg-white p-4 shadow-[0_10px_28px_rgba(15,23,42,0.05)] transition-shadow duration-200 hover:shadow-[0_16px_36px_rgba(15,23,42,0.09)];
+    @apply overflow-hidden rounded-xl border border-slate-200 bg-white p-4 shadow-none;
   }
 
   .dashboard-chart-box {
@@ -1167,7 +1167,7 @@
 
   .dashboard-chart-box h2,
   .important-notices h2 {
-    @apply relative mb-4 pl-3 text-[15px] font-bold tracking-[-0.01em] text-slate-900 before:absolute before:left-0 before:top-0.5 before:h-[16px] before:w-[3px] before:rounded-full before:bg-gradient-to-b before:from-rose-500 before:to-rose-300;
+    @apply mb-4 border-b border-slate-100 pb-3 text-[15px] font-bold tracking-[-0.01em] text-slate-900;
   }
 
   .dashboard-breakdown-grid {
@@ -1175,7 +1175,7 @@
   }
 
   .dashboard-breakdown-card {
-    @apply rounded-[20px] border border-slate-200 bg-white p-4 shadow-[0_12px_32px_rgba(15,23,42,0.07)];
+    @apply rounded-xl border border-slate-200 bg-white p-4 shadow-none;
   }
 
   .dashboard-breakdown-card h2 {
@@ -2324,11 +2324,27 @@
   }
 
   .foodora-topbar-inner {
-    @apply grid grid-cols-[auto_1fr_auto_auto] items-center gap-2 sm:grid-cols-[auto_auto_1fr_auto_auto] sm:gap-3;
+    @apply flex flex-col gap-3;
+  }
+
+  .foodora-topbar-row {
+    @apply flex items-center justify-between gap-2;
+  }
+
+  .foodora-topbar-actions {
+    @apply flex items-center gap-2;
   }
 
   .foodora-brand {
     @apply flex items-center gap-2 text-base font-black text-[#84091e] sm:text-lg;
+  }
+
+  .foodora-brand-text {
+    @apply flex flex-col leading-tight;
+  }
+
+  .foodora-brand-text small {
+    @apply text-[10px] font-bold uppercase tracking-[0.05em] text-slate-400 sm:text-xs;
   }
 
   .foodora-location {
@@ -2387,39 +2403,42 @@
 
   /* Category row */
   .foodora-categories {
-    @apply mx-auto mb-5 max-w-[1180px];
+    @apply mx-auto mb-5 max-w-[1180px] bg-white p-4 sm:p-5;
   }
 
   .foodora-categories-head {
-    @apply mb-3 flex flex-wrap items-center justify-between gap-3;
+    @apply mb-4 flex flex-wrap items-center justify-between gap-3;
   }
 
   .foodora-categories-head h2 {
-    @apply m-0 text-xl font-black text-slate-950;
+    @apply m-0 text-xl font-black tracking-tight text-slate-950;
   }
 
   .foodora-categories-row {
-    @apply grid grid-cols-3 gap-2.5 sm:flex sm:flex-wrap sm:gap-3 sm:overflow-visible;
+    @apply flex gap-2 overflow-x-auto pb-1;
+    scrollbar-width: none;
+    scroll-snap-type: x proximity;
+  }
+
+  .foodora-categories-row::-webkit-scrollbar {
+    display: none;
   }
 
   .foodora-categories-row button {
-    @apply grid min-w-0 place-items-center gap-1.5 rounded-2xl border border-transparent !bg-white p-2.5 text-center shadow-[0_10px_24px_rgba(15,23,42,0.06)] hover:!border-[#84091e]/30 sm:min-w-[92px] sm:p-3;
+    @apply inline-flex min-h-10 w-auto min-w-fit shrink-0 items-center justify-center rounded-full border border-slate-200 !bg-white px-5 py-2 text-center shadow-none transition duration-200 hover:!border-[#84091e]/30 hover:!bg-[#84091e]/[0.03];
+    scroll-snap-align: start;
   }
 
   .foodora-categories-row button.active {
-    @apply !border-[#84091e] !bg-[#84091e]/[0.08] shadow-[0_10px_24px_rgba(132,9,30,0.18)];
-  }
-
-  .foodora-cat-icon {
-    @apply grid h-10 w-10 place-items-center rounded-2xl text-[#84091e] sm:h-12 sm:w-12;
+    @apply !border-[#84091e] !bg-[#84091e] shadow-none;
   }
 
   .foodora-categories-row b {
-    @apply truncate text-xs font-black text-slate-800;
+    @apply whitespace-nowrap text-sm font-black leading-none text-slate-700;
   }
 
-  .foodora-categories-row small {
-    @apply text-[10px] font-semibold text-slate-400;
+  .foodora-categories-row button.active b {
+    @apply text-white;
   }
 
   .order-success-strip,
@@ -2621,15 +2640,15 @@
   }
 
   .foodora-product-grid {
-    @apply grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3;
+    @apply grid grid-cols-2 items-start gap-3 sm:gap-4 md:grid-cols-3;
   }
 
   .foodora-card {
-    @apply grid overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_10px_24px_rgba(15,23,42,0.05)] transition hover:-translate-y-0.5 hover:border-[#84091e]/25 hover:shadow-[0_16px_32px_rgba(132,9,30,0.1)];
+    @apply flex min-w-0 flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white p-2 shadow-[0_8px_24px_rgba(15,23,42,0.07)] transition duration-200 hover:-translate-y-1 hover:border-[#84091e]/20 hover:shadow-[0_18px_36px_rgba(132,9,30,0.12)];
   }
 
   .foodora-card-media {
-    @apply relative grid aspect-[4/3] place-items-center overflow-hidden bg-[#84091e]/[0.08] text-white;
+    @apply relative grid aspect-[4/3] place-items-center overflow-hidden rounded-xl bg-[#fdf1f3] text-white;
   }
 
   .foodora-card-media span {
@@ -2637,51 +2656,63 @@
   }
 
   .foodora-card-media img {
-    @apply h-full w-full object-cover;
+    @apply h-full w-full object-cover transition duration-500 group-hover:scale-105;
   }
 
   .foodora-card-media .food-type {
-    @apply absolute left-1.5 top-1.5 !gap-0.5 !px-1.5 !py-0.5 !text-[9px] shadow-sm;
+    @apply !absolute bottom-2 right-2 !m-0 !inline-flex !h-7 !w-auto items-center !gap-1 !rounded-lg !px-2 !py-0 !text-[9px] !leading-none shadow-sm;
   }
 
   .foodora-card-media .recommended-chip {
-    @apply absolute right-1.5 top-1.5 !gap-0.5 !px-1.5 !py-0.5 !text-[9px] shadow-sm;
+    @apply !absolute left-2 top-2 !m-0 !inline-flex !h-7 !w-auto items-center !gap-1 !rounded-lg !px-2 !py-0 !text-[10px] !leading-none shadow-sm;
   }
 
   .foodora-offer-ribbon {
-    @apply absolute bottom-1.5 left-1.5 inline-flex items-center gap-0.5 rounded-full bg-emerald-600 px-1.5 py-0.5 text-[9px] font-black text-white shadow-sm;
+    @apply !absolute bottom-2 left-2 !m-0 inline-flex !h-7 !w-auto items-center gap-1 rounded-lg bg-[#84091e] !px-2 !py-0 !text-[9px] font-black !leading-none text-white shadow-sm;
+  }
+
+  .foodora-favorite-btn {
+    @apply !absolute right-2 top-2 !grid !h-8 !min-h-0 !w-8 !min-w-0 place-items-center !rounded-full !border !border-white/70 !bg-white/95 !p-0 !text-slate-500 shadow-md backdrop-blur transition hover:!border-[#84091e]/30 hover:!text-[#84091e];
+  }
+
+  .foodora-favorite-btn.active {
+    @apply !border-[#84091e]/20 !bg-[#84091e] !text-white;
   }
 
   .foodora-card-info {
-    @apply grid gap-1 p-3;
+    @apply flex min-w-0 flex-1 flex-col px-1.5 pb-1 pt-3;
   }
 
   .foodora-card-category {
-    @apply text-xs font-black uppercase tracking-[0.06em] text-[#84091e];
+    @apply hidden;
   }
 
   .foodora-card-info h2 {
-    @apply m-0 text-base font-black leading-snug text-slate-950;
+    @apply m-0 line-clamp-1 text-sm font-black leading-snug text-slate-950 sm:text-[15px];
   }
 
   .foodora-card-rating {
-    @apply inline-flex w-fit items-center gap-1 text-[11px] font-bold text-amber-600;
+    @apply mt-1 inline-flex w-fit items-center gap-1 text-[11px] font-bold text-amber-600;
   }
 
   .foodora-card-info p {
-    @apply line-clamp-2 text-xs text-slate-500;
+    @apply mb-0 mt-1 line-clamp-2 min-h-8 text-[11px] leading-4 text-slate-500 sm:text-xs;
   }
 
   .foodora-card-foot {
-    @apply mt-1 flex flex-wrap items-center justify-between gap-2;
+    @apply relative mt-3 flex min-h-9 items-center justify-between gap-2 border-t border-slate-100 pt-2.5;
   }
 
   .foodora-card-foot strong {
-    @apply text-base font-black text-slate-950;
+    @apply whitespace-nowrap text-sm font-black text-[#84091e] sm:text-base;
   }
 
   .foodora-card-price {
     @apply flex items-baseline gap-1.5;
+  }
+
+  .foodora-card-price strong {
+    @apply whitespace-nowrap text-sm font-black text-[#84091e] sm:text-base;
   }
 
   .foodora-card-price s {
@@ -2742,11 +2773,15 @@
   }
 
   .menu-add-control {
-    @apply flex h-9 items-center justify-end gap-2;
+    @apply flex h-9 items-center justify-end gap-1.5;
   }
 
   .menu-add-control button {
-    @apply inline-flex h-9 min-w-9 items-center justify-center rounded-xl bg-[#84091e] px-3 py-0 text-white hover:bg-[#6b0718];
+    @apply inline-flex h-9 min-w-9 items-center justify-center rounded-full bg-[#84091e] px-3 py-0 text-white shadow-[0_6px_14px_rgba(132,9,30,0.35)] hover:bg-[#6b0718];
+  }
+
+  .menu-add-control .menu-add-button {
+    @apply w-9 min-w-9 p-0;
   }
 
   .customer-menu-page button:not(.sidebar-link):not(.sidebar-logout) {
@@ -2999,6 +3034,39 @@
     background-color: #84091e;
   }
 
+  /* Canonical order-status colors -- used by <StatusBadge>. One color per status,
+     everywhere, instead of every page picking its own (this used to be purple in
+     one place, green in another, and blue in a third for the same "served" status). */
+  .status-badge {
+    @apply inline-flex w-fit items-center justify-center rounded-full px-3 py-1 text-xs font-black capitalize;
+    @apply bg-slate-100 text-slate-600;
+  }
+
+  .status-badge.new {
+    @apply bg-rose-50 text-rose-700;
+  }
+
+  .status-badge.accepted {
+    @apply bg-blue-50 text-blue-700;
+  }
+
+  .status-badge.preparing {
+    @apply bg-amber-50 text-amber-700;
+  }
+
+  .status-badge.ready {
+    @apply bg-emerald-50 text-emerald-700;
+  }
+
+  .status-badge.served,
+  .status-badge.delivered {
+    @apply bg-violet-50 text-violet-700;
+  }
+
+  .status-badge.cancelled {
+    @apply bg-slate-200 text-slate-500;
+  }
+
   .optional-login-banner {
     @apply flex items-center gap-2 rounded-xl border border-dashed border-[#84091e]/30 bg-[#84091e]/5 px-3 py-2.5 text-left text-xs font-black text-[#84091e] hover:bg-[#84091e]/10;
   }
@@ -3083,6 +3151,18 @@
     @apply bg-slate-900 text-white;
   }
 
+  .captain-order-toggle button {
+    @apply gap-1.5;
+  }
+
+  .captain-order-subhead {
+    @apply m-0 mt-0.5 text-xs font-semibold text-white/70;
+  }
+
+  .captain-order-details-row {
+    @apply grid grid-cols-1 gap-2.5 sm:grid-cols-2;
+  }
+
   .captain-order-table-select {
     @apply grid gap-1.5;
   }
@@ -3091,20 +3171,41 @@
     @apply text-xs font-bold uppercase tracking-[0.04em] text-slate-500;
   }
 
+  .captain-order-search {
+    @apply grid grid-cols-[auto_1fr] items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-1;
+  }
+
+  .captain-order-search input {
+    @apply border-0 bg-transparent px-0 focus:ring-0;
+  }
+
   .captain-order-item-list {
     @apply grid max-h-[360px] gap-2 overflow-y-auto rounded-xl border border-slate-200 bg-slate-50 p-2;
+    scrollbar-width: thin;
   }
 
   .captain-order-item-row {
-    @apply flex items-center justify-between gap-3 rounded-xl bg-white p-3 shadow-sm;
+    @apply grid grid-cols-[40px_1fr_auto] items-center gap-3 rounded-xl bg-white p-2.5 shadow-sm transition;
   }
 
-  .captain-order-item-row > div:first-child {
-    @apply grid;
+  .captain-order-item-row.in-cart {
+    @apply border border-[#84091e]/25 bg-[#84091e]/[0.04];
+  }
+
+  .captain-order-item-media {
+    @apply grid h-10 w-10 place-items-center overflow-hidden rounded-lg bg-[#84091e]/[0.08] text-sm font-black text-[#84091e];
+  }
+
+  .captain-order-item-media img {
+    @apply h-full w-full object-cover;
+  }
+
+  .captain-order-item-name {
+    @apply grid min-w-0;
   }
 
   .captain-order-item-row b {
-    @apply text-sm font-black text-slate-900;
+    @apply truncate text-sm font-black text-slate-900;
   }
 
   .captain-order-item-row span {
@@ -3112,7 +3213,7 @@
   }
 
   .captain-order-right {
-    @apply grid content-start gap-3 rounded-2xl border border-slate-200 bg-white p-4;
+    @apply grid content-start gap-3 rounded-2xl border border-slate-200 bg-white p-4 lg:sticky lg:top-0;
   }
 
   .captain-order-right h3 {
@@ -3804,7 +3905,7 @@
   }
 
   .restaurant-dashboard-header {
-    @apply bg-[linear-gradient(135deg,#101828,#0f766e_58%,#22c55e)];
+    @apply bg-white;
   }
 
   .restaurant-dashboard-filters {
@@ -3821,7 +3922,7 @@
 
   .restaurant-dashboard-filters select,
   .restaurant-dashboard-filters input {
-    @apply h-11 rounded-xl bg-slate-50 py-2.5;
+    @apply h-10 rounded-lg border-slate-200 bg-white py-2;
   }
 
   .dashboard-filter-tabs {
@@ -3829,7 +3930,11 @@
   }
 
   .dashboard-filter-tabs button {
-    @apply h-11 rounded-xl bg-slate-100 px-4 py-2 text-sm font-black text-slate-700 hover:bg-red-50 hover:text-red-700;
+    @apply h-10 rounded-lg border border-transparent bg-transparent px-3.5 py-2 text-sm font-semibold text-slate-600 shadow-none hover:border-slate-200 hover:bg-slate-50 hover:text-slate-900;
+  }
+
+  .dashboard-filter-tabs button.active {
+    @apply border-[#84091e] bg-[#84091e] text-white hover:bg-[#6b0718] hover:text-white;
   }
 
   .restaurant-kpi-grid {
@@ -3869,11 +3974,11 @@
   }
 
   .delete-notice-list div {
-    @apply rounded-2xl border border-red-100 bg-red-50/60 p-3;
+    @apply rounded-lg border border-slate-200 bg-slate-50 p-3;
   }
 
   .delete-notice-list span {
-    @apply block text-xs font-black uppercase tracking-[0.05em] text-red-600;
+    @apply block text-xs font-semibold uppercase tracking-[0.05em] text-slate-500;
   }
 
   .delete-notice-list b {
@@ -4291,10 +4396,6 @@
 @media (max-width: 760px) {
   .customer-menu-page {
     @apply px-2.5 pb-28 pt-3;
-  }
-
-  .foodora-topbar-inner {
-    @apply grid-cols-[auto_1fr_auto_auto] gap-2;
   }
 
   .foodora-location {
@@ -4762,6 +4863,22 @@
 
   .customer-auth-head button {
     @apply grid h-8 w-8 shrink-0 place-items-center rounded-full bg-slate-100 p-0 text-slate-500 hover:bg-slate-200;
+  }
+
+  .auth-mode-tabs {
+    @apply grid grid-cols-2 gap-2 rounded-xl bg-slate-100 p-1;
+  }
+
+  .auth-mode-tabs.secondary {
+    @apply mb-1 bg-[#84091e]/[0.06];
+  }
+
+  .auth-mode-tabs button {
+    @apply !bg-transparent !py-2 !text-xs !font-black !text-slate-500 shadow-none hover:!bg-white/70;
+  }
+
+  .auth-mode-tabs button.active {
+    @apply !bg-white !text-[#84091e] shadow-sm;
   }
 
   .customer-profile-stats {

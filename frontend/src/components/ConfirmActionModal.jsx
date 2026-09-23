@@ -13,7 +13,7 @@ export default function ConfirmActionModal({
   return (
     <div className="confirm-action-overlay">
       <div className="confirm-action-modal">
-        <button type="button" className="confirm-action-close" onClick={onCancel} title="Close">
+        <button type="button" className="confirm-action-close" onClick={onCancel} title="Close" aria-label="Close">
           <X size={18} />
         </button>
 

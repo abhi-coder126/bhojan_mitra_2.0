@@ -4,6 +4,7 @@ import API from "../api/axios";
 import { ToastViewport, useToast } from "../components/Toast";
 import DeleteConfirmModal from "../components/DeleteConfirmModal";
 import ConfirmActionModal from "../components/ConfirmActionModal";
+import StatusBadge from "../components/StatusBadge";
 
 const ONES = ["", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten", "Eleven", "Twelve", "Thirteen", "Fourteen", "Fifteen", "Sixteen", "Seventeen", "Eighteen", "Nineteen"];
 const TENS = ["", "", "Twenty", "Thirty", "Forty", "Fifty", "Sixty", "Seventy", "Eighty", "Ninety"];
@@ -44,6 +45,13 @@ const amountInWords = (value) => {
 
 const statuses = ["new", "accepted", "preparing", "ready", "served", "cancelled"];
 const workflowStatuses = ["new", "accepted", "preparing", "ready", "served"];
+
+// "served" is the shared status value for both dine-in and delivery orders (same
+// workflow step -- order is complete), but showing "Served" for a delivery order
+// reads wrong to staff. Only the label changes here; the underlying status string
+// stored in the DB and used for workflow logic stays "served" for both order types.
+const statusLabel = (status, orderType) =>
+  status === "served" && orderType === "delivery" ? "delivered" : status;
 
 const defaultOrderSettings = {
   restaurantOrderSoundEnabled: true,
@@ -662,7 +670,7 @@ export default function RestaurantOrders() {
                     <h3>{order.orderType === "delivery" ? "Delivery Order" : `Table ${order.tableNo}`}</h3>
                     <p>{order.customerName || "Customer"} | {order.customerPhone || "No phone"}</p>
                   </div>
-                  <b>{order.status}</b>
+                  <StatusBadge status={order.status} orderType={order.orderType} />
                 </div>
 
                 <div className="order-workflow-rail">
@@ -671,7 +679,7 @@ export default function RestaurantOrders() {
                       key={status}
                       className={index <= getWorkflowProgress(order.status) ? "done" : ""}
                     >
-                      {status}
+                      {statusLabel(status, order.orderType)}
                     </span>
                   ))}
                 </div>
@@ -733,7 +741,7 @@ export default function RestaurantOrders() {
                   {order.status === "ready" && (
                     <button className="serve-order-btn" onClick={() => updateStatus(order._id, "served")}>
                       <Utensils size={16} />
-                      Mark Served
+                      {order.orderType === "delivery" ? "Mark Delivered" : "Mark Served"}
                     </button>
                   )}
                   {order.status === "served" && (
@@ -889,6 +897,7 @@ export default function RestaurantOrders() {
               className="order-alert-close"
               onClick={() => setActivePopupOrderId(null)}
               title="Hide popup"
+              aria-label="Hide popup"
             >
               <X size={18} />
             </button>
@@ -1209,8 +1218,11 @@ export default function RestaurantOrders() {
         <div className="product-modal-overlay">
           <div className="modal-card large captain-order-modal">
             <div className="product-modal-head">
-              <h2>New Order -- Table Side</h2>
-              <button onClick={() => setNewOrderOpen(false)}>x</button>
+              <div>
+                <h2>New Order</h2>
+                <p className="captain-order-subhead">Take an order table-side, waiter/captain style</p>
+              </div>
+              <button type="button" onClick={() => setNewOrderOpen(false)} aria-label="Close"><X size={18} /></button>
             </div>
 
             <div className="captain-order-body">
@@ -1221,25 +1233,19 @@ export default function RestaurantOrders() {
                     className={!newOrderIsDelivery ? "active" : ""}
                     onClick={() => setNewOrderIsDelivery(false)}
                   >
-                    Dine-in
+                    <Utensils size={15} /> Dine-in
                   </button>
                   <button
                     type="button"
                     className={newOrderIsDelivery ? "active" : ""}
                     onClick={() => setNewOrderIsDelivery(true)}
                   >
-                    Delivery
+                    <ClipboardList size={15} /> Delivery
                   </button>
                 </div>
 
-                {newOrderIsDelivery ? (
-                  <input
-                    placeholder="Customer name *"
-                    value={newOrderCustomerName}
-                    onChange={(e) => setNewOrderCustomerName(e.target.value)}
-                  />
-                ) : (
-                  <>
+                <div className="captain-order-details-row">
+                  {!newOrderIsDelivery && (
                     <label className="captain-order-table-select">
                       <span>Table</span>
                       <select value={newOrderTable} onChange={(e) => setNewOrderTable(e.target.value)}>
@@ -1248,26 +1254,38 @@ export default function RestaurantOrders() {
                         ))}
                       </select>
                     </label>
+                  )}
+                  <label className="captain-order-table-select">
+                    <span>Customer name {newOrderIsDelivery ? "*" : "(optional)"}</span>
                     <input
-                      placeholder="Customer name (optional)"
+                      placeholder="Customer name"
                       value={newOrderCustomerName}
                       onChange={(e) => setNewOrderCustomerName(e.target.value)}
                     />
-                  </>
-                )}
+                  </label>
+                </div>
 
-                <input
-                  placeholder="Search menu item..."
-                  value={newOrderSearch}
-                  onChange={(e) => setNewOrderSearch(e.target.value)}
-                />
+                <div className="captain-order-search">
+                  <Search size={16} />
+                  <input
+                    placeholder="Search menu item..."
+                    value={newOrderSearch}
+                    onChange={(e) => setNewOrderSearch(e.target.value)}
+                  />
+                </div>
 
                 <div className="captain-order-item-list">
+                  {newOrderFilteredProducts.length === 0 && (
+                    <p className="empty-cart-copy">No menu item found.</p>
+                  )}
                   {newOrderFilteredProducts.map((product) => {
                     const inCart = newOrderCart.find((item) => item.productId === product._id);
                     return (
-                      <div className="captain-order-item-row" key={product._id}>
-                        <div>
+                      <div className={`captain-order-item-row ${inCart ? "in-cart" : ""}`} key={product._id}>
+                        <div className="captain-order-item-media">
+                          {product.image ? <img src={product.image} alt={product.name} /> : <span>{product.name?.slice(0, 1) || "M"}</span>}
+                        </div>
+                        <div className="captain-order-item-name">
                           <b>{product.name}</b>
                           <span>Rs {Number(product.mrp || product.sellingPrice || 0).toFixed(2)}</span>
                         </div>

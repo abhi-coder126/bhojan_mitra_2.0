@@ -30,7 +30,7 @@ export default function DeleteConfirmModal({
   return (
     <div className="delete-confirm-overlay">
       <form className="delete-confirm-modal" onSubmit={submit}>
-        <button type="button" className="delete-confirm-close" onClick={onCancel} title="Close">
+        <button type="button" className="delete-confirm-close" onClick={onCancel} title="Close" aria-label="Close">
           <X size={18} />
         </button>
 

@@ -507,7 +507,7 @@ export default function Dashboard() {
       <div className="dashboard-header restaurant-dashboard-header dashboard-greeting-header">
         <div>
           <span className="dashboard-greeting-date">{todayLabel}</span>
-          <h1>{greeting}! 👋</h1>
+          <h1>{greeting}</h1>
           <p>Here's what's happening with your food business today.</p>
         </div>
         <div className="dashboard-header-actions">

@@ -22,6 +22,15 @@ const customerSchema = new mongoose.Schema(
       lowercase: true,
       trim: true,
     },
+    // Optional -- most customers log in passwordless via email OTP. Set only when
+    // a customer chooses to create a password for direct email+password login.
+    // `select: false` so it never comes back on normal Customer reads (matches
+    // how the staff `User` model treats `password`).
+    password: {
+      type: String,
+      select: false,
+      default: null,
+    },
     address: {
       type: String,
       default: "",
