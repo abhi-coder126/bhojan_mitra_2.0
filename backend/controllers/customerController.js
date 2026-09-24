@@ -3,7 +3,11 @@ const Sale = require("../models/Sale");
 const RestaurantOrder = require("../models/RestaurantOrder");
 const DeletionLog = require("../models/DeletionLog");
 const { verifyDeletePassword } = require("../utils/deleteAuth");
-const { nextCustomerCrn: generateCRN } = require("../utils/customerUpsert");
+const { nextCustomerCrn: generateCRN, customerBranchFilter } = require("../utils/customerUpsert");
+const { currentBranchId } = require("../utils/tenant");
+
+// A customer visible to the current branch (see utils/customerUpsert.js).
+const findBranchCustomer = (id) => Customer.findOne({ _id: id, ...customerBranchFilter() });
 
 exports.createCustomer = async (req, res) => {
   try {
@@ -27,6 +31,8 @@ exports.createCustomer = async (req, res) => {
       existing.contact = existing.contact || contact;
       existing.email = email || existing.email || "";
       existing.address = address || existing.address || "";
+      const branchId = currentBranchId();
+      if (branchId) existing.branchIds.addToSet(branchId);
       await existing.save();
       return res.json({
         success: false,
@@ -43,6 +49,7 @@ exports.createCustomer = async (req, res) => {
       contact,
       email,
       address,
+      branchIds: currentBranchId() ? [currentBranchId()] : [],
       activeFrom: new Date(),
     });
 
@@ -62,7 +69,7 @@ exports.createCustomer = async (req, res) => {
 
 exports.getCustomers = async (req, res) => {
   try {
-    const customers = await Customer.find().sort({ createdAt: -1 });
+    const customers = await Customer.find(customerBranchFilter()).sort({ createdAt: -1 });
 
     res.json({
       success: true,
@@ -87,11 +94,14 @@ exports.updateCustomer = async (req, res) => {
       return res.status(400).json({ success: false, message: "Contact number required" });
     }
 
-    const customer = await Customer.findByIdAndUpdate(
-      req.params.id,
+    const customer = await Customer.findOneAndUpdate(
+      { _id: req.params.id, ...customerBranchFilter() },
       { name, contact, email, address },
       { new: true }
     );
+    if (!customer) {
+      return res.status(404).json({ success: false, message: "Customer not found" });
+    }
 
     res.json({
       success: true,
@@ -109,7 +119,7 @@ exports.updateCustomer = async (req, res) => {
 
 exports.getCustomerHistory = async (req, res) => {
   try {
-    const customer = await Customer.findById(req.params.id);
+    const customer = await findBranchCustomer(req.params.id);
 
     if (!customer) {
       return res.status(404).json({
@@ -149,10 +159,18 @@ exports.getCustomerHistory = async (req, res) => {
 exports.deleteCustomer = async (req, res) => {
   try {
     const user = await verifyDeletePassword(req);
-    const customer = await Customer.findById(req.params.id);
+    const customer = await findBranchCustomer(req.params.id);
     if (!customer) return res.status(404).json({ success: false, message: "Customer not found" });
 
-    await Customer.findByIdAndDelete(req.params.id);
+    // The record is shared across branches -- a branch only removes itself from it.
+    // The record itself is deleted once no branch references it any more.
+    const branchId = currentBranchId();
+    if (branchId) customer.branchIds.pull(branchId);
+    if (!branchId || customer.branchIds.length === 0) {
+      await Customer.findByIdAndDelete(req.params.id);
+    } else {
+      await customer.save();
+    }
     await DeletionLog.create({
       recordType: "Customer",
       recordNo: customer.crn,
@@ -188,7 +206,7 @@ exports.earnLoyaltyPoints = async (customerId, grandTotal) => {
 exports.redeemLoyaltyPoints = async (req, res) => {
   try {
     const { points } = req.body;
-    const customer = await Customer.findById(req.params.id);
+    const customer = await findBranchCustomer(req.params.id);
     if (!customer) return res.status(404).json({ message: "Customer not found" });
 
     const redeemPoints = Number(points || 0);
@@ -207,7 +225,7 @@ exports.redeemLoyaltyPoints = async (req, res) => {
 
 exports.getCustomerSegments = async (req, res) => {
   try {
-    const customers = await Customer.find();
+    const customers = await Customer.find(customerBranchFilter());
     const now = Date.now();
     const THIRTY_DAYS = 30 * 24 * 60 * 60 * 1000;
     const NINETY_DAYS = 90 * 24 * 60 * 60 * 1000;
@@ -255,6 +273,7 @@ exports.searchCustomer = async (req, res) => {
     }
 
     const customers = await Customer.find({
+      ...customerBranchFilter(),
       $or: [
         { name: { $regex: keyword, $options: "i" } },
         { crn: { $regex: keyword, $options: "i" } },

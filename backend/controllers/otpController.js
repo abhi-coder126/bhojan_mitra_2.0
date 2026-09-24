@@ -63,7 +63,14 @@ exports.sendEmailOtp = async (req, res) => {
       expiresAt: new Date(Date.now() + OTP_TTL_MS),
     });
 
-    await sendOtpEmail(email, code);
+    try {
+      await sendOtpEmail(email, code);
+    } catch (sendError) {
+      // Drop the unsent OTP so the resend cooldown doesn't block the customer's retry.
+      await Otp.deleteMany({ identifier: email, purpose: "delivery-order" });
+      console.error("OTP email send failed:", sendError.message);
+      throw sendError;
+    }
 
     res.json({ success: true, message: "OTP sent to your email" });
   } catch (error) {

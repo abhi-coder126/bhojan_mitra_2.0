@@ -1,4 +1,5 @@
 import axios from "axios";
+import { clearSession, getActiveBranch, isMasterAdmin, setActiveBranch } from "./session";
 
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL || "https://bhojan-mitra.onrender.com/api";
@@ -12,25 +13,61 @@ const API = axios.create({
   timeout: 45000,
 });
 
-API.interceptors.request.use((config) => {
-  const token = localStorage.getItem("token");
-  if (token) config.headers.Authorization = `Bearer ${token}`;
+// Customer QR menu URLs: /menu/<branchCode>/<table>, or the legacy /menu/<table>
+// (printed before multi-branch; the server maps it to the main branch).
+const menuBranchCode = () => {
+  const match = window.location.pathname.match(/^\/menu\/([^/]+)\/[^/]+\/?$/);
+  return match ? decodeURIComponent(match[1]).toUpperCase() : "";
+};
 
-  const branchId = localStorage.getItem("branchId");
-  if (branchId) {
-    config.params = { ...(config.params || {}), branchId };
+const isCustomerMenuPage = () => window.location.pathname.startsWith("/menu/");
+
+// Head-office endpoints that must not run inside whichever branch is open.
+const isHeadOfficeRequest = (url = "") => /^\/?(branches|platform)(\/|$|\?)/.test(url);
+
+API.interceptors.request.use((config) => {
+  config.headers = config.headers || {};
+
+  if (isCustomerMenuPage()) {
+    // Never leak a staff session into the customer menu: an order placed here must
+    // go to the branch in the QR code, not the branch of whoever is logged in.
+    const code = menuBranchCode();
+    if (code) config.headers["x-branch-code"] = code;
+    return config;
+  }
+
+  const token = localStorage.getItem("token");
+  if (token && !config.headers.Authorization) config.headers.Authorization = `Bearer ${token}`;
+
+  if (isMasterAdmin() && !isHeadOfficeRequest(config.url)) {
+    const branch = getActiveBranch();
+    if (branch?.id) config.headers["x-branch-id"] = branch.id;
   }
 
   return config;
 });
 
+const goToLogin = (reason) => {
+  clearSession();
+  const query = reason ? `?reason=${encodeURIComponent(reason)}` : "";
+  window.location.href = `/login${query}`;
+};
+
 API.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response && error.response.status === 401 && window.location.pathname !== "/login") {
-      localStorage.removeItem("token");
-      localStorage.removeItem("user");
-      window.location.href = "/login";
+    const status = error.response?.status;
+    const code = error.response?.data?.code;
+    const onStaffPage = window.location.pathname !== "/login" && !isCustomerMenuPage();
+
+    if (onStaffPage && status === 401) {
+      goToLogin();
+    } else if (onStaffPage && status === 403 && code === "BRANCH_INACTIVE") {
+      // The branch was put on hold / removed while this user was logged in.
+      goToLogin(error.response.data.message);
+    } else if (onStaffPage && code === "BRANCH_NOT_FOUND" && isMasterAdmin()) {
+      setActiveBranch(null);
+      window.location.href = "/branches";
     }
 
     if (error.code === "ECONNABORTED" || error.message === "Network Error") {

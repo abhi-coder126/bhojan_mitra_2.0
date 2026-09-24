@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const { branchScopePlugin } = require("../utils/tenant");
 
 const recipeItemSchema = new mongoose.Schema(
   {
@@ -18,5 +19,7 @@ const recipeSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+recipeSchema.plugin(branchScopePlugin);
 
 module.exports = mongoose.model("Recipe", recipeSchema);

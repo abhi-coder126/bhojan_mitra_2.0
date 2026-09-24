@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const { branchScopePlugin } = require("../utils/tenant");
 
 // Admin-configured rule: "after N completed delivery orders, give this offer."
 const rewardTierSchema = new mongoose.Schema(
@@ -13,5 +14,7 @@ const rewardTierSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+rewardTierSchema.plugin(branchScopePlugin);
 
 module.exports = mongoose.model("RewardTier", rewardTierSchema);

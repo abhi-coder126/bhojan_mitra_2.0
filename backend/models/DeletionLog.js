@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const { branchScopePlugin } = require("../utils/tenant");
 
 const deletionLogSchema = new mongoose.Schema(
   {
@@ -10,5 +11,7 @@ const deletionLogSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+deletionLogSchema.plugin(branchScopePlugin);
 
 module.exports = mongoose.model("DeletionLog", deletionLogSchema);

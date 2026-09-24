@@ -48,6 +48,9 @@ const customerSchema = new mongoose.Schema(
       type: Date,
       default: Date.now,
     },
+    // A customer is one chain-wide identity (unique phone, shared login/loyalty), but
+    // each branch only sees the customers who have ordered from it.
+    branchIds: { type: [{ type: mongoose.Schema.Types.ObjectId, ref: "Branch" }], default: [], index: true },
     loyaltyPoints: { type: Number, default: 0 },
     totalVisits: { type: Number, default: 0 },
     lastVisit: { type: Date, default: null },

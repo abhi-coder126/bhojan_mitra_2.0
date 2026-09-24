@@ -6,10 +6,10 @@ const {
   deleteVendor,
   getVendorLedger,
 } = require("../controllers/vendorController");
-const { protect } = require("../middleware/authMiddleware");
+const { protect, requireBranch } = require("../middleware/authMiddleware");
 
 const router = express.Router();
-router.use(protect);
+router.use(protect, requireBranch);
 
 router.post("/", createVendor);
 router.get("/", getVendors);

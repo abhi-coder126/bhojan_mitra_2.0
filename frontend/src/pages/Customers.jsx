@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import API from "../api/axios";
 import DeleteConfirmModal from "../components/DeleteConfirmModal";
 import PhoneInput from "../components/PhoneInput";
+import { X } from "lucide-react";
 const emptyCustomer = {
     name: "",
     contact: "",
@@ -437,7 +438,7 @@ function CustomerModal({ title, close, children }) {
             <div className="customer-modal">
                 <div className="customer-modal-head">
                     <h2>{title}</h2>
-                    <button onClick={close}>×</button>
+                    <button type="button" className="modal-close-btn" aria-label="Close" title="Close" onClick={close}><X size={20} strokeWidth={2.5} /></button>
                 </div>
 
                 {children}

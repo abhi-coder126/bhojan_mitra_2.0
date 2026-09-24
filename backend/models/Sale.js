@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const { branchScopePlugin } = require("../utils/tenant");
 
 const saleSchema = new mongoose.Schema(
   {
@@ -54,8 +55,12 @@ const saleSchema = new mongoose.Schema(
 
     saleDate: { type: Date, default: Date.now },
     createdBy: String,
+    // See RestaurantOrder.inventoryDeducted.
+    inventoryDeducted: { type: Boolean, default: false },
   },
   { timestamps: true }
 );
+
+saleSchema.plugin(branchScopePlugin);
 
 module.exports = mongoose.model("Sale", saleSchema);

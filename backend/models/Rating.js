@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const { branchScopePlugin } = require("../utils/tenant");
 
 const ratingSchema = new mongoose.Schema(
   {
@@ -14,5 +15,7 @@ const ratingSchema = new mongoose.Schema(
 // One rating per item per order -- resubmitting from the same order updates it in place
 // instead of double-counting toward the product's average.
 ratingSchema.index({ orderId: 1, productId: 1 }, { unique: true });
+
+ratingSchema.plugin(branchScopePlugin);
 
 module.exports = mongoose.model("Rating", ratingSchema);

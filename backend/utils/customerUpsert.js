@@ -1,8 +1,26 @@
 const Customer = require("../models/Customer");
 const Counter = require("../models/Counter");
+const { currentBranchId } = require("./tenant");
 
 const normalizeContact = (value) => String(value || "").trim();
 const normalizeEmail = (value) => String(value || "").trim().toLowerCase();
+
+// Customers are one chain-wide record (the phone number is globally unique), so
+// Customer is deliberately NOT branch-scoped by the tenant plugin -- lookups by
+// phone/email must see every branch or a returning customer would collide with
+// their own record. Branch visibility is tracked in `branchIds` instead.
+const customerBranchFilter = () => {
+  const branchId = currentBranchId();
+  return branchId ? { branchIds: branchId } : {};
+};
+
+// Records that the customer has dealt with the current branch, so they show up in
+// that branch's customer list.
+const tagCustomerWithCurrentBranch = async (customerId) => {
+  const branchId = currentBranchId();
+  if (!branchId || !customerId) return;
+  await Customer.updateOne({ _id: customerId }, { $addToSet: { branchIds: branchId } });
+};
 
 // Atomic sequence via Counter, not Customer.countDocuments() -- a count-based id
 // collides the moment any customer is ever deleted (count drops below the highest
@@ -44,18 +62,29 @@ const upsertCustomerFromOrder = async ({ customerName, customerPhone, customerEm
     existing.contact = existing.contact || contact;
     existing.email = email || existing.email || "";
     existing.address = deliveryAddress || existing.address || "";
+    const branchId = currentBranchId();
+    if (branchId) existing.branchIds.addToSet(branchId);
     await existing.save();
     return existing;
   }
 
+  const branchId = currentBranchId();
   return Customer.create({
     crn: await nextCustomerCrn(),
     name: customerName,
     contact,
     email,
     address: deliveryAddress || "",
+    branchIds: branchId ? [branchId] : [],
     activeFrom: new Date(),
   });
 };
 
-module.exports = { upsertCustomerFromOrder, normalizeContact, normalizeEmail, nextCustomerCrn };
+module.exports = {
+  upsertCustomerFromOrder,
+  normalizeContact,
+  normalizeEmail,
+  nextCustomerCrn,
+  customerBranchFilter,
+  tagCustomerWithCurrentBranch,
+};

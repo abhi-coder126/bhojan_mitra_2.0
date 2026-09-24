@@ -8,8 +8,8 @@ const {
   deleteSale,
   clearSales,
 } = require("../controllers/saleController");
-const { protect, requireRole } = require("../middleware/authMiddleware");
-router.use(protect);
+const { protect, requireRole, requireBranch } = require("../middleware/authMiddleware");
+router.use(protect, requireBranch);
 
 router.post("/", createSale);
 router.get("/", getSales);

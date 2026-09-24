@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const { branchScopePlugin } = require("../utils/tenant");
 
 const settingSchema = new mongoose.Schema(
   {
@@ -87,5 +88,7 @@ const settingSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+settingSchema.plugin(branchScopePlugin);
 
 module.exports = mongoose.model("Setting", settingSchema);

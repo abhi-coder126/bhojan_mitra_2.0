@@ -1,6 +1,6 @@
 import AsyncButton from "../components/AsyncButton";
 import { useEffect, useMemo, useState } from "react";
-import { Info, Search, Trash2 } from "lucide-react";
+import { Info, Search, Trash2, X } from "lucide-react";
 import API from "../api/axios";
 import DeleteConfirmModal from "../components/DeleteConfirmModal";
 
@@ -165,7 +165,7 @@ export default function Reports() {
           <div className="report-modal">
             <div className="report-modal-head">
               <h2>{selectedReport.reportType === "restaurant" ? "Restaurant Order" : "Invoice"} Details</h2>
-              <button onClick={() => setSelectedReport(null)}>x</button>
+              <button type="button" className="modal-close-btn" aria-label="Close" title="Close" onClick={() => setSelectedReport(null)}><X size={20} strokeWidth={2.5} /></button>
             </div>
 
             <div className="report-info-grid">

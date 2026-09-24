@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const { branchScopePlugin } = require("../utils/tenant");
 const Counter = require("./Counter");
 
 const restaurantOrderItemSchema = new mongoose.Schema(
@@ -75,6 +76,10 @@ const restaurantOrderSchema = new mongoose.Schema(
     kotSentAt: Date,
     holdAt: Date,
     isHeld: { type: Boolean, default: false },
+    kotSentBy: { type: String, default: "" },
+    // True while this order's recipe ingredients are deducted from raw-material stock;
+    // flipped back atomically when they are returned so they can never be returned twice.
+    inventoryDeducted: { type: Boolean, default: false },
     splitFrom: { type: mongoose.Schema.Types.ObjectId, ref: "RestaurantOrder", default: null },
     mergedInto: { type: mongoose.Schema.Types.ObjectId, ref: "RestaurantOrder", default: null },
     discountReason: { type: String, default: "" },
@@ -117,5 +122,7 @@ restaurantOrderSchema.pre("save", async function setOrderNo() {
 
   this.orderNo = `DINE-${String(counter.seq).padStart(5, "0")}`;
 });
+
+restaurantOrderSchema.plugin(branchScopePlugin);
 
 module.exports = mongoose.model("RestaurantOrder", restaurantOrderSchema);

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import API from "../api/axios";
 import DeleteConfirmModal from "../components/DeleteConfirmModal";
 import PhoneInput from "../components/PhoneInput";
+import { X } from "lucide-react";
 
 export default function Vendors() {
   const [vendors, setVendors] = useState([]);
@@ -102,7 +103,7 @@ export default function Vendors() {
           <div className="modal-card large">
             <div className="modal-head">
               <h2>Ledger - {ledgerVendor.name}</h2>
-              <button onClick={() => { setLedgerVendor(null); setLedgerData(null); }}>x</button>
+              <button type="button" className="modal-close-btn" aria-label="Close" title="Close" onClick={() => { setLedgerVendor(null); setLedgerData(null); }}><X size={20} strokeWidth={2.5} /></button>
             </div>
             {!ledgerData ? (
               <p>Loading...</p>

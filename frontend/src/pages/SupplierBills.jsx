@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import API from "../api/axios";
+import { X } from "lucide-react";
 
 export default function SupplierBills() {
   const [purchases, setPurchases] = useState([]);
@@ -78,7 +79,7 @@ export default function SupplierBills() {
           <div className="sales-return-modal">
             <div className="sales-return-modal-head">
               <h2>Supplier Bill Details</h2>
-              <button onClick={() => setSelectedBill(null)}>×</button>
+              <button type="button" className="modal-close-btn" aria-label="Close" title="Close" onClick={() => setSelectedBill(null)}><X size={20} strokeWidth={2.5} /></button>
             </div>
 
             <div className="sales-return-info-grid">

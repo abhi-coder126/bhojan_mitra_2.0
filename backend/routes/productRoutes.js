@@ -8,10 +8,10 @@ const {
   clearProducts,
   bulkImportProducts,
 } = require("../controllers/productController");
-const { protect, requireRole } = require("../middleware/authMiddleware");
+const { protect, requireRole, requireBranch } = require("../middleware/authMiddleware");
 
 const router = express.Router();
-router.use(protect);
+router.use(protect, requireBranch);
 
 router.post("/", createProduct);
 router.post("/bulk-import", bulkImportProducts);

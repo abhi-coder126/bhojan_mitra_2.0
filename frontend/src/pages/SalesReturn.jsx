@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import API from "../api/axios";
 import { ToastViewport, useToast } from "../components/Toast";
 import DeleteConfirmModal from "../components/DeleteConfirmModal";
+import { X } from "lucide-react";
 
 export default function SalesReturn() {
   const [returns, setReturns] = useState([]);
@@ -107,7 +108,7 @@ export default function SalesReturn() {
           <div className="sales-return-modal">
             <div className="sales-return-modal-head">
               <h2>Return Details</h2>
-              <button onClick={() => setSelectedReturn(null)}>×</button>
+              <button type="button" className="modal-close-btn" aria-label="Close" title="Close" onClick={() => setSelectedReturn(null)}><X size={20} strokeWidth={2.5} /></button>
             </div>
 
             <div className="sales-return-info-grid">

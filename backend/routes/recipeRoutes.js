@@ -6,10 +6,10 @@ const {
   deleteRecipe,
   getFoodCost,
 } = require("../controllers/recipeController");
-const { protect } = require("../middleware/authMiddleware");
+const { protect, requireBranch } = require("../middleware/authMiddleware");
 
 const router = express.Router();
-router.use(protect);
+router.use(protect, requireBranch);
 
 router.get("/", getRecipes);
 router.get("/food-cost", getFoodCost);

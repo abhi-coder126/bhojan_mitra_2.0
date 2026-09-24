@@ -1,7 +1,8 @@
 import AsyncButton from "../components/AsyncButton";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Banknote, Bell, CheckCircle2, ClipboardList, CreditCard, Printer, QrCode, RefreshCcw, Search, Smartphone, Utensils, X } from "lucide-react";
+import { Banknote, Bell, ChefHat, CheckCircle2, ClipboardList, CreditCard, Minus, Plus, Printer, QrCode, RefreshCcw, Search, Smartphone, Utensils, X } from "lucide-react";
 import API from "../api/axios";
+import { notifyOrdersUpdated } from "../api/orderAlarm";
 import { ToastViewport, useToast } from "../components/Toast";
 import DeleteConfirmModal from "../components/DeleteConfirmModal";
 import ConfirmActionModal from "../components/ConfirmActionModal";
@@ -9,7 +10,6 @@ import StatusBadge from "../components/StatusBadge";
 import { KotReceipt, TaxInvoiceReceipt } from "../components/ThermalReceipt";
 import { toInvoiceData } from "../components/receiptData";
 
-const statuses = ["new", "accepted", "preparing", "ready", "served", "cancelled"];
 const workflowStatuses = ["new", "accepted", "preparing", "ready", "served"];
 
 // "served" is the shared status value for both dine-in and delivery orders (same
@@ -52,6 +52,8 @@ const defaultOrderSettings = {
 export default function RestaurantOrders() {
   const [orders, setOrders] = useState([]);
   const [tableCount, setTableCount] = useState(28);
+  // Tables set up in Table Management, with their live status (reserved, cleaning...).
+  const [tableDocs, setTableDocs] = useState([]);
   const [activeSection, setActiveSection] = useState("tables");
   const [selectedTable, setSelectedTable] = useState(null);
   const [orderSettings, setOrderSettings] = useState(defaultOrderSettings);
@@ -79,41 +81,7 @@ export default function RestaurantOrders() {
   const [placingNewOrder, setPlacingNewOrder] = useState(false);
   const knownOrderIds = useRef(new Set());
   const initialLoadDone = useRef(false);
-  const ringTimer = useRef(null);
   const { toast, showToast } = useToast();
-
-  const playOrderTune = useCallback((force = false) => {
-    if (!force && !orderSettings.restaurantOrderSoundEnabled) return;
-
-    const AudioContext = window.AudioContext || window.webkitAudioContext;
-    if (!AudioContext) return;
-
-      const context = new AudioContext();
-    const notes = [
-      { frequency: 880, start: 0, duration: 0.14 },
-      { frequency: 1174, start: 0.16, duration: 0.14 },
-      { frequency: 1568, start: 0.32, duration: 0.22 },
-    ];
-
-    notes.forEach((note) => {
-      const oscillator = context.createOscillator();
-      const gain = context.createGain();
-
-      oscillator.type = "sine";
-      oscillator.frequency.value = note.frequency;
-      oscillator.connect(gain);
-      gain.connect(context.destination);
-      gain.gain.setValueAtTime(0.0001, context.currentTime + note.start);
-      gain.gain.exponentialRampToValueAtTime(0.22, context.currentTime + note.start + 0.02);
-      gain.gain.exponentialRampToValueAtTime(0.0001, context.currentTime + note.start + note.duration);
-      oscillator.start(context.currentTime + note.start);
-      oscillator.stop(context.currentTime + note.start + note.duration + 0.03);
-    });
-
-    window.setTimeout(() => {
-      context.close?.();
-    }, 700);
-  }, [orderSettings.restaurantOrderSoundEnabled]);
 
   const fetchOrderSettings = useCallback(async () => {
     try {
@@ -133,36 +101,20 @@ export default function RestaurantOrders() {
       .catch(() => {});
   }, [fetchOrderSettings]);
 
-  useEffect(() => {
-    const unlockAudio = () => {
-      if (orderSettings.restaurantOrderSoundEnabled) {
-        playOrderTune(true);
-      }
-      window.removeEventListener("click", unlockAudio);
-      window.removeEventListener("keydown", unlockAudio);
-      window.removeEventListener("touchstart", unlockAudio);
-    };
-
-    window.addEventListener("click", unlockAudio);
-    window.addEventListener("keydown", unlockAudio);
-    window.addEventListener("touchstart", unlockAudio);
-
-    return () => {
-      window.removeEventListener("click", unlockAudio);
-      window.removeEventListener("keydown", unlockAudio);
-      window.removeEventListener("touchstart", unlockAudio);
-    };
-  }, [orderSettings.restaurantOrderSoundEnabled, playOrderTune]);
-
   const fetchOrders = useCallback(async () => {
     try {
-      const res = await API.get("/restaurant-orders");
+      const [res, tablesRes] = await Promise.all([
+        API.get("/restaurant-orders"),
+        API.get("/tables").catch(() => null),
+      ]);
+      if (tablesRes) setTableDocs(tablesRes.data.tables || []);
       const latestOrders = res.data.orders || [];
       const incomingNewOrders = latestOrders.filter(
         (order) => order.status === "new" && !knownOrderIds.current.has(order._id)
       );
 
       setOrders(latestOrders);
+      notifyOrdersUpdated(latestOrders);
 
       latestOrders.forEach((order) => knownOrderIds.current.add(order._id));
 
@@ -170,9 +122,7 @@ export default function RestaurantOrders() {
         if (orderSettings.restaurantOrderPopupEnabled) {
           setActivePopupOrderId(incomingNewOrders[0]._id);
         }
-        if (orderSettings.restaurantOrderSoundEnabled) {
-          playOrderTune();
-        }
+        // The looping ringtone itself is handled globally by <OrderAlarm />.
         showToast(`New order: Table ${incomingNewOrders[0].tableNo}`, "success");
       }
 
@@ -180,7 +130,7 @@ export default function RestaurantOrders() {
     } catch (error) {
       showToast(error.response?.data?.message || "Orders could not be loaded");
     }
-  }, [orderSettings.restaurantOrderPopupEnabled, orderSettings.restaurantOrderSoundEnabled, playOrderTune, showToast]);
+  }, [orderSettings.restaurantOrderPopupEnabled, showToast]);
 
   useEffect(() => {
     fetchOrders();
@@ -189,30 +139,6 @@ export default function RestaurantOrders() {
     const timer = setInterval(fetchOrders, refreshMs);
     return () => clearInterval(timer);
   }, [orderSettings.restaurantOrderRefreshSeconds, fetchOrders]);
-
-  useEffect(() => {
-    const hasNewOrders = orders.some((order) => order.status === "new");
-
-    if (!orderSettings.restaurantOrderSoundEnabled || !orderSettings.restaurantOrderRepeatSound || !hasNewOrders) {
-      if (ringTimer.current) {
-        clearInterval(ringTimer.current);
-        ringTimer.current = null;
-      }
-      return;
-    }
-
-    if (!ringTimer.current) {
-      playOrderTune();
-      ringTimer.current = setInterval(playOrderTune, 1400);
-    }
-
-    return () => {
-      if (ringTimer.current) {
-        clearInterval(ringTimer.current);
-        ringTimer.current = null;
-      }
-    };
-  }, [orders, orderSettings.restaurantOrderSoundEnabled, orderSettings.restaurantOrderRepeatSound, playOrderTune]);
 
   const activeOrders = useMemo(
     () => orders.filter((order) => order.status !== "cancelled" && order.paymentStatus !== "paid"),
@@ -231,16 +157,83 @@ export default function RestaurantOrders() {
       if (statusTarget.status !== "new" && activePopupOrderId === statusTarget.orderId) {
         setActivePopupOrderId(null);
       }
-      const acceptedOrder =
-        statusTarget.status === "accepted" ? orders.find((item) => item._id === statusTarget.orderId) : null;
+      const accepted = statusTarget.status === "accepted";
       setStatusTarget(null);
       fetchOrders();
-      showToast("Order status updated", "success");
-      if (acceptedOrder) setKotOrder(acceptedOrder);
+      showToast(accepted ? "Order accepted. Send the KOT to the kitchen next." : "Order status updated", "success");
     } catch (error) {
       showToast(error.response?.data?.message || "Status update failed");
     }
   };
+
+  // Counter sends the KOT for an accepted order; only then does the kitchen see it.
+  const sendKot = async (order) => {
+    try {
+      const res = await API.patch(`/restaurant-orders/${order._id}/kot`);
+      showToast("KOT sent to the kitchen", "success");
+      setKotOrder(res.data.order);
+      fetchOrders();
+    } catch (error) {
+      showToast(error.response?.data?.message || "Could not send the KOT");
+    }
+  };
+
+  const setTableStatus = async (table, status) => {
+    try {
+      await API.patch(`/tables/${table.id}/status`, { status });
+      showToast(`Table ${table.number} marked ${status}`, "success");
+      fetchOrders();
+    } catch (error) {
+      showToast(error.response?.data?.message || "Could not update the table");
+    }
+  };
+
+  const kitchenProgress = (order) => {
+    if (order.status === "preparing") return "Kitchen: preparing";
+    if ((order.items || []).some((item) => item.itemStatus === "NEW")) return "KOT sent - waiting for kitchen";
+    return "Kitchen accepted the KOT";
+  };
+
+  // The counter's steps, in order: Accept -> Send KOT -> (kitchen cooks) -> Serve -> Payment.
+  const renderFlowActions = (order) => (
+    <>
+      {order.status === "new" && (
+        <AsyncButton className="accept-order-btn" onClick={() => updateStatus(order._id, "accepted")}>
+          <CheckCircle2 size={17} />
+          Accept
+        </AsyncButton>
+      )}
+      {order.status === "accepted" && !order.kotSentAt && (
+        <AsyncButton className="accept-order-btn" onClick={() => sendKot(order)}>
+          <Printer size={16} />
+          Send KOT to Kitchen
+        </AsyncButton>
+      )}
+      {order.kotSentAt && ["accepted", "preparing"].includes(order.status) && (
+        <span className="kitchen-progress-chip">
+          <ChefHat size={15} />
+          {kitchenProgress(order)}
+        </span>
+      )}
+      {order.status === "ready" && (
+        <AsyncButton className="serve-order-btn" onClick={() => updateStatus(order._id, "served")}>
+          <Utensils size={16} />
+          {order.orderType === "delivery" ? "Mark Delivered" : "Mark Served"}
+        </AsyncButton>
+      )}
+      {order.status === "served" && order.paymentStatus !== "paid" && (
+        <button className="payment-action-btn" onClick={() => openPayment(order)}>
+          <CreditCard size={16} />
+          Payment
+        </button>
+      )}
+      {!["served", "cancelled"].includes(order.status) && (
+        <AsyncButton className="reject-order-btn" onClick={() => updateStatus(order._id, "cancelled")}>
+          Cancel
+        </AsyncButton>
+      )}
+    </>
+  );
 
   // Waiter/captain flow: staff picks a table and items directly from this screen
   // instead of the customer having to scan the QR menu themselves.
@@ -442,7 +435,10 @@ export default function RestaurantOrders() {
     }
   };
 
-  const tables = Array.from({ length: Number(tableCount || 0) }, (_, index) => index + 1);
+  // Tables from Table Management when they're set up there; otherwise the count from Settings.
+  const tables = tableDocs.length > 0
+    ? tableDocs.map((table) => ({ id: table._id, number: String(table.number), status: table.status }))
+    : Array.from({ length: Number(tableCount || 0) }, (_, index) => ({ id: null, number: String(index + 1), status: "available" }));
   const ordersByTable = useMemo(() => {
     const map = new Map();
 
@@ -460,12 +456,14 @@ export default function RestaurantOrders() {
     : [];
 
   const getTableStatus = (table) => {
-    const tableOrders = ordersByTable.get(String(table)) || [];
+    const tableOrders = ordersByTable.get(table.number) || [];
     if (tableOrders.some((order) => order.status === "new")) return "new";
     if (tableOrders.some((order) => order.status === "preparing")) return "preparing";
     if (tableOrders.some((order) => order.status === "ready")) return "ready";
     if (tableOrders.some((order) => order.status === "served")) return "served";
     if (tableOrders.some((order) => order.status === "accepted")) return "accepted";
+    // No running order: show what Table Management says (reserved, cleaning...).
+    if (["reserved", "cleaning", "occupied", "billing"].includes(table.status)) return table.status;
     return "blank";
   };
 
@@ -578,23 +576,30 @@ export default function RestaurantOrders() {
             <span><i className="legend-dot preparing" /> Preparing</span>
             <span><i className="legend-dot ready" /> Ready</span>
             <span><i className="legend-dot served" /> Served</span>
+            <span><i className="legend-dot reserved" /> Reserved</span>
+            <span><i className="legend-dot cleaning" /> Cleaning</span>
           </div>
-          <label>
-            Tables
-            <input
-              type="number"
-              min="1"
-              max="80"
-              value={tableCount}
-              onChange={(e) => setTableCount(e.target.value)}
-            />
-          </label>
+          {tableDocs.length === 0 ? (
+            <label>
+              Tables
+              <input
+                type="number"
+                min="1"
+                max="80"
+                value={tableCount}
+                onChange={(e) => setTableCount(e.target.value)}
+              />
+            </label>
+          ) : (
+            <span className="table-source-note">Tables from Table Management</span>
+          )}
         </div>
 
         <div className="table-grid">
           {tables.map((table) => {
             const status = getTableStatus(table);
-            const tableOrders = ordersByTable.get(String(table)) || [];
+            const tableOrders = ordersByTable.get(table.number) || [];
+            const idleLabel = { reserved: "Reserved", cleaning: "Cleaning", occupied: "Occupied", billing: "Billing" }[status] || "Blank";
             const tableTotal = tableOrders.reduce((sum, order) => sum + Number(order.grandTotal || 0), 0);
             const hasCoupon = tableOrders.some((order) => order.couponCode);
 
@@ -602,11 +607,11 @@ export default function RestaurantOrders() {
               <button
                 type="button"
                 className={`restaurant-table-card ${status}`}
-                key={table}
-                onClick={() => setSelectedTable(table)}
+                key={table.id || table.number}
+                onClick={() => setSelectedTable(table.number)}
               >
-                <strong>Table {table}</strong>
-                <span>{tableOrders.length ? `${tableOrders.length} order` : "Blank"}</span>
+                <strong>Table {table.number}</strong>
+                <span>{tableOrders.length ? `${tableOrders.length} order` : idleLabel}</span>
                 {tableOrders.length > 0 && (
                   <small>
                     ₹{tableTotal.toFixed(2)}
@@ -697,44 +702,16 @@ export default function RestaurantOrders() {
                 )}
 
                 <div className="current-order-actions">
-                  {order.status === "new" && (
-                    <AsyncButton className="accept-order-btn" onClick={() => updateStatus(order._id, "accepted")}>
-                      <CheckCircle2 size={17} />
-                      Accept
-                    </AsyncButton>
-                  )}
-                  {order.status === "accepted" && (
-                    <AsyncButton onClick={() => updateStatus(order._id, "preparing")}>Start Preparing</AsyncButton>
-                  )}
-                  {order.status === "preparing" && (
-                    <AsyncButton onClick={() => updateStatus(order._id, "ready")}>Mark Ready</AsyncButton>
-                  )}
-                  {order.status === "ready" && (
-                    <AsyncButton className="serve-order-btn" onClick={() => updateStatus(order._id, "served")}>
-                      <Utensils size={16} />
-                      {order.orderType === "delivery" ? "Mark Delivered" : "Mark Served"}
-                    </AsyncButton>
-                  )}
-                  {order.status === "served" && (
-                    <button className="payment-action-btn" onClick={() => openPayment(order)}>
-                      <CreditCard size={16} />
-                      Payment
-                    </button>
-                  )}
-                  {order.status !== "served" && (
-                    <AsyncButton className="reject-order-btn" onClick={() => updateStatus(order._id, "cancelled")}>
-                      Cancel
-                    </AsyncButton>
-                  )}
+                  {renderFlowActions(order)}
                   {!order.isHeld ? (
                     <AsyncButton onClick={() => holdOrder(order)}>Hold</AsyncButton>
                   ) : (
                     <AsyncButton onClick={() => resumeOrder(order)}>Resume</AsyncButton>
                   )}
-                  {["accepted", "preparing", "ready", "served"].includes(order.status) && (
+                  {order.kotSentAt && (
                     <button className="print-kot-btn" onClick={() => setKotOrder(order)}>
                       <Printer size={16} />
-                      Print KOT
+                      Reprint KOT
                     </button>
                   )}
                   <button onClick={() => openDiscount(order)}>Discount</button>
@@ -804,13 +781,29 @@ export default function RestaurantOrders() {
           <div className="modal-card large table-order-modal">
             <div className="modal-head">
               <h2>Table {selectedTable} Orders</h2>
-              <button onClick={() => setSelectedTable(null)}>x</button>
+              <button type="button" className="modal-close-btn" aria-label="Close" title="Close" onClick={() => setSelectedTable(null)}><X size={20} strokeWidth={2.5} /></button>
             </div>
 
             {selectedTableOrders.length === 0 ? (
               <div className="restaurant-empty compact">
                 <ClipboardList size={30} />
                 <p>There is no active order on this table.</p>
+                {(() => {
+                  const table = tables.find((t) => t.number === String(selectedTable));
+                  if (!table?.id) return null;
+                  return (
+                    <div className="table-status-actions">
+                      <span>Table status: <b>{table.status}</b></span>
+                      {["available", "reserved", "cleaning"]
+                        .filter((status) => status !== table.status)
+                        .map((status) => (
+                          <AsyncButton key={status} onClick={() => setTableStatus(table, status)}>
+                            Mark {status}
+                          </AsyncButton>
+                        ))}
+                    </div>
+                  );
+                })()}
               </div>
             ) : (
               <div className="table-modal-orders">
@@ -844,20 +837,7 @@ export default function RestaurantOrders() {
                     )}
 
                     <div className="restaurant-order-actions">
-                      <select
-                        value={order.status}
-                        onChange={(e) => updateStatus(order._id, e.target.value)}
-                      >
-                        {statuses.map((status) => (
-                          <option key={status} value={status}>{status}</option>
-                        ))}
-                      </select>
-                      {order.status === "served" && (
-                        <button onClick={() => openPayment(order)}>
-                          <CreditCard size={16} />
-                          Payment
-                        </button>
-                      )}
+                      {renderFlowActions(order)}
                     </div>
                   </article>
                 ))}
@@ -931,7 +911,7 @@ export default function RestaurantOrders() {
           <div className="modal-card payment-modal">
             <div className="modal-head">
               <h2>Payment - {paymentOrder.orderNo}</h2>
-              <button onClick={() => setPaymentOrder(null)}>x</button>
+              <button type="button" className="modal-close-btn" aria-label="Close" title="Close" onClick={() => setPaymentOrder(null)}><X size={20} strokeWidth={2.5} /></button>
             </div>
 
             <div className="payment-summary-box">
@@ -966,7 +946,7 @@ export default function RestaurantOrders() {
           <div className="modal-card invoice-modal">
             <div className="modal-head no-print">
               <h2>KOT - {kotOrder.orderNo}</h2>
-              <button onClick={() => setKotOrder(null)}>x</button>
+              <button type="button" className="modal-close-btn" aria-label="Close" title="Close" onClick={() => setKotOrder(null)}><X size={20} strokeWidth={2.5} /></button>
             </div>
 
             <div className="receipt-modal-body">
@@ -986,7 +966,7 @@ export default function RestaurantOrders() {
           <div className="modal-card large invoice-modal restaurant-invoice-modal">
             <div className="modal-head no-print">
               <h2>Invoice - {getInvoiceNo(paidInvoice)}</h2>
-              <button onClick={() => setPaidInvoice(null)}>x</button>
+              <button type="button" className="modal-close-btn" aria-label="Close" title="Close" onClick={() => setPaidInvoice(null)}><X size={20} strokeWidth={2.5} /></button>
             </div>
 
             <div className="receipt-modal-body">
@@ -1009,7 +989,7 @@ export default function RestaurantOrders() {
           <div className="modal-card">
             <div className="modal-head">
               <h2>Apply Discount - {discountOrder.orderNo}</h2>
-              <button onClick={() => setDiscountOrder(null)}>x</button>
+              <button type="button" className="modal-close-btn" aria-label="Close" title="Close" onClick={() => setDiscountOrder(null)}><X size={20} strokeWidth={2.5} /></button>
             </div>
             <label>
               Discount Amount (₹)
@@ -1038,7 +1018,7 @@ export default function RestaurantOrders() {
           <div className="modal-card">
             <div className="modal-head">
               <h2>Split Bill - {splitOrder.orderNo}</h2>
-              <button onClick={() => setSplitOrder(null)}>x</button>
+              <button type="button" className="modal-close-btn" aria-label="Close" title="Close" onClick={() => setSplitOrder(null)}><X size={20} strokeWidth={2.5} /></button>
             </div>
             <p>Select items to move into a new bill:</p>
             <div className="restaurant-order-items">
@@ -1064,7 +1044,7 @@ export default function RestaurantOrders() {
           <div className="modal-card">
             <div className="modal-head">
               <h2>Merge Bill - {mergeOrder.orderNo}</h2>
-              <button onClick={() => setMergeOrder(null)}>x</button>
+              <button type="button" className="modal-close-btn" aria-label="Close" title="Close" onClick={() => setMergeOrder(null)}><X size={20} strokeWidth={2.5} /></button>
             </div>
             <p>Merge this order's items into another active order (same table/customer):</p>
             <select value={mergeTargetId} onChange={(e) => setMergeTargetId(e.target.value)}>
@@ -1107,7 +1087,7 @@ export default function RestaurantOrders() {
                 <h2 id="new-order-title">New Order</h2>
                 <p className="captain-order-subhead">Take an order table-side, waiter/captain style</p>
               </div>
-              <button type="button" disabled={placingNewOrder} onClick={() => setNewOrderOpen(false)} aria-label="Close"><X size={18} /></button>
+              <button type="button" disabled={placingNewOrder} onClick={() => setNewOrderOpen(false)} aria-label="Close" className="modal-close-btn"><X size={20} strokeWidth={2.5} /></button>
             </div>
 
             <div className="captain-order-body">
@@ -1176,15 +1156,15 @@ export default function RestaurantOrders() {
                           <b>{product.name}</b>
                           <span>₹{Number(product.mrp || product.sellingPrice || 0).toFixed(2)}</span>
                         </div>
-                        <div className="menu-add-control">
+                        <div className={`menu-add-control ${inCart ? "is-stepper" : ""}`}>
                           {inCart ? (
                             <>
-                              <button type="button" aria-label={`Remove one ${product.name}`} onClick={() => changeNewOrderQty(product, -1)}>-</button>
+                              <button type="button" aria-label={`Remove one ${product.name}`} onClick={() => changeNewOrderQty(product, -1)}><Minus size={16} strokeWidth={3} /></button>
                               <b>{inCart.qty}</b>
-                              <button type="button" aria-label={`Add one ${product.name}`} onClick={() => changeNewOrderQty(product, 1)}>+</button>
+                              <button type="button" aria-label={`Add one ${product.name}`} onClick={() => changeNewOrderQty(product, 1)}><Plus size={16} strokeWidth={3} /></button>
                             </>
                           ) : (
-                            <button type="button" aria-label={`Add ${product.name}`} onClick={() => changeNewOrderQty(product, 1)}>Add</button>
+                            <button type="button" className="captain-add-btn" aria-label={`Add ${product.name}`} onClick={() => changeNewOrderQty(product, 1)}><Plus size={16} strokeWidth={3} /> Add</button>
                           )}
                         </div>
                       </div>

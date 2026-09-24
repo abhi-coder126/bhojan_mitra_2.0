@@ -9,10 +9,10 @@ const {
     redeemLoyaltyPoints,
     getCustomerSegments,
 } = require("../controllers/customerController");
-const { protect } = require("../middleware/authMiddleware");
+const { protect, requireBranch } = require("../middleware/authMiddleware");
 
 const router = express.Router();
-router.use(protect);
+router.use(protect, requireBranch);
 
 router.post("/", createCustomer);
 router.get("/search/customer", searchCustomer);

@@ -5,8 +5,15 @@ const StockTransaction = require("../models/StockTransaction");
 const DeletionLog = require("../models/DeletionLog");
 const SalesReturn = require("../models/SalesReturn");
 const { verifyDeletePassword } = require("../utils/deleteAuth");
-const { nextCustomerCrn } = require("../utils/customerUpsert");
-const { deductRawMaterialsForItems } = require("./recipeController");
+const { nextCustomerCrn, tagCustomerWithCurrentBranch } = require("../utils/customerUpsert");
+const { consumeIngredients, returnIngredients } = require("../utils/inventory");
+
+// Gives a POS bill's ingredients back to raw-material stock (bill deleted). The flag
+// is claimed atomically so the same bill can never be returned twice.
+const restoreSaleInventory = async (sale, note) => {
+  const claimed = await Sale.findOneAndUpdate({ _id: sale._id, inventoryDeducted: true }, { inventoryDeducted: false });
+  if (claimed) await returnIngredients(claimed.products, { reference: claimed.invoiceNo, note });
+};
 const { earnLoyaltyPoints } = require("./customerController");
 const { nextInvoiceNo: invoiceNo } = require("../utils/invoiceNumber");
 
@@ -149,10 +156,10 @@ exports.createSale = async (req, res) => {
       customer.email = email || customer.email || "";
       await customer.save();
     }
+    await tagCustomerWithCurrentBranch(customer._id);
 
     const sale = await Sale.create({
       invoiceNo: await invoiceNo(),
-      branchId: req.body.branchId || req.query.branchId || undefined,
       customerId: customer._id,
       customerName,
       customerPhone,
@@ -180,7 +187,13 @@ exports.createSale = async (req, res) => {
       { sourceNo: sale.invoiceNo }
     );
 
-    await deductRawMaterialsForItems(finalProducts).catch(() => {});
+    try {
+      if (await consumeIngredients(finalProducts, { reference: sale.invoiceNo, actor: req.user?.name })) {
+        await Sale.updateOne({ _id: sale._id }, { inventoryDeducted: true });
+      }
+    } catch (error) {
+      console.error("Ingredient deduction failed:", error.message);
+    }
     await earnLoyaltyPoints(customer._id, grandTotal).catch(() => {});
 
     res.status(201).json({ success: true, sale });
@@ -191,9 +204,7 @@ exports.createSale = async (req, res) => {
 
 exports.getSales = async (req, res) => {
   try {
-    const filter = {};
-    if (req.query.branchId) filter.branchId = req.query.branchId;
-    const sales = await Sale.find(filter).sort({ createdAt: -1 });
+    const sales = await Sale.find().sort({ createdAt: -1 });
     res.json({ success: true, sales });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -261,6 +272,7 @@ exports.deleteSale = async (req, res) => {
       }
     }
 
+    await restoreSaleInventory(sale, "Bill deleted");
     await Sale.findByIdAndDelete(req.params.id);
     await DeletionLog.create({
       recordType: "POS Invoice",
@@ -310,6 +322,9 @@ exports.clearSales = async (req, res) => {
       );
     }
 
+    for (const sale of sales) {
+      await restoreSaleInventory(sale, "All bills cleared");
+    }
     const result = await Sale.deleteMany({});
     await DeletionLog.create({
       recordType: "POS Invoices",

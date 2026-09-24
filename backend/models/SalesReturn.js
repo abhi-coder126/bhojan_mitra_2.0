@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const { branchScopePlugin } = require("../utils/tenant");
 
 const salesReturnSchema = new mongoose.Schema(
   {
@@ -28,5 +29,7 @@ const salesReturnSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+salesReturnSchema.plugin(branchScopePlugin);
 
 module.exports = mongoose.model("SalesReturn", salesReturnSchema);

@@ -9,8 +9,13 @@ import {
   Bell,
   ShieldCheck,
   DatabaseBackup,
+  Building2,
+  LifeBuoy,
 } from "lucide-react";
+import { ManageBranchesPanel, SupportContactsPanel } from "../components/HeadOfficeSettings";
+import { getActiveBranch, isMasterAdmin } from "../api/session";
 import API from "../api/axios";
+import { ORDER_SETTINGS_CHANGED_EVENT, playOrderTuneOnce } from "../api/orderAlarm";
 import { ToastViewport, useToast } from "../components/Toast";
 import DeleteConfirmModal from "../components/DeleteConfirmModal";
 import PhoneInput from "../components/PhoneInput";
@@ -76,8 +81,24 @@ const tabs = [
   { key: "data", label: "Data Management", icon: DatabaseBackup },
 ];
 
+// Head-office tabs, master admin only. They save on their own (not via "Save Settings").
+const headOfficeTabs = [
+  { key: "branches", label: "Manage Branches", icon: Building2 },
+  { key: "support", label: "Support Contacts", icon: LifeBuoy },
+];
+const HEAD_OFFICE_TAB_KEYS = headOfficeTabs.map((tab) => tab.key);
+
 export default function Settings() {
-  const [activeTab, setActiveTab] = useState("store");
+  const isMaster = isMasterAdmin();
+  // Store settings belong to a branch; a master admin with no branch open only
+  // gets the head-office tabs (plus Security for their own password).
+  const hasBranch = Boolean(getActiveBranch());
+  const visibleTabs = [
+    ...(isMaster ? headOfficeTabs : []),
+    ...tabs.filter((tab) => hasBranch || tab.key === "security"),
+  ];
+  const [activeTab, setActiveTab] = useState(hasBranch ? "store" : "branches");
+  const isHeadOfficeTab = HEAD_OFFICE_TAB_KEYS.includes(activeTab);
   const [settings, setSettings] = useState(defaultSettings);
   const [loading, setLoading] = useState(false);
   const [cleanupTarget, setCleanupTarget] = useState(null);
@@ -95,6 +116,7 @@ export default function Settings() {
   };
 
   useEffect(() => {
+    if (!hasBranch) return;
     fetchSettings();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -118,6 +140,7 @@ export default function Settings() {
         sessionTimeoutMinutes: Math.max(5, Number(settings.sessionTimeoutMinutes || 60)),
       });
       showToast("Settings saved successfully", "success");
+      window.dispatchEvent(new Event(ORDER_SETTINGS_CHANGED_EVENT));
       fetchSettings();
     } catch (error) {
       showToast(error.response?.data?.message || "Settings save failed");
@@ -151,43 +174,14 @@ export default function Settings() {
     }
   };
 
-  const playTestSound = () => {
+  const playTestSound = async () => {
     if (!settings.restaurantOrderSoundEnabled) {
       showToast("New order sound is disabled", "warning");
       return;
     }
 
-    const AudioContext = window.AudioContext || window.webkitAudioContext;
-    if (!AudioContext) {
-      showToast("Audio is not supported in this browser");
-      return;
-    }
-
-    const context = new AudioContext();
-    const notes = [
-      { frequency: 880, start: 0, duration: 0.14 },
-      { frequency: 1174, start: 0.16, duration: 0.14 },
-      { frequency: 1568, start: 0.32, duration: 0.22 },
-    ];
-
-    notes.forEach((note) => {
-      const oscillator = context.createOscillator();
-      const gain = context.createGain();
-
-      oscillator.type = "sine";
-      oscillator.frequency.value = note.frequency;
-      oscillator.connect(gain);
-      gain.connect(context.destination);
-      gain.gain.setValueAtTime(0.0001, context.currentTime + note.start);
-      gain.gain.exponentialRampToValueAtTime(0.22, context.currentTime + note.start + 0.02);
-      gain.gain.exponentialRampToValueAtTime(0.0001, context.currentTime + note.start + note.duration);
-      oscillator.start(context.currentTime + note.start);
-      oscillator.stop(context.currentTime + note.start + note.duration + 0.03);
-    });
-
-    window.setTimeout(() => {
-      context.close?.();
-    }, 700);
+    const ok = await playOrderTuneOnce();
+    if (!ok) showToast("Browser blocked the sound. Click the page once and try again.", "warning");
   };
 
   const runCleanup = async (type) => {
@@ -249,14 +243,16 @@ export default function Settings() {
           <p>Configure store details, invoice policies, payment modes and system preferences</p>
         </div>
 
-        <AsyncButton onClick={saveSettings} disabled={loading}>
-          {loading ? "Saving..." : "Save Settings"}
-        </AsyncButton>
+        {hasBranch && !isHeadOfficeTab && (
+          <AsyncButton onClick={saveSettings} disabled={loading}>
+            {loading ? "Saving..." : "Save Settings"}
+          </AsyncButton>
+        )}
       </div>
 
       <div className="settings-layout">
         <nav className="settings-tabs">
-          {tabs.map((tab) => {
+          {visibleTabs.map((tab) => {
             const Icon = tab.icon;
             return (
               <button
@@ -273,6 +269,8 @@ export default function Settings() {
         </nav>
 
         <div className="settings-panel">
+          {activeTab === "branches" && isMaster && <ManageBranchesPanel showToast={showToast} />}
+          {activeTab === "support" && isMaster && <SupportContactsPanel showToast={showToast} />}
           {activeTab === "store" && (
             <div className="settings-section">
               <h2>Store Settings</h2>
@@ -449,15 +447,9 @@ export default function Settings() {
               <div className="settings-grid">
                 <Toggle
                   title="New Order Sound"
-                  description="Play a counter alert when a new QR order arrives."
+                  description="Loop the order ringtone on every page until each new order is accepted."
                   value={settings.restaurantOrderSoundEnabled}
                   onClick={() => change("restaurantOrderSoundEnabled", !settings.restaurantOrderSoundEnabled)}
-                />
-                <Toggle
-                  title="Repeat Sound"
-                  description="Keep ringing until the new order is accepted."
-                  value={settings.restaurantOrderRepeatSound}
-                  onClick={() => change("restaurantOrderRepeatSound", !settings.restaurantOrderRepeatSound)}
                 />
                 <Toggle
                   title="Order Popup"

@@ -15,7 +15,6 @@ exports.createProduct = async (req, res) => {
 
     const product = await Product.create({
       ...req.body,
-      branchId: req.body.branchId || req.query.branchId || undefined,
       barcode: generatedCode,
       purchasePrice: Number(req.body.purchasePrice || 0),
       sellingPrice: Number(req.body.sellingPrice || mrp),
@@ -35,10 +34,7 @@ exports.createProduct = async (req, res) => {
 
 exports.getProducts = async (req, res) => {
   try {
-    const filter = {};
-    if (req.query.branchId) filter.branchId = req.query.branchId;
-
-    const products = await Product.find(filter)
+    const products = await Product.find()
       .populate("vendorId", "name gstNumber phone")
       .sort({ createdAt: -1 });
 
@@ -129,8 +125,6 @@ exports.deleteProduct = async (req, res) => {
 exports.bulkImportProducts = async (req, res) => {
   try {
     const rows = Array.isArray(req.body.items) ? req.body.items : [];
-    const branchId = req.body.branchId || req.query.branchId || undefined;
-
     let created = 0;
     const skipped = [];
 
@@ -148,7 +142,6 @@ exports.bulkImportProducts = async (req, res) => {
       try {
         await Product.create({
           name,
-          branchId,
           barcode,
           category: String(row.category || "").trim(),
           itemType: ["food", "beverage", "dessert"].includes(row.itemType) ? row.itemType : "food",

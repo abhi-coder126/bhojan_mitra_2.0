@@ -1,8 +1,9 @@
 const mongoose = require("mongoose");
+const { branchScopePlugin } = require("../utils/tenant");
 
 const couponSchema = new mongoose.Schema(
   {
-    code: { type: String, required: true, unique: true },
+    code: { type: String, required: true },
     discountType: {
       type: String,
       enum: ["Amount", "Percent"],
@@ -22,5 +23,8 @@ const couponSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+couponSchema.index({ branchId: 1, code: 1 }, { unique: true });
+couponSchema.plugin(branchScopePlugin);
 
 module.exports = mongoose.model("Coupon", couponSchema);

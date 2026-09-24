@@ -1,32 +1,74 @@
 import AsyncButton from "../components/AsyncButton";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { ChefHat, CheckCircle2, Flame, Timer } from "lucide-react";
 import API from "../api/axios";
 import { ToastViewport, useToast } from "../components/Toast";
 
-const itemStatusFlow = ["NEW", "ACCEPTED", "COOKING", "READY", "SERVED"];
-const itemStatusColors = {
-  NEW: "#ef4444",
-  ACCEPTED: "#f59e0b",
-  COOKING: "#38bdf8",
-  READY: "#22c55e",
-  SERVED: "#6b7280",
+// The kitchen's side of the flow. The counter accepts an order and sends its KOT;
+// only then does it appear here. The kitchen accepts the KOT, cooks, and marks it
+// ready; the counter then serves it.
+const ITEM_NEXT = { NEW: "ACCEPTED", ACCEPTED: "COOKING", COOKING: "READY" };
+const ITEM_LABEL = { NEW: "New", ACCEPTED: "Accepted", COOKING: "Cooking", READY: "Ready", SERVED: "Served" };
+
+const LANES = [
+  { key: "new", title: "New KOTs", icon: ChefHat },
+  { key: "cooking", title: "Cooking", icon: Flame },
+  { key: "ready", title: "Ready - waiting for counter", icon: CheckCircle2 },
+];
+
+const laneOf = (order) => {
+  const statuses = order.items.map((item) => item.itemStatus);
+  if (statuses.every((s) => s === "READY" || s === "SERVED")) return "ready";
+  if (statuses.some((s) => s === "COOKING" || s === "READY")) return "cooking";
+  if (statuses.some((s) => s === "NEW")) return "new";
+  return "cooking";
 };
 
-function elapsedMinutes(createdAt, now) {
-  const diff = now - new Date(createdAt).getTime();
-  return Math.max(Math.floor(diff / 60000), 0);
-}
+const minutesSince = (value, now) => Math.max(Math.floor((now - new Date(value).getTime()) / 60000), 0);
+
+const playChime = () => {
+  try {
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContext) return;
+    const ctx = new AudioContext();
+    [880, 1320].forEach((frequency, index) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.frequency.value = frequency;
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      const start = ctx.currentTime + index * 0.18;
+      gain.gain.setValueAtTime(0.0001, start);
+      gain.gain.exponentialRampToValueAtTime(0.25, start + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.16);
+      osc.start(start);
+      osc.stop(start + 0.2);
+    });
+    window.setTimeout(() => ctx.close?.(), 600);
+  } catch {
+    // Audio is a nice-to-have; the KOT is on screen either way.
+  }
+};
 
 export default function KDS() {
   const [orders, setOrders] = useState([]);
   const [now, setNow] = useState(() => Date.now());
   const { toast, showToast } = useToast();
-  const timerRef = useRef(null);
+  const knownIds = useRef(null);
 
   const fetchOrders = useCallback(async () => {
     try {
       const res = await API.get("/restaurant-orders/kitchen/live");
-      setOrders(res.data.orders || []);
+      const latest = res.data.orders || [];
+      if (knownIds.current) {
+        const incoming = latest.filter((order) => !knownIds.current.has(order._id));
+        if (incoming.length > 0) {
+          playChime();
+          showToast(`New KOT: ${incoming[0].orderType === "delivery" ? "Delivery" : `Table ${incoming[0].tableNo}`}`, "success");
+        }
+      }
+      knownIds.current = new Set(latest.map((order) => order._id));
+      setOrders(latest);
     } catch (error) {
       showToast(error.response?.data?.message || "Could not load kitchen orders", "warning");
     }
@@ -35,163 +77,114 @@ export default function KDS() {
   useEffect(() => {
     fetchOrders();
     const poll = setInterval(fetchOrders, 5000);
-    timerRef.current = setInterval(() => setNow(Date.now()), 1000);
+    const clock = setInterval(() => setNow(Date.now()), 15000);
     return () => {
       clearInterval(poll);
-      clearInterval(timerRef.current);
+      clearInterval(clock);
     };
   }, [fetchOrders]);
 
-  const sendKOT = async (order) => {
-    try {
-      await API.patch(`/restaurant-orders/${order._id}/kot`);
-      fetchOrders();
-    } catch (error) {
-      showToast(error.response?.data?.message || "Could not send KOT", "error");
-    }
-  };
-
-  const nextItemStatus = (status) => {
-    const idx = itemStatusFlow.indexOf(status);
-    return itemStatusFlow[Math.min(idx + 1, itemStatusFlow.length - 1)];
-  };
-
-  const advanceItem = async (order, itemIndex, currentStatus) => {
-    try {
-      await API.patch(`/restaurant-orders/${order._id}/item-status`, {
-        itemIndex,
-        itemStatus: nextItemStatus(currentStatus),
-      });
-      fetchOrders();
-    } catch (error) {
-      showToast(error.response?.data?.message || "Could not update item status", "error");
-    }
-  };
-
-  const markAllItems = async (order, itemStatus) => {
+  const setItems = async (order, itemStatus, itemIndex) => {
     try {
       await API.patch(`/restaurant-orders/${order._id}/item-status`, {
         itemStatus,
-        applyToAll: true,
+        ...(itemIndex === undefined ? { applyToAll: true } : { itemIndex }),
       });
       fetchOrders();
     } catch (error) {
-      showToast(error.response?.data?.message || "Could not update items", "error");
+      showToast(error.response?.data?.message || "Could not update the KOT", "error");
     }
   };
 
+  const grouped = LANES.map((lane) => ({ ...lane, orders: orders.filter((order) => laneOf(order) === lane.key) }));
+
   return (
-    <div>
+    <div className="kds-page">
       <ToastViewport toast={toast} />
 
       <div className="page-head">
         <div>
-          <h1>Kitchen Display System</h1>
-          <p>Live orders by status with prep timers. Refreshes automatically every 5 seconds.</p>
+          <h1>Kitchen Display</h1>
+          <p>KOTs sent by the counter. Accept, cook and mark ready - the counter serves. Refreshes every 5 seconds.</p>
         </div>
       </div>
 
-      {orders.length === 0 && (
-        <div className="panel">
-          <p>No live kitchen orders right now.</p>
-        </div>
-      )}
+      <div className="kds-lanes">
+        {grouped.map(({ key, title, icon: Icon, orders: laneOrders }) => (
+          <section key={key} className={`kds-lane kds-lane-${key}`}>
+            <header>
+              <Icon size={18} />
+              <h2>{title}</h2>
+              <span>{laneOrders.length}</span>
+            </header>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 300px), 1fr))", gap: "16px" }}>
-        {orders.map((order) => {
-          const minutes = elapsedMinutes(order.createdAt, now);
-          const urgent = minutes >= 15;
+            {laneOrders.length === 0 && <p className="kds-empty">Nothing here</p>}
 
-          return (
-            <div
-              key={order._id}
-              className="panel"
-              style={{
-                borderTop: `4px solid ${urgent ? "#ef4444" : "#22c55e"}`,
-              }}
-            >
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <div>
-                  <strong>
-                    {order.orderType === "delivery" ? "Delivery" : `Table ${order.tableNo}`}
-                  </strong>
-                  <div style={{ fontSize: "12px", opacity: 0.7 }}>
-                    {order.orderNo} · {order.orderSource || "pos"}
-                  </div>
-                </div>
-                <div style={{ fontWeight: 700, color: urgent ? "#ef4444" : "#22c55e" }}>
-                  {minutes}m
-                </div>
-              </div>
+            {laneOrders.map((order) => {
+              const minutes = minutesSince(order.kotSentAt || order.createdAt, now);
+              const late = key !== "ready" && minutes >= 15;
 
-              {!order.kotSentAt && (
-                <AsyncButton style={{ margin: "10px 0", width: "100%" }} onClick={() => sendKOT(order)}>
-                  Send KOT to Kitchen
-                </AsyncButton>
-              )}
-
-              {order.kotSentAt && (
-                <div style={{ display: "flex", gap: "6px", margin: "10px 0" }}>
-                  {["COOKING", "READY", "SERVED"].map((status) => (
-                    <AsyncButton
-                      key={status}
-                      style={{
-                        flex: 1,
-                        fontSize: "11px",
-                        padding: "8px 4px",
-                        background: itemStatusColors[status],
-                        color: "#fff",
-                        border: "none",
-                        borderRadius: "6px",
-                        fontWeight: 700,
-                      }}
-                      onClick={() => markAllItems(order, status)}
-                    >
-                      Mark all {status}
-                    </AsyncButton>
-                  ))}
-                </div>
-              )}
-
-              <ul style={{ listStyle: "none", padding: 0, margin: "10px 0" }}>
-                {order.items.map((item, idx) => (
-                  <li
-                    key={idx}
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                      padding: "6px 0",
-                      borderBottom: "1px solid #eee",
-                    }}
-                  >
-                    <span>
-                      {item.qty} x {item.name}
+              return (
+                <article key={order._id} className={`kds-ticket${late ? " is-late" : ""}`}>
+                  <div className="kds-ticket-head">
+                    <div>
+                      <strong>{order.orderType === "delivery" ? "Delivery" : `Table ${order.tableNo}`}</strong>
+                      <small>
+                        {order.orderNo}
+                        {order.kotSentBy ? ` · KOT by ${order.kotSentBy}` : ""}
+                      </small>
+                    </div>
+                    <span className="kds-timer" title="Minutes since the KOT was sent">
+                      <Timer size={14} /> {minutes}m
                     </span>
-                    <AsyncButton
-                      style={{
-                        fontSize: "11px",
-                        padding: "3px 8px",
-                        background: itemStatusColors[item.itemStatus],
-                        color: "#fff",
-                        border: "none",
-                        borderRadius: "6px",
-                      }}
-                      disabled={item.itemStatus === "SERVED"}
-                      onClick={() => advanceItem(order, idx, item.itemStatus)}
-                    >
-                      {item.itemStatus}
-                    </AsyncButton>
-                  </li>
-                ))}
-              </ul>
+                  </div>
 
-              <div style={{ fontSize: "12px", opacity: 0.7 }}>
-                Order status: <strong>{order.status}</strong>
-              </div>
-            </div>
-          );
-        })}
+                  <ul className="kds-items">
+                    {order.items.map((item, index) => {
+                      const next = ITEM_NEXT[item.itemStatus];
+                      return (
+                        <li key={`${item.productId}-${index}`}>
+                          <span>
+                            <b>{item.qty} ×</b> {item.name}
+                          </span>
+                          <AsyncButton
+                            className={`kds-item-status is-${String(item.itemStatus).toLowerCase()}`}
+                            disabled={!next}
+                            title={next ? `Tap to mark ${ITEM_LABEL[next].toLowerCase()}` : ""}
+                            onClick={() => setItems(order, next, index)}
+                          >
+                            {ITEM_LABEL[item.itemStatus]}
+                          </AsyncButton>
+                        </li>
+                      );
+                    })}
+                  </ul>
+
+                  {order.note && <p className="kds-note">Note: {order.note}</p>}
+
+                  <div className="kds-actions">
+                    {key === "new" && (
+                      <>
+                        <AsyncButton className="kds-btn" onClick={() => setItems(order, "ACCEPTED")}>
+                          Accept KOT
+                        </AsyncButton>
+                        <AsyncButton className="kds-btn kds-btn-primary" onClick={() => setItems(order, "COOKING")}>
+                          Start cooking
+                        </AsyncButton>
+                      </>
+                    )}
+                    {key === "cooking" && (
+                      <AsyncButton className="kds-btn kds-btn-primary" onClick={() => setItems(order, "READY")}>
+                        Mark all ready
+                      </AsyncButton>
+                    )}
+                    {key === "ready" && <span className="kds-waiting">Counter will serve this order</span>}
+                  </div>
+                </article>
+              );
+            })}
+          </section>
+        ))}
       </div>
     </div>
   );

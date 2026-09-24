@@ -1,6 +1,6 @@
 import AsyncForm from "../components/AsyncForm";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Eye, Flame, ImagePlus, Leaf, Pencil, Sparkles, Trash2, Upload, Utensils } from "lucide-react";
+import { Eye, Flame, ImagePlus, Leaf, Pencil, Sparkles, Trash2, Upload, Utensils, X } from "lucide-react";
 import API from "../api/axios";
 import { ToastViewport, useToast } from "../components/Toast";
 import DeleteConfirmModal from "../components/DeleteConfirmModal";
@@ -451,7 +451,7 @@ function MenuItemModal({ title, close, children }) {
       <div className="product-modal menu-item-modal">
         <div className="product-modal-head">
           <h2>{title}</h2>
-          <button onClick={close}>x</button>
+          <button type="button" className="modal-close-btn" aria-label="Close" title="Close" onClick={close}><X size={20} strokeWidth={2.5} /></button>
         </div>
         {children}
       </div>

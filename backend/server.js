@@ -5,6 +5,7 @@ const cors = require("cors");
 require("dotenv").config();
 
 const connectDB = require("./config/db");
+const { requestContext } = require("./utils/requestContext");
 
 const authRoutes = require("./routes/authRoutes");
 const vendorRoutes = require("./routes/vendorRoutes");
@@ -26,6 +27,7 @@ const branchRoutes = require("./routes/branchRoutes");
 const otpRoutes = require("./routes/otpRoutes");
 const customerAuthRoutes = require("./routes/customerAuthRoutes");
 const rewardRoutes = require("./routes/rewardRoutes");
+const platformRoutes = require("./routes/platformRoutes");
 
 const app = express();
 
@@ -38,6 +40,8 @@ connectDB();
 
 app.use(cors());
 app.use(express.json({ limit: "10mb" }));
+// Records the caller's IP + device for audit logs written during the request.
+app.use(requestContext);
 
 app.get("/", (req, res) => {
   res.send("BhojanMitra API Running");
@@ -63,6 +67,7 @@ app.use("/api/branches", branchRoutes);
 app.use("/api/otp", otpRoutes);
 app.use("/api/customer-auth", customerAuthRoutes);
 app.use("/api/rewards", rewardRoutes);
+app.use("/api/platform", platformRoutes);
 
 const PORT = process.env.PORT || 5000;
 

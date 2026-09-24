@@ -3,10 +3,10 @@ const {
   getSettings,
   updateSettings,
 } = require("../controllers/settingController");
-const { protect } = require("../middleware/authMiddleware");
+const { protect, requireBranch } = require("../middleware/authMiddleware");
 
 const router = express.Router();
-router.use(protect);
+router.use(protect, requireBranch);
 
 router.get("/", getSettings);
 router.put("/", updateSettings);

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { QrCode, Printer, RefreshCcw } from "lucide-react";
+import { getActiveBranch } from "../api/session";
 
 export default function TableBarcodes() {
   const [tableCount, setTableCount] = useState(28);
@@ -17,6 +18,15 @@ export default function TableBarcodes() {
     setOrigin(`${protocol}//${host}${port}`);
   }, []);
 
+  // Every QR carries the branch code (/menu/<code>/<table>) so a scan can only ever
+  // open this branch's menu and send the order to this branch.
+  const branch = getActiveBranch();
+  const menuBase = `${origin}/menu/${encodeURIComponent(branch?.code || "")}`;
+
+  if (!branch?.code) {
+    return <div className="table-barcodes-page"><p>Open a branch to print its QR codes.</p></div>;
+  }
+
   const tables = Array.from({ length: Number(tableCount || 0) }, (_, index) => index + 1);
 
   return (
@@ -24,7 +34,15 @@ export default function TableBarcodes() {
       <div className="page-head restaurant-head">
         <div>
           <h1>Table QR Setup</h1>
-          <p>Print each table QR and place it on the table. Customers can scan it to open the menu.</p>
+          <p>
+            Print each table QR and place it on the table. Customers can scan it to open the menu.
+            {branch && (
+              <>
+                {" "}
+                These QR codes are for <b>{branch.name}</b> only.
+              </>
+            )}
+          </p>
         </div>
         <div className="restaurant-head-actions">
           <button onClick={() => window.location.reload()}>
@@ -58,7 +76,7 @@ export default function TableBarcodes() {
             <div className="qr-image-wrap">
               {origin ? (
                 <img
-                  src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(`${origin}/menu/delivery`)}`}
+                  src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(`${menuBase}/delivery`)}`}
                   alt="Delivery QR"
                 />
               ) : (
@@ -67,11 +85,11 @@ export default function TableBarcodes() {
             </div>
             <b>Delivery Order</b>
             <strong>Pamphlet QR</strong>
-            <span>{`${origin}/menu/delivery`}</span>
+            <span>{`${menuBase}/delivery`}</span>
           </div>
 
           {tables.map((table) => {
-            const url = `${origin}/menu/${table}`;
+            const url = `${menuBase}/${table}`;
             const qrSrc = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(url)}`;
 
             return (

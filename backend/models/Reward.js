@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const { branchScopePlugin } = require("../utils/tenant");
 
 // A specific reward instance handed to one customer for completing one order.
 const rewardSchema = new mongoose.Schema(
@@ -14,5 +15,7 @@ const rewardSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+rewardSchema.plugin(branchScopePlugin);
 
 module.exports = mongoose.model("Reward", rewardSchema);

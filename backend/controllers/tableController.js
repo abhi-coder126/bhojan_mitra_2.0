@@ -3,9 +3,7 @@ const RestaurantOrder = require("../models/RestaurantOrder");
 
 exports.getTables = async (req, res) => {
   try {
-    const filter = {};
-    if (req.query.branchId) filter.branchId = req.query.branchId;
-    const tables = await Table.find(filter).sort({ floor: 1, number: 1 });
+    const tables = await Table.find().sort({ floor: 1, number: 1 });
     res.json({ success: true, tables });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -26,7 +24,6 @@ exports.createTable = async (req, res) => {
 
     const table = await Table.create({
       number: String(number).trim(),
-      branchId: req.body.branchId || req.query.branchId || undefined,
       floor: floor || "Ground Floor",
       section: section || "Main",
       capacity: Number(capacity || 4),

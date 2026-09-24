@@ -8,6 +8,9 @@ const DeletionLog = require("../models/DeletionLog");
 const RawMaterial = require("../models/RawMaterial");
 const Table = require("../models/Table");
 const RestaurantOrder = require("../models/RestaurantOrder");
+const Branch = require("../models/Branch");
+const { customerBranchFilter } = require("../utils/customerUpsert");
+const { royaltyPeriods } = require("../utils/royalty");
 
 const getDateRange = (filter, startDate, endDate) => {
   const now = new Date();
@@ -65,7 +68,7 @@ exports.getDashboard = async (req, res) => {
     const salesReturns = await SalesReturn.find(dateQuery).sort({ createdAt: -1 });
 
     const allProducts = await Product.find();
-    const customers = await Customer.find();
+    const customers = await Customer.find(customerBranchFilter()).select("_id").lean();
     const vendors = await Vendor.find();
 
     const grossSale = sales.reduce((sum, s) => sum + Number(s.grandTotal || 0), 0);
@@ -298,6 +301,29 @@ exports.getAnalytics = async (req, res) => {
       topSelling,
       leastSelling,
       hourlyBreakdown,
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// Royalty card on the branch dashboard: the % and base set by the master admin, and
+// what that works out to today / this month / last month.
+exports.getRoyalty = async (req, res) => {
+  try {
+    const branch = await Branch.findById(req.user.branchId).lean();
+    if (!branch) return res.status(404).json({ success: false, message: "Branch not found" });
+
+    res.json({
+      success: true,
+      branch: {
+        id: branch._id,
+        name: branch.name,
+        code: branch.code,
+        royaltyPercent: branch.royaltyPercent,
+        royaltyBase: branch.royaltyBase,
+      },
+      periods: await royaltyPeriods(branch),
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });

@@ -1,13 +1,19 @@
 import AsyncForm from "../components/AsyncForm";
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Eye, EyeOff, LockKeyhole, Mail, ShieldCheck, Store, Utensils } from "lucide-react";
 import API from "../api/axios";
+import { clearSession } from "../api/session";
 
 export default function Login() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [isLoggingIn, setIsLoggingIn] = useState(false);
-  const [loginNotice, setLoginNotice] = useState(null);
+  // Set when the user was signed out because their branch was put on hold/removed.
+  const [loginNotice, setLoginNotice] = useState(() => {
+    const reason = searchParams.get("reason");
+    return reason ? { image: "/failed.svg", title: "Access paused", message: reason } : null;
+  });
   const [showPassword, setShowPassword] = useState(false);
 
   const [form, setForm] = useState({
@@ -28,6 +34,7 @@ export default function Login() {
       setIsLoggingIn(true);
       setLoginNotice(null);
       const res = await API.post("/auth/login", form);
+      clearSession();
       localStorage.setItem("token", res.data.token);
       localStorage.setItem("user", JSON.stringify(res.data.user));
       sessionStorage.setItem("showWelcome", "1");
@@ -38,6 +45,12 @@ export default function Login() {
           image: "/404.svg",
           title: "Server is not running",
           message: "Unable to connect to the backend server. Please start the server and try logging in again.",
+        });
+      } else if (error.response.data?.code === "BRANCH_INACTIVE") {
+        setLoginNotice({
+          image: "/failed.svg",
+          title: "Branch not active",
+          message: error.response.data.message,
         });
       } else {
         setLoginNotice({

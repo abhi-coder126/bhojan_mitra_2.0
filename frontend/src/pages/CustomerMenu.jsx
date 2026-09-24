@@ -23,23 +23,30 @@ const loadStoredCustomerAuth = () => {
 };
 
 // Cart survives a page refresh but not a closed tab -- sessionStorage is exactly
-// that lifetime, and keying by table keeps separate QR tables from mixing carts.
-const cartStorageKey = (tableNo) => `bhojan_cart_${tableNo}`;
+// that lifetime, and keying by branch + table keeps separate QR tables (and the
+// same table number at two branches) from mixing carts.
+const cartStorageKey = (cartKey) => `bhojan_cart_${cartKey}`;
 
-const loadStoredCart = (tableNo) => {
+const loadStoredCart = (cartKey) => {
   try {
-    return JSON.parse(sessionStorage.getItem(cartStorageKey(tableNo)) || "[]");
+    return JSON.parse(sessionStorage.getItem(cartStorageKey(cartKey)) || "[]");
   } catch {
     return [];
   }
 };
 
 export default function CustomerMenu() {
-  const { tableNo } = useParams();
+  // /menu/<branchCode>/<table>; legacy QR codes (/menu/<table>) have no branch code
+  // and are served by the main branch. The branch code reaches the API via axios.js.
+  const { branchCode, tableNo } = useParams();
+  const cartKey = `${branchCode || "main"}_${tableNo}`;
   const isDelivery = tableNo === "delivery";
   const [products, setProducts] = useState([]);
   const [menuLoading, setMenuLoading] = useState(true);
-  const [cart, setCart] = useState(() => loadStoredCart(tableNo));
+  const [branchName, setBranchName] = useState("");
+  // Set when the outlet is on hold / removed: ordering is blocked server-side too.
+  const [closedMessage, setClosedMessage] = useState("");
+  const [cart, setCart] = useState(() => loadStoredCart(cartKey));
   const [activeCategory, setActiveCategory] = useState("All");
   const [activeFoodType, setActiveFoodType] = useState("all");
   const [checkoutStep, setCheckoutStep] = useState("cart");
@@ -133,7 +140,12 @@ export default function CustomerMenu() {
       try {
         const res = await API.get("/restaurant-orders/menu");
         setProducts(res.data.products || []);
+        setBranchName(res.data.branch?.name || "");
       } catch (error) {
+        if ([404, 423].includes(error.response?.status)) {
+          setClosedMessage(error.response.data?.message || "This outlet is not accepting orders right now.");
+          return;
+        }
         showToast(error.response?.data?.message || "Menu could not be loaded");
       } finally {
         setMenuLoading(false);
@@ -361,11 +373,11 @@ export default function CustomerMenu() {
 
   useEffect(() => {
     try {
-      sessionStorage.setItem(cartStorageKey(tableNo), JSON.stringify(cart));
+      sessionStorage.setItem(cartStorageKey(cartKey), JSON.stringify(cart));
     } catch {
       // Storage unavailable (e.g. private mode) -- cart just won't survive a refresh.
     }
-  }, [cart, tableNo]);
+  }, [cart, cartKey]);
 
   const normalizedEmail = customer.customerEmail.trim().toLowerCase();
   // A returning logged-in customer whose form still matches their saved profile
@@ -741,6 +753,13 @@ export default function CustomerMenu() {
     <div className={`customer-menu-page ${checkoutStep === "details" ? "checkout-open" : ""}`}>
       <ToastViewport toast={toast} />
 
+      {closedMessage && (
+        <div className="customer-page-preloader" role="alert">
+          <Utensils size={34} />
+          <p>{closedMessage}</p>
+        </div>
+      )}
+
       {menuLoading && (
         <div className="customer-page-preloader">
           <span className="customer-page-spinner" />
@@ -754,7 +773,7 @@ export default function CustomerMenu() {
             <div className="foodora-brand">
               <Utensils size={20} />
               <div className="foodora-brand-text">
-                <span>BhojanMitra</span>
+                <span>{branchName || "BhojanMitra"}</span>
                 <small>{isDelivery ? "Delivery order" : `Table ${tableNo}`}</small>
               </div>
             </div>

@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const { branchScopePlugin } = require("../utils/tenant");
 
 const stockTransactionSchema = new mongoose.Schema(
   {
@@ -7,7 +8,7 @@ const stockTransactionSchema = new mongoose.Schema(
     barcode: String,
 
     type: { type: String, enum: ["IN", "OUT"], required: true },
-    source: { type: String, enum: ["PURCHASE", "SALE"], required: true },
+    source: { type: String, enum: ["PURCHASE", "SALE", "SALES_RETURN"], required: true },
     sourceNo: String,
 
     qty: Number,
@@ -19,5 +20,7 @@ const stockTransactionSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+stockTransactionSchema.plugin(branchScopePlugin);
 
 module.exports = mongoose.model("StockTransaction", stockTransactionSchema);

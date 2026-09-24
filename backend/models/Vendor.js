@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const { branchScopePlugin } = require("../utils/tenant");
 
 const vendorSchema = new mongoose.Schema(
   {
@@ -15,5 +16,7 @@ const vendorSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+vendorSchema.plugin(branchScopePlugin);
 
 module.exports = mongoose.model("Vendor", vendorSchema);

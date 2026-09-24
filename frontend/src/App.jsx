@@ -2,6 +2,7 @@ import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { Menu } from "lucide-react";
 import Sidebar from "./components/Sidebar";
+import OrderAlarm from "./components/OrderAlarm";
 import { ToastViewport, useToast } from "./components/Toast";
 
 import Dashboard from "./pages/Dashboard";
@@ -26,6 +27,11 @@ import Tables from "./pages/Tables";
 import KDS from "./pages/KDS";
 import SmartInventory from "./pages/SmartInventory";
 import AuditLogs from "./pages/AuditLogs";
+import BranchManagement from "./pages/BranchManagement";
+import Support from "./pages/Support";
+import API from "./api/axios";
+import { loadPlatform } from "./api/platform";
+import { BRANCH_CHANGED_EVENT, getActiveBranch, isMasterAdmin, setActiveBranch } from "./api/session";
 
 const pageMeta = {
   "/": {
@@ -112,6 +118,14 @@ const pageMeta = {
     title: "Smart Inventory | BhojanMitra Restaurant POS",
     description: "Raw materials, recipes, food cost % and low stock alerts.",
   },
+  "/branches": {
+    title: "Branch Management | BhojanMitra Head Office",
+    description: "Add, hold and remove branches, set royalty and review every branch's sales.",
+  },
+  "/support": {
+    title: "Support | BhojanMitra",
+    description: "Contact BhojanMitra support to resolve issues quickly.",
+  },
   "/login": {
     title: "Login | BhojanMitra Billing Software",
     description: "Secure login for BhojanMitra billing, inventory, purchase and POS management.",
@@ -149,8 +163,66 @@ function ScrollToTop() {
   return null;
 }
 
+// Pages a master admin can use without having a branch open.
+const HEAD_OFFICE_PATHS = ["/branches", "/support", "/settings"];
+
+// Keeps the UI's open branch in sync with the session and, for a master admin with
+// no branch open, either drops them into the only branch (single-outlet setups) or
+// sends them to Branch Management to pick one.
+function useBranchGate(token) {
+  const location = useLocation();
+  const [activeBranch, setActiveBranchState] = useState(getActiveBranch);
+  const [resolving, setResolving] = useState(() => Boolean(token) && isMasterAdmin() && !getActiveBranch());
+
+  useEffect(() => {
+    const sync = () => setActiveBranchState(getActiveBranch());
+    window.addEventListener(BRANCH_CHANGED_EVENT, sync);
+    return () => window.removeEventListener(BRANCH_CHANGED_EVENT, sync);
+  }, []);
+
+  // Refresh the saved session once per load: sessions from before multi-branch have
+  // no branch on them, and head office may have renamed the branch since login.
+  useEffect(() => {
+    if (!token) return;
+    API.get("/auth/me")
+      .then((res) => {
+        localStorage.setItem("user", JSON.stringify(res.data.user));
+        window.dispatchEvent(new Event(BRANCH_CHANGED_EVENT));
+      })
+      .catch(() => {});
+  }, [token]);
+
+  useEffect(() => {
+    if (!token || !isMasterAdmin() || activeBranch) {
+      setResolving(false);
+      return undefined;
+    }
+
+    let alive = true;
+    setResolving(true);
+    Promise.all([loadPlatform(), API.get("/branches/options")])
+      .then(([platform, res]) => {
+        const branches = res.data.branches || [];
+        if (!alive) return;
+        if (branches.length === 1 || (!platform?.multiBranchEnabled && branches.length > 0)) {
+          setActiveBranch(branches.find((b) => b.isDefault) || branches[0]);
+        }
+      })
+      .catch(() => {})
+      .finally(() => alive && setResolving(false));
+
+    return () => {
+      alive = false;
+    };
+  }, [token, activeBranch]);
+
+  const needsBranch = isMasterAdmin() && !activeBranch && !HEAD_OFFICE_PATHS.includes(location.pathname);
+  return { activeBranch, resolving, needsBranch };
+}
+
 function ProtectedLayout() {
   const token = localStorage.getItem("token");
+  const { activeBranch, resolving, needsBranch } = useBranchGate(token);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [showWelcome, setShowWelcome] = useState(() => sessionStorage.getItem("showWelcome") === "1");
 
@@ -167,9 +239,13 @@ function ProtectedLayout() {
 
   if (!token) return <Navigate to="/login" replace />;
   if (showWelcome) return <WelcomeScreen />;
+  if (resolving) return null;
+  if (needsBranch) return <Navigate to="/branches" replace />;
 
   return (
     <div className={`app-layout ${!sidebarOpen ? "sidebar-closed" : ""}`}>
+      <OrderAlarm key={activeBranch?.id || "head-office"} />
+
       {sidebarOpen && (
         <Sidebar onClose={() => setSidebarOpen(false)} />
       )}
@@ -187,7 +263,9 @@ function ProtectedLayout() {
       )}
 
       <main className="main-content">
-        <Routes>
+        {/* Keyed by branch: switching branches remounts every page so nothing from the
+            previous branch stays on screen. */}
+        <Routes key={activeBranch?.id || "head-office"}>
           <Route path="/" element={<Dashboard />} />
           <Route path="/billing" element={<Navigate to="/restaurant-orders" replace />} />
           <Route path="/products" element={<Navigate to="/menu-items" replace />} />
@@ -210,6 +288,8 @@ function ProtectedLayout() {
           <Route path="/kds" element={<KDS />} />
           <Route path="/smart-inventory" element={<SmartInventory />} />
           <Route path="/audit-logs" element={<AuditLogs />} />
+          <Route path="/branches" element={isMasterAdmin() ? <BranchManagement /> : <Navigate to="/" replace />} />
+          <Route path="/support" element={<Support />} />
         </Routes>
       </main>
     </div>
@@ -268,6 +348,7 @@ export default function App() {
       <ToastViewport toast={toast} />
       <Routes>
         <Route path="/login" element={<Login />} />
+        <Route path="/menu/:branchCode/:tableNo" element={<CustomerMenu />} />
         <Route path="/menu/:tableNo" element={<CustomerMenu />} />
         <Route path="/*" element={<ProtectedLayout />} />
       </Routes>

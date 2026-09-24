@@ -5808,4 +5808,61 @@
   .scratch-done-btn {
     @apply h-12 rounded-xl bg-[#84091e] text-sm font-black text-white hover:bg-[#6b0718];
   }
+
+  /* Unified modal close button (glass icon button on red header) */
+  .modal-close-btn,
+  :is(.modal-head, .product-modal-head, .customer-modal-head, .sales-return-modal-head, .report-modal-head, .pos-modal-head, .grn-modal-head) .modal-close-btn {
+    @apply inline-grid !h-10 !w-10 shrink-0 place-items-center rounded-full border border-white/35 !bg-white/15 !p-0 !text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.25)] backdrop-blur-sm transition duration-200 hover:rotate-90 hover:!bg-white hover:!text-red-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 active:scale-90 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:rotate-0;
+  }
+
+  .modal-close-btn svg {
+    @apply pointer-events-none;
+  }
+
+  /* Captain / New Order: Add button + quantity stepper */
+  .captain-order-item-row .menu-add-control .captain-add-btn {
+    @apply h-10 gap-1.5 rounded-full border-2 border-[#84091e] !bg-white px-4 text-sm font-black uppercase tracking-wide !text-[#84091e] shadow-[0_4px_12px_rgba(132,9,30,0.15)] transition hover:!bg-[#84091e] hover:!text-white active:scale-95;
+  }
+
+  .captain-order-item-row .menu-add-control.is-stepper {
+    @apply h-10 min-h-0 gap-0 self-center justify-self-end overflow-hidden rounded-full bg-[#84091e] p-0.5 shadow-[0_6px_14px_rgba(132,9,30,0.3)];
+  }
+
+  .captain-order-item-row .menu-add-control.is-stepper button {
+    @apply h-9 w-9 min-w-9 rounded-full bg-transparent p-0 text-white shadow-none transition hover:bg-white/20 active:scale-90;
+  }
+
+  .captain-order-item-row .menu-add-control.is-stepper b {
+    @apply min-w-8 text-center text-base font-black tabular-nums text-white;
+  }
+
+  /* Global new-order alarm banner */
+  .order-alarm-banner {
+    @apply fixed bottom-5 left-1/2 z-[99999] flex w-[min(520px,calc(100vw-32px))] -translate-x-1/2 items-center gap-3 rounded-2xl border border-red-300/40 bg-[linear-gradient(135deg,#7f0615,#dc2626)] px-4 py-3 text-white shadow-[0_18px_45px_rgba(127,6,21,0.45)];
+  }
+
+  .order-alarm-banner.blocked {
+    @apply cursor-pointer;
+  }
+
+  .order-alarm-icon {
+    @apply grid h-10 w-10 shrink-0 place-items-center rounded-full bg-white/20;
+    animation: orderPulse 1s ease-in-out infinite;
+  }
+
+  .order-alarm-banner > div {
+    @apply grid min-w-0 flex-1;
+  }
+
+  .order-alarm-banner b {
+    @apply text-base font-black;
+  }
+
+  .order-alarm-banner small {
+    @apply truncate text-xs text-white/85;
+  }
+
+  .order-alarm-banner button {
+    @apply h-10 shrink-0 rounded-xl bg-white px-4 text-sm font-black text-red-700 hover:bg-red-50;
+  }
 }

@@ -6,10 +6,10 @@ const {
   createSalesReturn,
   deleteSalesReturn,
 } = require("../controllers/salesReturnController");
-const { protect } = require("../middleware/authMiddleware");
+const { protect, requireBranch } = require("../middleware/authMiddleware");
 
 const router = express.Router();
-router.use(protect);
+router.use(protect, requireBranch);
 
 router.get("/", getSalesReturns);
 router.get("/invoice/:invoiceNo", getInvoiceForReturn);

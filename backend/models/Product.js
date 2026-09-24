@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const { branchScopePlugin } = require("../utils/tenant");
 
 const productSchema = new mongoose.Schema(
   {
@@ -57,5 +58,7 @@ const productSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+productSchema.plugin(branchScopePlugin);
 
 module.exports = mongoose.model("Product", productSchema);

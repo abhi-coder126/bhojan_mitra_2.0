@@ -3,6 +3,7 @@ import AsyncButton from "../components/AsyncButton";
 import { useEffect, useState } from "react";
 import API from "../api/axios";
 import PhoneInput from "../components/PhoneInput";
+import { X } from "lucide-react";
 export default function Purchase() {
   const [vendors, setVendors] = useState([]);
   const [products, setProducts] = useState([]);
@@ -741,7 +742,7 @@ export default function Purchase() {
           <div className="modal-card">
             <div className="modal-head">
               <h2>Create Vendor</h2>
-              <button onClick={() => setShowVendorPopup(false)}>X</button>
+              <button type="button" className="modal-close-btn" aria-label="Close" title="Close" onClick={() => setShowVendorPopup(false)}><X size={20} strokeWidth={2.5} /></button>
             </div>
 
             <AsyncForm className="form-grid" onSubmit={createVendor}>
@@ -807,7 +808,7 @@ export default function Purchase() {
           <div className="modal-card large">
             <div className="modal-head">
               <h2>Create Product</h2>
-              <button onClick={() => setShowProductPopup(false)}>X</button>
+              <button type="button" className="modal-close-btn" aria-label="Close" title="Close" onClick={() => setShowProductPopup(false)}><X size={20} strokeWidth={2.5} /></button>
             </div>
 
             <AsyncForm className="form-grid" onSubmit={createProduct}>
@@ -935,7 +936,7 @@ export default function Purchase() {
           <div className="modal-card large">
             <div className="modal-head">
               <h2>GRN Details</h2>
-              <button onClick={() => setSelectedGRN(null)}>X</button>
+              <button type="button" className="modal-close-btn" aria-label="Close" title="Close" onClick={() => setSelectedGRN(null)}><X size={20} strokeWidth={2.5} /></button>
             </div>
 
             <div className="grn-detail-grid">

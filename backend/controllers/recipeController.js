@@ -1,6 +1,9 @@
 const Recipe = require("../models/Recipe");
 const RawMaterial = require("../models/RawMaterial");
 const Product = require("../models/Product");
+const { logAudit, getActor } = require("../utils/auditLog");
+
+const round2 = (value) => Math.round(Number(value || 0) * 100) / 100;
 
 exports.getRecipes = async (req, res) => {
   try {
@@ -20,36 +23,52 @@ exports.getRecipeByProduct = async (req, res) => {
   }
 };
 
+// Quantities are per ONE portion sold, in the raw material's own unit (e.g. 0.2 kg).
 exports.upsertRecipe = async (req, res) => {
   try {
     const { productId, items = [] } = req.body;
-    if (!productId) return res.status(400).json({ message: "Product required" });
+    if (!productId) return res.status(400).json({ message: "Select a menu item" });
 
     const product = await Product.findById(productId);
-    if (!product) return res.status(404).json({ message: "Product not found" });
+    if (!product) return res.status(404).json({ message: "Menu item not found" });
 
     const rawMaterialIds = items.map((i) => i.rawMaterialId).filter(Boolean);
     const rawMaterials = await RawMaterial.find({ _id: { $in: rawMaterialIds } });
     const rmMap = new Map(rawMaterials.map((rm) => [String(rm._id), rm]));
 
-    const recipeItems = items
-      .map((item) => {
-        const rm = rmMap.get(String(item.rawMaterialId));
-        if (!rm) return null;
-        return {
-          rawMaterialId: rm._id,
-          rawMaterialName: rm.name,
-          unit: rm.unit,
-          qtyPerUnit: Number(item.qtyPerUnit || 0),
-        };
-      })
-      .filter(Boolean);
+    const seen = new Set();
+    const recipeItems = [];
+    for (const item of items) {
+      const rm = rmMap.get(String(item.rawMaterialId));
+      const qtyPerUnit = Number(item.qtyPerUnit);
+      if (!rm) continue;
+      if (!(qtyPerUnit > 0)) {
+        return res.status(400).json({ message: `Enter a quantity above 0 for ${rm.name}` });
+      }
+      if (seen.has(String(rm._id))) {
+        return res.status(400).json({ message: `${rm.name} is added twice -- combine it into one line` });
+      }
+      seen.add(String(rm._id));
+      recipeItems.push({ rawMaterialId: rm._id, rawMaterialName: rm.name, unit: rm.unit, qtyPerUnit });
+    }
+
+    if (recipeItems.length === 0) {
+      return res.status(400).json({ message: "Add at least one ingredient" });
+    }
 
     const recipe = await Recipe.findOneAndUpdate(
       { productId },
       { productId, productName: product.name, items: recipeItems },
       { new: true, upsert: true }
     );
+
+    await logAudit({
+      actor: getActor(req),
+      action: "recipe_saved",
+      entity: "Recipe",
+      entityId: recipe._id,
+      newValue: `${product.name}: ${recipeItems.map((i) => `${i.qtyPerUnit} ${i.unit} ${i.rawMaterialName}`).join(", ")}`,
+    });
 
     res.json({ success: true, recipe });
   } catch (error) {
@@ -59,87 +78,76 @@ exports.upsertRecipe = async (req, res) => {
 
 exports.deleteRecipe = async (req, res) => {
   try {
-    await Recipe.findByIdAndDelete(req.params.id);
+    const recipe = await Recipe.findByIdAndDelete(req.params.id);
+    if (!recipe) return res.status(404).json({ message: "Recipe not found" });
     res.json({ success: true, message: "Recipe deleted" });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
 
-// Food cost % = (ingredient cost of one unit / selling price) * 100
+// Food cost % = ingredient cost of one portion / selling price excl. GST.
+// Menu prices (mrp) are GST-inclusive, and GST isn't revenue, so it is backed out
+// first -- otherwise every dish would look cheaper to make than it really is.
+// Also reports how many portions the current stock can still make.
 exports.getFoodCost = async (req, res) => {
   try {
     const recipes = await Recipe.find();
-    const products = await Product.find();
+    const products = await Product.find({ _id: { $in: recipes.map((r) => r.productId) } });
     const productMap = new Map(products.map((p) => [String(p._id), p]));
 
-    const foodCosts = recipes.map((recipe) => ({
-      recipe,
-      product: productMap.get(String(recipe.productId)),
-    }));
-
-    // compute ingredient cost using current raw material prices
     const rawMaterialIds = [...new Set(recipes.flatMap((r) => r.items.map((i) => String(i.rawMaterialId))))];
     const rawMaterials = await RawMaterial.find({ _id: { $in: rawMaterialIds } });
-    const rmCostMap = new Map(rawMaterials.map((rm) => [String(rm._id), Number(rm.costPerUnit || 0)]));
+    const rmMap = new Map(rawMaterials.map((rm) => [String(rm._id), rm]));
 
-    const result = foodCosts.map(({ recipe, product }) => {
-      const ingredientCost = recipe.items.reduce(
-        (sum, item) => sum + Number(item.qtyPerUnit || 0) * (rmCostMap.get(String(item.rawMaterialId)) || 0),
-        0
-      );
-      const sellingPrice = Number(product?.sellingPrice || product?.mrp || 0);
-      const foodCostPercent = sellingPrice > 0 ? (ingredientCost / sellingPrice) * 100 : 0;
+    const foodCosts = recipes
+      .map((recipe) => {
+        const product = productMap.get(String(recipe.productId));
+        let portionsPossible = Infinity;
+        let limitingIngredient = "";
 
-      return {
-        productId: recipe.productId,
-        productName: recipe.productName,
-        ingredientCost: Number(ingredientCost.toFixed(2)),
-        sellingPrice,
-        foodCostPercent: Number(foodCostPercent.toFixed(2)),
-        grossMargin: Number((sellingPrice - ingredientCost).toFixed(2)),
-      };
-    });
+        const ingredients = recipe.items.map((item) => {
+          const rm = rmMap.get(String(item.rawMaterialId));
+          const qty = Number(item.qtyPerUnit || 0);
+          const cost = qty * Number(rm?.costPerUnit || 0);
+          const canMake = rm && qty > 0 ? Math.max(Math.floor(Number(rm.stock || 0) / qty), 0) : 0;
+          if (canMake < portionsPossible) {
+            portionsPossible = canMake;
+            limitingIngredient = rm?.name || item.rawMaterialName;
+          }
+          return {
+            name: rm?.name || item.rawMaterialName,
+            unit: rm?.unit || item.unit,
+            qty,
+            cost: round2(cost),
+            missing: !rm,
+          };
+        });
 
-    res.json({ success: true, foodCosts: result });
+        const ingredientCost = ingredients.reduce((sum, item) => sum + item.cost, 0);
+        const priceInclGst = Number(product?.mrp || product?.sellingPrice || 0);
+        const gst = Number(product?.gst || 0);
+        const sellingPrice = gst > 0 ? priceInclGst / (1 + gst / 100) : priceInclGst;
+        const foodCostPercent = sellingPrice > 0 ? (ingredientCost / sellingPrice) * 100 : 0;
+
+        return {
+          recipeId: recipe._id,
+          productId: recipe.productId,
+          productName: product?.name || recipe.productName,
+          ingredients,
+          ingredientCost: round2(ingredientCost),
+          priceInclGst: round2(priceInclGst),
+          sellingPrice: round2(sellingPrice),
+          foodCostPercent: round2(foodCostPercent),
+          grossMargin: round2(sellingPrice - ingredientCost),
+          portionsPossible: Number.isFinite(portionsPossible) ? portionsPossible : 0,
+          limitingIngredient,
+        };
+      })
+      .sort((a, b) => b.foodCostPercent - a.foodCostPercent);
+
+    res.json({ success: true, foodCosts });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
-};
-
-// Auto-deduct raw material stock for items sold (used by Sale + RestaurantOrder creation)
-exports.deductRawMaterialsForItems = async (items = []) => {
-  if (!Array.isArray(items) || items.length === 0) return;
-
-  const productIds = items.map((i) => i.productId).filter(Boolean);
-  if (productIds.length === 0) return;
-
-  const recipes = await Recipe.find({ productId: { $in: productIds } });
-  if (recipes.length === 0) return;
-
-  const recipeMap = new Map(recipes.map((r) => [String(r.productId), r]));
-  const deductions = new Map(); // rawMaterialId -> qty to deduct
-
-  items.forEach((item) => {
-    const recipe = recipeMap.get(String(item.productId));
-    if (!recipe) return;
-
-    const qtySold = Number(item.qty || 0);
-    recipe.items.forEach((ri) => {
-      const key = String(ri.rawMaterialId);
-      const deductQty = Number(ri.qtyPerUnit || 0) * qtySold;
-      deductions.set(key, (deductions.get(key) || 0) + deductQty);
-    });
-  });
-
-  if (deductions.size === 0) return;
-
-  await RawMaterial.bulkWrite(
-    Array.from(deductions.entries()).map(([rawMaterialId, qty]) => ({
-      updateOne: {
-        filter: { _id: rawMaterialId },
-        update: { $inc: { stock: -qty } },
-      },
-    }))
-  );
 };

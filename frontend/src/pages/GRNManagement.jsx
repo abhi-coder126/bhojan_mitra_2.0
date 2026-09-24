@@ -1,6 +1,7 @@
 import AsyncButton from "../components/AsyncButton";
 import { useEffect, useMemo, useState } from "react";
 import API from "../api/axios";
+import { X } from "lucide-react";
 export default function GRNManagement() {
     const [purchases, setPurchases] = useState([]);
     const [selectedGRN, setSelectedGRN] = useState(null);
@@ -324,7 +325,7 @@ export default function GRNManagement() {
                                 </h2>
                             </div>
 
-                            <button onClick={() => setSelectedGRN(null)}>×</button>
+                            <button type="button" className="modal-close-btn" aria-label="Close" title="Close" onClick={() => setSelectedGRN(null)}><X size={20} strokeWidth={2.5} /></button>
                         </div>
 
                         <div className="grn-modal-scroll">

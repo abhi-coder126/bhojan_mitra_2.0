@@ -13,9 +13,13 @@ const userSchema = new mongoose.Schema(
     password: { type: String, required: true },
     role: {
       type: String,
-      enum: ["admin", "staff", "owner", "manager", "cashier", "waiter", "kitchen", "inventory"],
+      enum: ["master_admin", "admin", "staff", "owner", "manager", "cashier", "waiter", "kitchen", "inventory"],
       default: "admin",
     },
+    // Every role except master_admin belongs to exactly one branch and can only ever
+    // see that branch's data (enforced in authMiddleware.protect).
+    branchId: { type: mongoose.Schema.Types.ObjectId, ref: "Branch", default: null },
+    isActive: { type: Boolean, default: true },
   },
   { timestamps: true }
 );

@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const { branchScopePlugin } = require("../utils/tenant");
 
 const rawMaterialSchema = new mongoose.Schema(
   {
@@ -17,5 +18,7 @@ const rawMaterialSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+rawMaterialSchema.plugin(branchScopePlugin);
 
 module.exports = mongoose.model("RawMaterial", rawMaterialSchema);

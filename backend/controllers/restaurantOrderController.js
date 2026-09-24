@@ -9,11 +9,12 @@ const RewardTier = require("../models/RewardTier");
 const Reward = require("../models/Reward");
 const { verifyDeletePassword } = require("../utils/deleteAuth");
 const { syncTableForOrder } = require("./tableController");
-const { deductRawMaterialsForItems } = require("./recipeController");
+const { consumeIngredients, returnIngredients } = require("../utils/inventory");
 const { earnLoyaltyPoints } = require("./customerController");
 const { logAudit, getActor } = require("../utils/auditLog");
 const { upsertCustomerFromOrder } = require("../utils/customerUpsert");
 const { nextInvoiceNo } = require("../utils/invoiceNumber");
+const { runWithBranch } = require("../utils/tenant");
 
 // Fires when a logged-in customer's delivery order is marked "served": count their
 // completed delivery orders, find the best-matching active tier they now qualify
@@ -46,13 +47,35 @@ const grantRewardIfEarned = async (order) => {
   });
 };
 
+// Raw-material stock follows the order: ingredients leave stock when the order is
+// placed and come back if it is cancelled or deleted before being served. The
+// inventoryDeducted flag is claimed atomically, so a double cancel/delete can't
+// return them twice.
+const deductOrderInventory = async (order, actor) => {
+  const deducted = await consumeIngredients(order.items, { reference: order.orderNo, actor });
+  if (deducted) await RestaurantOrder.updateOne({ _id: order._id }, { inventoryDeducted: true });
+};
+
+const restoreOrderInventory = async (order, note = "Order cancelled") => {
+  const claimed = await RestaurantOrder.findOneAndUpdate(
+    { _id: order._id, inventoryDeducted: true },
+    { inventoryDeducted: false }
+  );
+  if (!claimed) return;
+  await returnIngredients(claimed.items, { reference: claimed.orderNo, note });
+};
+
 exports.getMenuProducts = async (req, res) => {
   try {
     const products = await Product.find({ stock: { $gt: 0 } })
       .select("name barcode category itemType foodType description spiceLevel isRecommended image unit sellingPrice mrp gst stock offerPercent ratingAvg ratingCount")
       .sort({ category: 1, name: 1 });
 
-    res.json({ success: true, products });
+    res.json({
+      success: true,
+      branch: req.branch ? { name: req.branch.name, code: req.branch.code } : null,
+      products,
+    });
   } catch (error) {
     res.status(error.statusCode || 500).json({ message: error.message });
   }
@@ -74,29 +97,33 @@ exports.rateOrderItems = async (req, res) => {
     const ratings = Array.isArray(req.body.ratings) ? req.body.ratings : [];
     const orderProductIds = new Set((order.items || []).map((item) => String(item.productId)));
 
-    for (const entry of ratings) {
-      const productId = String(entry.productId || "");
-      const stars = Number(entry.stars);
-      if (!orderProductIds.has(productId) || !(stars >= 1 && stars <= 5)) continue;
+    // The lookup above is by order id across branches; the rating writes below must
+    // land in the branch that actually served the order.
+    await runWithBranch(order.branchId, async () => {
+      for (const entry of ratings) {
+        const productId = String(entry.productId || "");
+        const stars = Number(entry.stars);
+        if (!orderProductIds.has(productId) || !(stars >= 1 && stars <= 5)) continue;
 
-      await Rating.findOneAndUpdate(
-        { orderId: order._id, productId },
-        {
-          stars,
-          comment: String(entry.comment || "").slice(0, 300),
-          customerName: order.customerName || "",
-        },
-        { upsert: true, new: true }
-      );
+        await Rating.findOneAndUpdate(
+          { orderId: order._id, productId },
+          {
+            stars,
+            comment: String(entry.comment || "").slice(0, 300),
+            customerName: order.customerName || "",
+          },
+          { upsert: true, new: true }
+        );
 
-      const agg = await Rating.aggregate([
-        { $match: { productId: new mongoose.Types.ObjectId(productId) } },
-        { $group: { _id: null, avg: { $avg: "$stars" }, count: { $sum: 1 } } },
-      ]);
+        const agg = await Rating.aggregate([
+          { $match: { productId: new mongoose.Types.ObjectId(productId) } },
+          { $group: { _id: null, avg: { $avg: "$stars" }, count: { $sum: 1 } } },
+        ]);
 
-      const { avg = 0, count = 0 } = agg[0] || {};
-      await Product.findByIdAndUpdate(productId, { ratingAvg: avg, ratingCount: count });
-    }
+        const { avg = 0, count = 0 } = agg[0] || {};
+        await Product.findByIdAndUpdate(productId, { ratingAvg: avg, ratingCount: count });
+      }
+    });
 
     res.json({ success: true, message: "Thanks for rating your order!" });
   } catch (error) {
@@ -116,8 +143,11 @@ exports.createRestaurantOrder = async (req, res) => {
       note,
       couponCode,
       items = [],
-      orderSource = "pos",
     } = req.body;
+
+    // Only an authenticated staff request (see branchContext.staffOrPublicBranch) may
+    // claim a POS/waiter source -- those skip the customer email-OTP check below.
+    const orderSource = req.user ? req.body.orderSource || "pos" : "qr";
 
     if (orderType !== "delivery" && !tableNo) {
       return res.status(400).json({ message: "Table number required" });
@@ -301,7 +331,6 @@ exports.createRestaurantOrder = async (req, res) => {
 
     const order = await RestaurantOrder.create({
       invoiceNo: await nextInvoiceNo(),
-      branchId: req.body.branchId || req.query.branchId || undefined,
       orderType,
       tableNo: orderType === "delivery" ? "DELIVERY" : tableNo,
       customerId: req.customer?._id || orderCustomer?._id || null,
@@ -320,7 +349,9 @@ exports.createRestaurantOrder = async (req, res) => {
     });
 
     await syncTableForOrder(order).catch(() => {});
-    await deductRawMaterialsForItems(orderItems).catch(() => {});
+    await deductOrderInventory(order, req.user?.name || "QR order").catch((error) =>
+      console.error("Ingredient deduction failed:", error.message)
+    );
     if (orderCustomer) await earnLoyaltyPoints(orderCustomer._id, order.grandTotal).catch(() => {});
 
     // One verified OTP is good for exactly one delivery order.
@@ -345,9 +376,16 @@ exports.markRestaurantOrderPaid = async (req, res) => {
     const existing = await RestaurantOrder.findById(req.params.id);
     if (!existing) return res.status(404).json({ message: "Order not found" });
 
+    if (existing.status === "cancelled") {
+      return res.status(400).json({ message: "This order is cancelled" });
+    }
+
     const paidAmount = Number(cash || 0) + Number(upi || 0) + Number(card || 0);
     const isFullyPaid = !partial && paidAmount >= Number(existing.grandTotal || 0);
     const dueAmount = Math.max(Number(existing.grandTotal || 0) - paidAmount, 0);
+    // Paying up front (e.g. a prepaid delivery) must not skip the kitchen: only an
+    // order whose food is ready is closed as served by the payment.
+    const nextStatus = isFullyPaid && existing.status === "ready" ? "served" : existing.status;
 
     const order = await RestaurantOrder.findByIdAndUpdate(
       req.params.id,
@@ -362,14 +400,15 @@ exports.markRestaurantOrderPaid = async (req, res) => {
         },
         paidAmount,
         dueAmount,
-        status: isFullyPaid ? "served" : existing.status,
+        status: nextStatus,
+        ...(nextStatus === "served" ? { "items.$[].itemStatus": "SERVED" } : {}),
       },
       { new: true }
     );
 
     await syncTableForOrder(order).catch(() => {});
 
-    if (isFullyPaid && existing.status !== "served") {
+    if (nextStatus === "served" && existing.status !== "served") {
       await grantRewardIfEarned(order).catch(() => {});
     }
 
@@ -413,6 +452,7 @@ exports.deleteRestaurantOrder = async (req, res) => {
     }
 
     await restoreRestaurantOrderStock([order]);
+    await restoreOrderInventory(order, "Order deleted");
     await RestaurantOrder.findByIdAndDelete(req.params.id);
     await DeletionLog.create({
       recordType: "Restaurant Invoice",
@@ -436,6 +476,9 @@ exports.clearRestaurantOrders = async (req, res) => {
     const user = await verifyDeletePassword(req);
     const orders = await RestaurantOrder.find();
     await restoreRestaurantOrderStock(orders);
+    for (const order of orders) {
+      await restoreOrderInventory(order, "All orders cleared");
+    }
     const result = await RestaurantOrder.deleteMany({});
     await DeletionLog.create({
       recordType: "Restaurant Invoices",
@@ -457,9 +500,7 @@ exports.clearRestaurantOrders = async (req, res) => {
 
 exports.getRestaurantOrders = async (req, res) => {
   try {
-    const filter = {};
-    if (req.query.branchId) filter.branchId = req.query.branchId;
-    const orders = await RestaurantOrder.find(filter).sort({ createdAt: -1 });
+    const orders = await RestaurantOrder.find().sort({ createdAt: -1 });
     res.json({ success: true, orders });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -485,17 +526,52 @@ exports.getRestaurantOrderById = async (req, res) => {
   }
 };
 
+// Counter-side order flow: new -> accepted (counter) -> KOT sent (counter) ->
+// preparing/ready (kitchen, via item-status on the KDS) -> served (counter).
+// Returns an error message when the counter may not move `order` to `next`.
+const counterTransitionError = (order, next) => {
+  if (order.status === "cancelled") return "This order is already cancelled";
+  if (order.status === "served" && next !== "served") return "This order is already served";
+
+  switch (next) {
+    case "accepted":
+      return order.status === "new" ? null : "Only new orders can be accepted";
+    case "served":
+      return order.kotSentAt ? null : "Send the KOT to the kitchen before serving";
+    case "cancelled":
+      return null;
+    case "preparing":
+    case "ready":
+      return "The kitchen updates this from the Kitchen Display after receiving the KOT";
+    default:
+      return "Invalid order status";
+  }
+};
+
 exports.updateRestaurantOrderStatus = async (req, res) => {
   try {
+    const next = req.body.status;
     const before = await RestaurantOrder.findById(req.params.id);
-    const order = await RestaurantOrder.findByIdAndUpdate(
-      req.params.id,
-      { status: req.body.status },
-      { new: true }
-    );
+    if (!before) {
+      return res.status(404).json({ message: "Order not found" });
+    }
+
+    const transitionError = counterTransitionError(before, next);
+    if (transitionError) {
+      return res.status(400).json({ message: transitionError });
+    }
+
+    const update = { status: next };
+    if (next === "served") update["items.$[].itemStatus"] = "SERVED";
+    const order = await RestaurantOrder.findByIdAndUpdate(req.params.id, update, { new: true });
 
     if (!order) {
       return res.status(404).json({ message: "Order not found" });
+    }
+
+    // Cancelled before being cooked/served: the ingredients were never used.
+    if (next === "cancelled" && before.status !== "cancelled") {
+      await restoreOrderInventory(order).catch(() => {});
     }
 
     if (req.body.status === "cancelled" && before?.status !== "cancelled") {
@@ -522,19 +598,26 @@ exports.updateRestaurantOrderStatus = async (req, res) => {
   }
 };
 
-// --- KDS: send KOT (kitchen order ticket) ---
+// --- Counter: send the KOT (kitchen order ticket) for an accepted order ---
+// The order only appears on the Kitchen Display once this is done.
 exports.sendKOT = async (req, res) => {
   try {
     const order = await RestaurantOrder.findById(req.params.id);
 
     if (!order) return res.status(404).json({ message: "Order not found" });
+    if (order.status === "new") {
+      return res.status(400).json({ message: "Accept the order before sending the KOT" });
+    }
+    if (["served", "cancelled"].includes(order.status)) {
+      return res.status(400).json({ message: `This order is already ${order.status}` });
+    }
 
-    order.kotSentAt = new Date();
-    order.status = "accepted";
-    order.items.forEach((item) => {
-      if (item.itemStatus === "NEW") item.itemStatus = "ACCEPTED";
-    });
-    await order.save();
+    // Re-sending (e.g. a reprint) keeps the original time so kitchen timers stay right.
+    if (!order.kotSentAt) {
+      order.kotSentAt = new Date();
+      order.kotSentBy = req.user?.name || "";
+      await order.save();
+    }
 
     res.json({ success: true, order });
   } catch (error) {
@@ -542,17 +625,24 @@ exports.sendKOT = async (req, res) => {
   }
 };
 
-// --- KDS: update a single item's kitchen status ---
+// --- KDS: kitchen updates item status (accept KOT -> cooking -> ready) ---
+// Serving is the counter's step (updateRestaurantOrderStatus -> "served").
 exports.updateOrderItemStatus = async (req, res) => {
   try {
     const { itemIndex, itemStatus, applyToAll } = req.body;
-    const allowed = ["NEW", "ACCEPTED", "COOKING", "READY", "SERVED"];
+    const allowed = ["ACCEPTED", "COOKING", "READY"];
     if (!allowed.includes(itemStatus)) {
       return res.status(400).json({ message: "Invalid item status" });
     }
 
     const order = await RestaurantOrder.findById(req.params.id);
     if (!order) return res.status(404).json({ message: "Order not found" });
+    if (!order.kotSentAt) {
+      return res.status(400).json({ message: "The counter hasn't sent the KOT for this order yet" });
+    }
+    if (["served", "cancelled"].includes(order.status)) {
+      return res.status(400).json({ message: `This order is already ${order.status}` });
+    }
 
     // KDS "mark all" action -- bumps every item on the KOT to the same status in one
     // tap instead of clicking through each item individually.
@@ -568,10 +658,9 @@ exports.updateOrderItemStatus = async (req, res) => {
     }
 
     const allStatuses = order.items.map((item) => item.itemStatus);
-    if (allStatuses.every((s) => s === "SERVED")) order.status = "served";
-    else if (allStatuses.every((s) => s === "READY" || s === "SERVED")) order.status = "ready";
-    else if (allStatuses.some((s) => s === "COOKING")) order.status = "preparing";
-    else if (allStatuses.every((s) => s === "ACCEPTED")) order.status = "accepted";
+    if (allStatuses.every((s) => s === "READY" || s === "SERVED")) order.status = "ready";
+    else if (allStatuses.some((s) => s === "COOKING" || s === "READY")) order.status = "preparing";
+    else order.status = "accepted";
 
     await order.save();
     await syncTableForOrder(order).catch(() => {});
@@ -582,12 +671,13 @@ exports.updateOrderItemStatus = async (req, res) => {
   }
 };
 
-// --- KDS: list of live (kitchen-relevant) orders ---
+// --- KDS: orders the counter has sent to the kitchen and not yet served ---
 exports.getKitchenOrders = async (req, res) => {
   try {
     const orders = await RestaurantOrder.find({
+      kotSentAt: { $ne: null },
       status: { $nin: ["served", "cancelled"] },
-    }).sort({ createdAt: 1 });
+    }).sort({ kotSentAt: 1 });
 
     res.json({ success: true, orders });
   } catch (error) {
@@ -646,10 +736,13 @@ exports.mergeRestaurantOrders = async (req, res) => {
     if (source.couponCode && source.couponCode !== target.couponCode) {
       target.couponCode = [target.couponCode, source.couponCode].filter(Boolean).join(" + ");
     }
+    // The source's items (and their deducted ingredients) now live on the target.
+    if (source.inventoryDeducted) target.inventoryDeducted = true;
     await target.save();
 
     source.status = "cancelled";
     source.mergedInto = target._id;
+    source.inventoryDeducted = false;
     await source.save();
 
     await syncTableForOrder(target).catch(() => {});
@@ -705,6 +798,9 @@ exports.splitRestaurantOrder = async (req, res) => {
       grandTotal: Math.max(splitGross - splitDiscount, 0),
       splitFrom: order._id,
       status: order.status,
+      kotSentAt: order.kotSentAt,
+      kotSentBy: order.kotSentBy,
+      inventoryDeducted: order.inventoryDeducted,
     });
 
     order.items = remainingItems;

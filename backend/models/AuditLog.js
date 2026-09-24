@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const { branchScopePlugin } = require("../utils/tenant");
 
 const auditLogSchema = new mongoose.Schema(
   {
@@ -17,5 +18,7 @@ const auditLogSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+auditLogSchema.plugin(branchScopePlugin, { strict: false });
 
 module.exports = mongoose.model("AuditLog", auditLogSchema);

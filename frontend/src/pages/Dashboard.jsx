@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import RoyaltyCard from "../components/RoyaltyCard";
 import {
   Area,
   Bar,
@@ -524,6 +525,8 @@ export default function Dashboard() {
           </button>
         </div>
       </div>
+
+      <RoyaltyCard />
 
       <div className="dashboard-filter-card restaurant-dashboard-filters">
         <label>

@@ -6,10 +6,10 @@ const {
   deleteRewardTier,
   getIssuedRewards,
 } = require("../controllers/rewardController");
-const { protect } = require("../middleware/authMiddleware");
+const { protect, requireBranch } = require("../middleware/authMiddleware");
 
 const router = express.Router();
-router.use(protect);
+router.use(protect, requireBranch);
 
 router.get("/tiers", getRewardTiers);
 router.post("/tiers", createRewardTier);

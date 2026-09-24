@@ -7,10 +7,10 @@ const {
   deleteTable,
   seedTables,
 } = require("../controllers/tableController");
-const { protect } = require("../middleware/authMiddleware");
+const { protect, requireBranch } = require("../middleware/authMiddleware");
 
 const router = express.Router();
-router.use(protect);
+router.use(protect, requireBranch);
 
 router.get("/", getTables);
 router.post("/", createTable);

@@ -16,12 +16,13 @@ async function run() {
 
   if (existing) {
     existing.password = hashed;
-    existing.role = "admin";
+    existing.role = "master_admin";
+    existing.branchId = null;
     await existing.save();
-    console.log("Existing admin user updated:", EMAIL);
+    console.log("Existing user updated to master admin:", EMAIL);
   } else {
-    await User.create({ name: NAME, email: EMAIL, password: hashed, role: "admin" });
-    console.log("Admin user created:", EMAIL);
+    await User.create({ name: NAME, email: EMAIL, password: hashed, role: "master_admin" });
+    console.log("Master admin created:", EMAIL);
   }
 
   await mongoose.disconnect();

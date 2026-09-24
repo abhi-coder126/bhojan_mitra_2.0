@@ -1,7 +1,7 @@
 import AsyncButton from "../components/AsyncButton";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Eye, RotateCcw } from "lucide-react";
+import { Eye, RotateCcw, X } from "lucide-react";
 import API from "../api/axios";
 import PhoneInput from "../components/PhoneInput";
 import { TaxInvoiceReceipt } from "../components/ThermalReceipt";
@@ -795,7 +795,7 @@ export default function BillingPOS() {
           <div className="pos-modal">
             <div className="pos-modal-head">
               <h2>Partial Payment</h2>
-              <button onClick={() => setShowPartial(false)}>×</button>
+              <button type="button" className="modal-close-btn" aria-label="Close" title="Close" onClick={() => setShowPartial(false)}><X size={20} strokeWidth={2.5} /></button>
             </div>
 
             <input
@@ -835,7 +835,7 @@ export default function BillingPOS() {
           <div className="pos-modal large">
             <div className="pos-modal-head">
               <h2>Customer Details</h2>
-              <button onClick={() => setShowCustomer(false)}>×</button>
+              <button type="button" className="modal-close-btn" aria-label="Close" title="Close" onClick={() => setShowCustomer(false)}><X size={20} strokeWidth={2.5} /></button>
             </div>
 
             <div className="pos-customer-grid">
@@ -910,7 +910,7 @@ export default function BillingPOS() {
           <div className="pos-modal large invoice-modal">
             <div className="pos-modal-head no-print">
               <h2>Sales Return - {returnSale.invoiceNo}</h2>
-              <button onClick={() => setShowReturnModal(false)}>×</button>
+              <button type="button" className="modal-close-btn" aria-label="Close" title="Close" onClick={() => setShowReturnModal(false)}><X size={20} strokeWidth={2.5} /></button>
             </div>
 
             <div className="return-info-box">
@@ -986,7 +986,7 @@ export default function BillingPOS() {
           <div className="pos-modal large invoice-modal last-invoice-modal">
             <div className="pos-modal-head no-print">
               <h2>Latest Invoice</h2>
-              <button onClick={() => setShowLastInvoice(false)}>×</button>
+              <button type="button" className="modal-close-btn" aria-label="Close" title="Close" onClick={() => setShowLastInvoice(false)}><X size={20} strokeWidth={2.5} /></button>
             </div>
 
             <div className="receipt-modal-body">
