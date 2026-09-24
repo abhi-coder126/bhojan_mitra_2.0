@@ -76,7 +76,7 @@ exports.deleteSalesReturn = async (req, res) => {
       recordNo: salesReturn.returnNo || salesReturn.invoiceNo,
       title: salesReturn.customerName || "",
       deletedBy: user.name,
-      details: `Invoice ${salesReturn.invoiceNo} | Rs ${Number(salesReturn.returnAmount || 0).toFixed(2)}`,
+      details: `Invoice ${salesReturn.invoiceNo} | ₹${Number(salesReturn.returnAmount || 0).toFixed(2)}`,
     });
 
     res.json({

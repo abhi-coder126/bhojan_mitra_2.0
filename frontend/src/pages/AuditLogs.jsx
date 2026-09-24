@@ -1,3 +1,4 @@
+import AsyncButton from "../components/AsyncButton";
 import { useEffect, useState } from "react";
 import { ShieldCheck, ShieldAlert } from "lucide-react";
 import API from "../api/axios";
@@ -66,7 +67,7 @@ export default function AuditLogs() {
             <option value="Sale">Sale</option>
             <option value="RawMaterial">Raw Material</option>
           </select>
-          <button onClick={fetchLogs}>Refresh</button>
+          <AsyncButton onClick={fetchLogs}>Refresh</AsyncButton>
         </div>
       )}
 

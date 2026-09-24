@@ -1,3 +1,4 @@
+import AsyncForm from "../components/AsyncForm";
 import { useEffect, useState } from "react";
 import API from "../api/axios";
 import DeleteConfirmModal from "../components/DeleteConfirmModal";
@@ -62,7 +63,7 @@ export default function Coupons() {
         </div>
       </div>
 
-      <form className="panel form-grid" onSubmit={submit}>
+      <AsyncForm className="panel form-grid" onSubmit={submit}>
         <input
           placeholder="Coupon Code"
           value={form.code}
@@ -121,7 +122,7 @@ export default function Coupons() {
         </select>
 
         <button>Create Coupon</button>
-      </form>
+      </AsyncForm>
 
       <div className="panel">
         <h2>All Coupons</h2>

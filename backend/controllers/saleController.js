@@ -81,7 +81,7 @@ exports.createSale = async (req, res) => {
       discount += itemDiscount;
 
       finalProducts.push({
-        productId: product._id, // YE MUST HONA CHAHIYE
+        productId: product._id, // Required: productId must be present
         name: product.name,
         barcode: product.barcode,
         qty,
@@ -267,7 +267,7 @@ exports.deleteSale = async (req, res) => {
       recordNo: sale.invoiceNo,
       title: sale.customerName || "Counter sale",
       deletedBy: user.name,
-      details: `Rs ${Number(sale.grandTotal || 0).toFixed(2)}`,
+      details: `₹${Number(sale.grandTotal || 0).toFixed(2)}`,
     });
 
     res.json({

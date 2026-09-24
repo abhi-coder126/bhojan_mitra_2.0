@@ -67,7 +67,7 @@ const settingSchema = new mongoose.Schema(
       default: "light",
     },
 
-    currencySymbol: { type: String, default: "Rs" },
+    currencySymbol: { type: String, default: "₹" },
     dateFormat: {
       type: String,
       enum: ["DD-MM-YYYY", "MM-DD-YYYY", "YYYY-MM-DD"],

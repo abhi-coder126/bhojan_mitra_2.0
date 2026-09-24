@@ -1,3 +1,5 @@
+import AsyncForm from "../components/AsyncForm";
+import AsyncButton from "../components/AsyncButton";
 import { useEffect, useState } from "react";
 import {
   Store,
@@ -56,7 +58,7 @@ const defaultSettings = {
   lowStockAlertQty: 5,
   expiryAlertDays: 30,
   themeMode: "light",
-  currencySymbol: "Rs",
+  currencySymbol: "₹",
   dateFormat: "DD-MM-YYYY",
   timezone: "Asia/Kolkata",
 
@@ -247,9 +249,9 @@ export default function Settings() {
           <p>Configure store details, invoice policies, payment modes and system preferences</p>
         </div>
 
-        <button onClick={saveSettings} disabled={loading}>
+        <AsyncButton onClick={saveSettings} disabled={loading}>
           {loading ? "Saving..." : "Save Settings"}
-        </button>
+        </AsyncButton>
       </div>
 
       <div className="settings-layout">
@@ -371,7 +373,7 @@ export default function Settings() {
                   value={settings.currencySymbol}
                   onChange={(e) => change("currencySymbol", e.target.value)}
                 >
-                  <option value="Rs">Rs (Rupee)</option>
+                  <option value="₹">₹ (Rupee)</option>
                   <option value="$">$ (Dollar)</option>
                   <option value="€">{"€"} (Euro)</option>
                   <option value="£">{"£"} (Pound)</option>
@@ -563,7 +565,7 @@ export default function Settings() {
               </div>
 
               <h2 className="settings-subhead">Change Password</h2>
-              <form className="settings-form-grid" onSubmit={changePassword}>
+              <AsyncForm className="settings-form-grid" onSubmit={changePassword}>
                 <input
                   type="password"
                   placeholder="Current password"
@@ -585,7 +587,7 @@ export default function Settings() {
                 <button type="submit" disabled={changingPassword} className="settings-password-btn">
                   {changingPassword ? "Updating..." : "Update Password"}
                 </button>
-              </form>
+              </AsyncForm>
             </div>
           )}
 
@@ -599,18 +601,18 @@ export default function Settings() {
               </div>
 
               <div className="cleanup-grid">
-                <button type="button" onClick={() => runCleanup("restaurant")} disabled={loading}>
+                <AsyncButton type="button" onClick={() => runCleanup("restaurant")} disabled={loading}>
                   Delete Restaurant Orders & Invoices
-                </button>
-                <button type="button" onClick={() => runCleanup("pos")} disabled={loading}>
+                </AsyncButton>
+                <AsyncButton type="button" onClick={() => runCleanup("pos")} disabled={loading}>
                   Delete POS Invoices
-                </button>
-                <button type="button" onClick={() => runCleanup("products")} disabled={loading}>
+                </AsyncButton>
+                <AsyncButton type="button" onClick={() => runCleanup("products")} disabled={loading}>
                   Delete All Menu Items
-                </button>
-                <button type="button" className="danger-clear-all" onClick={() => runCleanup("all")} disabled={loading}>
+                </AsyncButton>
+                <AsyncButton type="button" className="danger-clear-all" onClick={() => runCleanup("all")} disabled={loading}>
                   Delete All Testing Data
-                </button>
+                </AsyncButton>
               </div>
             </div>
           )}

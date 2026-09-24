@@ -1,4 +1,6 @@
-import { useEffect, useState } from "react";
+import AsyncForm from "../components/AsyncForm";
+import AsyncButton from "../components/AsyncButton";
+import { useCallback, useEffect, useState } from "react";
 import API from "../api/axios";
 import { ToastViewport, useToast } from "../components/Toast";
 
@@ -17,7 +19,7 @@ export default function SmartInventory() {
   const [recipeProductId, setRecipeProductId] = useState("");
   const [recipeItems, setRecipeItems] = useState([{ rawMaterialId: "", qtyPerUnit: "" }]);
 
-  const fetchAll = async () => {
+  const fetchAll = useCallback(async () => {
     try {
       const [materialsRes, productsRes, recipesRes, foodCostRes, lowStockRes] = await Promise.all([
         API.get("/raw-materials"),
@@ -34,11 +36,11 @@ export default function SmartInventory() {
     } catch (error) {
       showToast(error.response?.data?.message || "Could not load inventory data", "warning");
     }
-  };
+  }, [showToast]);
 
   useEffect(() => {
     fetchAll();
-  }, []);
+  }, [fetchAll]);
 
   const addMaterial = async (e) => {
     e.preventDefault();
@@ -109,7 +111,7 @@ export default function SmartInventory() {
         </div>
       </div>
 
-      <div style={{ display: "flex", gap: "10px", marginBottom: "16px" }}>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: "10px", marginBottom: "16px" }}>
         {[
           ["materials", "Raw Materials"],
           ["recipes", "Recipes"],
@@ -128,7 +130,7 @@ export default function SmartInventory() {
 
       {tab === "materials" && (
         <>
-          <form className="panel form-grid" onSubmit={addMaterial}>
+          <AsyncForm className="panel form-grid" onSubmit={addMaterial}>
             <input placeholder="Material name" value={materialForm.name} onChange={(e) => setMaterialForm({ ...materialForm, name: e.target.value })} required />
             <select value={materialForm.unit} onChange={(e) => setMaterialForm({ ...materialForm, unit: e.target.value })}>
               {units.map((u) => <option key={u} value={u}>{u}</option>)}
@@ -137,7 +139,7 @@ export default function SmartInventory() {
             <input type="number" placeholder="Cost per unit" value={materialForm.costPerUnit} onChange={(e) => setMaterialForm({ ...materialForm, costPerUnit: e.target.value })} />
             <input type="number" placeholder="Low stock threshold" value={materialForm.lowStockThreshold} onChange={(e) => setMaterialForm({ ...materialForm, lowStockThreshold: e.target.value })} />
             <button>Add Raw Material</button>
-          </form>
+          </AsyncForm>
 
           <div className="panel">
             <table>
@@ -153,9 +155,9 @@ export default function SmartInventory() {
                     <td>₹{m.costPerUnit}</td>
                     <td>{m.lowStockThreshold}</td>
                     <td>
-                      <button style={{ fontSize: 11 }} onClick={() => adjustStock(m._id, 1, "add")}>+1</button>{" "}
-                      <button style={{ fontSize: 11 }} onClick={() => adjustStock(m._id, 1, "reduce")}>-1</button>{" "}
-                      <button style={{ fontSize: 11 }} onClick={() => deleteMaterial(m._id)}>Delete</button>
+                      <AsyncButton style={{ fontSize: 11 }} onClick={() => adjustStock(m._id, 1, "add")}>+1</AsyncButton>{" "}
+                      <AsyncButton style={{ fontSize: 11 }} onClick={() => adjustStock(m._id, 1, "reduce")}>-1</AsyncButton>{" "}
+                      <AsyncButton style={{ fontSize: 11 }} onClick={() => deleteMaterial(m._id)}>Delete</AsyncButton>
                     </td>
                   </tr>
                 ))}
@@ -167,7 +169,7 @@ export default function SmartInventory() {
 
       {tab === "recipes" && (
         <>
-          <form className="panel" onSubmit={saveRecipe}>
+          <AsyncForm className="panel" onSubmit={saveRecipe}>
             <select value={recipeProductId} onChange={(e) => setRecipeProductId(e.target.value)} required style={{ marginBottom: 10 }}>
               <option value="">Select menu item</option>
               {products.map((p) => <option key={p._id} value={p._id}>{p.name}</option>)}
@@ -192,7 +194,7 @@ export default function SmartInventory() {
               + Add Ingredient
             </button>{" "}
             <button type="submit">Save Recipe</button>
-          </form>
+          </AsyncForm>
 
           <div className="panel">
             <table>

@@ -1,3 +1,4 @@
+import AsyncButton from "../components/AsyncButton";
 import { useEffect, useMemo, useState } from "react";
 import API from "../api/axios";
 export default function GRNManagement() {
@@ -270,18 +271,18 @@ export default function GRNManagement() {
                                         <td>{new Date(p.createdAt).toLocaleDateString()}</td>
                                         <td>
                                             <div className="grn-action-buttons">
-                                                <button
+                                                <AsyncButton
                                                     className="view-btn"
                                                     onClick={() => viewGRN(p._id, "view")}
                                                 >
                                                     View
-                                                </button>
-                                                <button
+                                                </AsyncButton>
+                                                <AsyncButton
                                                     className="edit-btn"
                                                     onClick={() => viewGRN(p._id, "edit")}
                                                 >
                                                     Edit
-                                                </button>
+                                                </AsyncButton>
                                             </div>
                                         </td>
                                     </tr>
@@ -576,9 +577,9 @@ export default function GRNManagement() {
                             </div>
 
                             {modalMode === "edit" && (
-                                <button className="save-grn-btn" onClick={saveGRNUpdate}>
+                                <AsyncButton className="save-grn-btn" onClick={saveGRNUpdate}>
                                     Save GRN Update
-                                </button>
+                                </AsyncButton>
                             )}
                         </div>
                     </div>

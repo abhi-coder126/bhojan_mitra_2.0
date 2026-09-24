@@ -1,3 +1,5 @@
+import AsyncForm from "../components/AsyncForm";
+import AsyncButton from "../components/AsyncButton";
 import { useEffect, useState } from "react";
 import API from "../api/axios";
 import DeleteConfirmModal from "../components/DeleteConfirmModal";
@@ -59,7 +61,7 @@ export default function Vendors() {
         </div>
       </div>
 
-      <form className="panel form-grid" onSubmit={submit}>
+      <AsyncForm className="panel form-grid" onSubmit={submit}>
         <input placeholder="Vendor Name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
         <PhoneInput placeholder="Mobile number" value={form.phone} onChange={(value) => setForm({ ...form, phone: value })} />
         <input placeholder="Email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
@@ -67,7 +69,7 @@ export default function Vendors() {
         <input placeholder="Address" value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} />
         <input type="number" placeholder="Opening Balance" value={form.openingBalance} onChange={(e) => setForm({ ...form, openingBalance: e.target.value })} />
         <button>Add Vendor</button>
-      </form>
+      </AsyncForm>
 
       <div className="panel">
         <h2>Vendor Dashboard</h2>
@@ -86,7 +88,7 @@ export default function Vendors() {
                 <td>₹{v.pendingAmount}</td>
                 <td>{v.status}</td>
                 <td>
-                  <button onClick={() => openLedger(v)}>Ledger</button>{" "}
+                  <AsyncButton onClick={() => openLedger(v)}>Ledger</AsyncButton>{" "}
                   <button onClick={() => setDeleteTarget(v)}>Delete</button>
                 </td>
               </tr>

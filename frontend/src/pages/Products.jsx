@@ -1,3 +1,4 @@
+import AsyncForm from "../components/AsyncForm";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Eye, Flame, ImagePlus, Leaf, Pencil, Sparkles, Trash2, Upload, Utensils } from "lucide-react";
 import API from "../api/axios";
@@ -317,13 +318,13 @@ export default function Products() {
                         {Number(item.offerPercent || 0) > 0 ? (
                           <>
                             <b className="offer-final-price">
-                              Rs {(Number(item.mrp || item.sellingPrice || 0) * (1 - item.offerPercent / 100)).toFixed(2)}
+                              ₹{(Number(item.mrp || item.sellingPrice || 0) * (1 - item.offerPercent / 100)).toFixed(2)}
                             </b>
-                            <s className="offer-strike-price">Rs {Number(item.mrp || item.sellingPrice || 0).toFixed(2)}</s>
+                            <s className="offer-strike-price">₹{Number(item.mrp || item.sellingPrice || 0).toFixed(2)}</s>
                             <small className="offer-chip">{item.offerPercent}% OFF</small>
                           </>
                         ) : (
-                          <b>MRP Rs {Number(item.mrp || item.sellingPrice || 0).toFixed(2)}</b>
+                          <b>MRP ₹{Number(item.mrp || item.sellingPrice || 0).toFixed(2)}</b>
                         )}
                         {Number(item.gst || 0) > 0 && <small>{item.gst}% GST included</small>}
                         {item.isRecommended && <small className="recommended-chip"><Sparkles size={12} /> Recommended</small>}
@@ -393,11 +394,11 @@ export default function Products() {
                 {selectedItem.itemType === "food" && (
                   <InfoTile label="Spice" value={selectedItem.spiceLevel || "Medium"} />
                 )}
-                <InfoTile label="MRP" value={`Rs ${Number(selectedItem.mrp || selectedItem.sellingPrice || 0).toFixed(2)}`} />
+                <InfoTile label="MRP" value={`₹${Number(selectedItem.mrp || selectedItem.sellingPrice || 0).toFixed(2)}`} />
                 {Number(selectedItem.offerPercent || 0) > 0 && (
                   <InfoTile
                     label="Offer Price"
-                    value={`Rs ${(Number(selectedItem.mrp || selectedItem.sellingPrice || 0) * (1 - selectedItem.offerPercent / 100)).toFixed(2)} (${selectedItem.offerPercent}% off)`}
+                    value={`₹${(Number(selectedItem.mrp || selectedItem.sellingPrice || 0) * (1 - selectedItem.offerPercent / 100)).toFixed(2)} (${selectedItem.offerPercent}% off)`}
                   />
                 )}
                 <InfoTile
@@ -468,7 +469,7 @@ function MenuItemForm({ form, setForm, categories, submit, buttonText }) {
   };
 
   return (
-    <form className="menu-item-form" onSubmit={submit}>
+    <AsyncForm className="menu-item-form" onSubmit={submit}>
       <label className="menu-image-uploader">
         <input
           type="file"
@@ -607,12 +608,12 @@ function MenuItemForm({ form, setForm, categories, submit, buttonText }) {
         />
         {Number(form.offerPercent || 0) > 0 && Number(form.mrp || 0) > 0 && (
           <span className="item-type-hint offer-preview">
-            Customer pays Rs {(Number(form.mrp) * (1 - Number(form.offerPercent) / 100)).toFixed(2)}
+            Customer pays ₹{(Number(form.mrp) * (1 - Number(form.offerPercent) / 100)).toFixed(2)}
           </span>
         )}
       </div>
 
       <button>{buttonText}</button>
-    </form>
+    </AsyncForm>
   );
 }

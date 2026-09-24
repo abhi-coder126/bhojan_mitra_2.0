@@ -1,3 +1,5 @@
+import AsyncForm from "../components/AsyncForm";
+import AsyncButton from "../components/AsyncButton";
 import { useEffect, useState } from "react";
 import API from "../api/axios";
 import PhoneInput from "../components/PhoneInput";
@@ -341,11 +343,11 @@ export default function Purchase() {
       const priceChanges = res.data.priceChanges || [];
       if (priceChanges.length > 0) {
         const summary = priceChanges
-          .map((c) => `${c.name}: Rs ${c.previousPrice} -> Rs ${c.newPrice} (${c.changePercent > 0 ? "+" : ""}${c.changePercent}%)`)
+          .map((c) => `${c.name}: ₹${c.previousPrice} -> ₹${c.newPrice} (${c.changePercent > 0 ? "+" : ""}${c.changePercent}%)`)
           .join("\n");
         alert(`GRN saved. Price change detected:\n${summary}`);
       } else {
-        alert("GRN saved successfully. Stock increase ho gaya.");
+        alert("GRN saved successfully. Stock has been updated.");
       }
 
       setItems([]);
@@ -700,7 +702,7 @@ export default function Purchase() {
 
           <p>Pending Amount: ₹{pendingAmount}</p>
 
-          <button onClick={saveGRN}>Save GRN & Increase Stock</button>
+          <AsyncButton onClick={saveGRN}>Save GRN & Increase Stock</AsyncButton>
         </div>
 
         <div className="panel">
@@ -725,7 +727,7 @@ export default function Purchase() {
                   <td>₹{p.grandTotal}</td>
                   <td>₹{p.pendingAmount}</td>
                   <td>
-                    <button onClick={() => viewGRN(p._id)}>View</button>
+                    <AsyncButton onClick={() => viewGRN(p._id)}>View</AsyncButton>
                   </td>
                 </tr>
               ))}
@@ -742,7 +744,7 @@ export default function Purchase() {
               <button onClick={() => setShowVendorPopup(false)}>X</button>
             </div>
 
-            <form className="form-grid" onSubmit={createVendor}>
+            <AsyncForm className="form-grid" onSubmit={createVendor}>
               <input
                 placeholder="Vendor Name"
                 value={vendorForm.name}
@@ -795,7 +797,7 @@ export default function Purchase() {
               />
 
               <button>Create Vendor</button>
-            </form>
+            </AsyncForm>
           </div>
         </div>
       )}
@@ -808,7 +810,7 @@ export default function Purchase() {
               <button onClick={() => setShowProductPopup(false)}>X</button>
             </div>
 
-            <form className="form-grid" onSubmit={createProduct}>
+            <AsyncForm className="form-grid" onSubmit={createProduct}>
               <input
                 placeholder="Product Name"
                 value={productForm.name}
@@ -923,7 +925,7 @@ export default function Purchase() {
               />
 
               <button>Create Product</button>
-            </form>
+            </AsyncForm>
           </div>
         </div>
       )}
@@ -1021,7 +1023,7 @@ export default function Purchase() {
                 </select>
               </div>
 
-              <button onClick={updateGRNPayment}>Update Payment</button>
+              <AsyncButton onClick={updateGRNPayment}>Update Payment</AsyncButton>
             </div>
           </div>
         </div>

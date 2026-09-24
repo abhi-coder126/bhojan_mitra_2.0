@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from "react";
+import AsyncButton from "../components/AsyncButton";
+import { useCallback, useEffect, useRef, useState } from "react";
 import API from "../api/axios";
 import { ToastViewport, useToast } from "../components/Toast";
 
@@ -11,25 +12,25 @@ const itemStatusColors = {
   SERVED: "#6b7280",
 };
 
-function elapsedMinutes(createdAt) {
-  const diff = Date.now() - new Date(createdAt).getTime();
+function elapsedMinutes(createdAt, now) {
+  const diff = now - new Date(createdAt).getTime();
   return Math.max(Math.floor(diff / 60000), 0);
 }
 
 export default function KDS() {
   const [orders, setOrders] = useState([]);
-  const [now, setNow] = useState(Date.now());
+  const [now, setNow] = useState(() => Date.now());
   const { toast, showToast } = useToast();
   const timerRef = useRef(null);
 
-  const fetchOrders = async () => {
+  const fetchOrders = useCallback(async () => {
     try {
       const res = await API.get("/restaurant-orders/kitchen/live");
       setOrders(res.data.orders || []);
     } catch (error) {
       showToast(error.response?.data?.message || "Could not load kitchen orders", "warning");
     }
-  };
+  }, [showToast]);
 
   useEffect(() => {
     fetchOrders();
@@ -39,7 +40,7 @@ export default function KDS() {
       clearInterval(poll);
       clearInterval(timerRef.current);
     };
-  }, []);
+  }, [fetchOrders]);
 
   const sendKOT = async (order) => {
     try {
@@ -96,9 +97,9 @@ export default function KDS() {
         </div>
       )}
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: "16px" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 300px), 1fr))", gap: "16px" }}>
         {orders.map((order) => {
-          const minutes = elapsedMinutes(order.createdAt);
+          const minutes = elapsedMinutes(order.createdAt, now);
           const urgent = minutes >= 15;
 
           return (
@@ -124,15 +125,15 @@ export default function KDS() {
               </div>
 
               {!order.kotSentAt && (
-                <button style={{ margin: "10px 0", width: "100%" }} onClick={() => sendKOT(order)}>
+                <AsyncButton style={{ margin: "10px 0", width: "100%" }} onClick={() => sendKOT(order)}>
                   Send KOT to Kitchen
-                </button>
+                </AsyncButton>
               )}
 
               {order.kotSentAt && (
                 <div style={{ display: "flex", gap: "6px", margin: "10px 0" }}>
                   {["COOKING", "READY", "SERVED"].map((status) => (
-                    <button
+                    <AsyncButton
                       key={status}
                       style={{
                         flex: 1,
@@ -147,7 +148,7 @@ export default function KDS() {
                       onClick={() => markAllItems(order, status)}
                     >
                       Mark all {status}
-                    </button>
+                    </AsyncButton>
                   ))}
                 </div>
               )}
@@ -167,7 +168,7 @@ export default function KDS() {
                     <span>
                       {item.qty} x {item.name}
                     </span>
-                    <button
+                    <AsyncButton
                       style={{
                         fontSize: "11px",
                         padding: "3px 8px",
@@ -180,7 +181,7 @@ export default function KDS() {
                       onClick={() => advanceItem(order, idx, item.itemStatus)}
                     >
                       {item.itemStatus}
-                    </button>
+                    </AsyncButton>
                   </li>
                 ))}
               </ul>

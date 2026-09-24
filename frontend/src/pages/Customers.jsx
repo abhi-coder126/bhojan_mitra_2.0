@@ -1,3 +1,5 @@
+import AsyncForm from "../components/AsyncForm";
+import AsyncButton from "../components/AsyncButton";
 import { useEffect, useMemo, useState } from "react";
 import API from "../api/axios";
 import DeleteConfirmModal from "../components/DeleteConfirmModal";
@@ -46,7 +48,7 @@ export default function Customers() {
             const res = await API.patch(`/customers/${selectedCustomer._id}/redeem-points`, { points });
             setSelectedCustomer(res.data.customer);
             setRedeemPoints("");
-            alert(`Redeemed ${points} points (Rs ${res.data.discountValue} value)`);
+            alert(`Redeemed ${points} points (₹${res.data.discountValue} value)`);
             fetchCustomers();
         } catch (error) {
             alert(error.response?.data?.message || "Redeem failed");
@@ -290,9 +292,9 @@ export default function Customers() {
                                     <td>{c.address || "N/A"}</td>
                                     <td>{formatDate(c.activeFrom)}</td>
                                     <td>
-                                        <button className="customer-info-btn" onClick={() => openInfo(c)}>
+                                        <AsyncButton className="customer-info-btn" onClick={() => openInfo(c)}>
                                             i
-                                        </button>
+                                        </AsyncButton>
                                     </td>
                                     <td>
                                         <button className="customer-edit-btn" onClick={() => openEdit(c)}>
@@ -374,7 +376,7 @@ export default function Customers() {
                                 onChange={(e) => setRedeemPoints(e.target.value)}
                                 style={{ maxWidth: 160 }}
                             />
-                            <button onClick={submitRedeem}>Redeem Points</button>
+                            <AsyncButton onClick={submitRedeem}>Redeem Points</AsyncButton>
                             <button
                                 className="delete-customer-btn"
                                 onClick={() => setDeleteTarget(selectedCustomer)}
@@ -446,7 +448,7 @@ function CustomerModal({ title, close, children }) {
 
 function CustomerForm({ form, setForm, submit, buttonText }) {
     return (
-        <form className="customer-form-grid" onSubmit={submit}>
+        <AsyncForm className="customer-form-grid" onSubmit={submit}>
             <input
                 placeholder="Customer Name *"
                 value={form.name}
@@ -484,7 +486,7 @@ function CustomerForm({ form, setForm, submit, buttonText }) {
             </div>
 
             <button>{buttonText}</button>
-        </form>
+        </AsyncForm>
     );
 }
 

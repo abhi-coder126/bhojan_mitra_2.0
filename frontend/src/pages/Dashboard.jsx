@@ -2,11 +2,11 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Area,
-  AreaChart,
   Bar,
   BarChart,
   CartesianGrid,
   Cell,
+  ComposedChart,
   Line,
   LineChart,
   Pie,
@@ -50,10 +50,16 @@ const tooltipCursor = { fill: "rgba(148,163,184,0.12)" };
 const axisTick = { fontSize: 11, fontWeight: 600, fill: "#94a3b8" };
 const gridStroke = "#eef2f7";
 
+const resultColor = (value, maximum) => {
+  if (value <= 0) return "#94a3b8";
+  const ratio = maximum > 0 ? value / maximum : 0;
+  return ratio >= 2 / 3 ? "#059669" : ratio >= 1 / 3 ? "#d97706" : "#e11d48";
+};
+
 const formatDateInput = (date) => date.toISOString().slice(0, 10);
 
 const money = (value) =>
-  `Rs ${Number(value || 0).toLocaleString("en-IN", {
+  `₹${Number(value || 0).toLocaleString("en-IN", {
     maximumFractionDigits: 2,
   })}`;
 
@@ -426,14 +432,13 @@ export default function Dashboard() {
       });
     });
 
-    const rows = Array.from(map.values()).sort((a, b) => b.revenue - a.revenue);
-    const grandRevenue = rows.reduce((sum, row) => sum + row.revenue, 0);
+    const rows = Array.from(map.values()).sort((a, b) => b.orders - a.orders);
 
     return {
       rows: rows.map((row, index) => ({
         ...row,
         color: categoryColors[index % categoryColors.length],
-        share: grandRevenue ? (row.revenue / grandRevenue) * 100 : 0,
+        share: totalOrders ? (row.orders / totalOrders) * 100 : 0,
       })),
       totalOrders,
     };
@@ -647,6 +652,7 @@ export default function Dashboard() {
                   key={value}
                   type="button"
                   className={trendPeriod === value ? "active" : ""}
+                  aria-pressed={trendPeriod === value}
                   onClick={() => setTrendPeriod(value)}
                 >
                   {label}
@@ -655,11 +661,15 @@ export default function Dashboard() {
             </div>
           </div>
 
+          <div className="dashboard-trend-legend">
+            <span><i style={{ backgroundColor: "#e11d48" }} />Revenue (₹)</span>
+            <span><i style={{ backgroundColor: "#0d9488" }} />Orders</span>
+          </div>
           {revenueTrend.length === 0 ? (
             <p>No trend data</p>
           ) : (
             <ResponsiveContainer width="100%" height={260}>
-              <AreaChart data={revenueTrend}>
+              <ComposedChart data={revenueTrend} margin={{ top: 10, right: 0, bottom: 0, left: 0 }}>
                 <defs>
                   <linearGradient id="revenueFill" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="0%" stopColor="#e11d48" stopOpacity={0.3} />
@@ -667,9 +677,9 @@ export default function Dashboard() {
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} vertical={false} />
-                <XAxis dataKey="name" tick={axisTick} axisLine={{ stroke: "#e2e8f0" }} tickLine={false} />
-                <YAxis yAxisId="revenue" tick={axisTick} axisLine={false} tickLine={false} />
-                <YAxis yAxisId="orders" orientation="right" tick={axisTick} axisLine={false} tickLine={false} />
+                <XAxis dataKey="name" tick={axisTick} minTickGap={24} axisLine={{ stroke: "#e2e8f0" }} tickLine={false} />
+                <YAxis yAxisId="revenue" width={46} tick={axisTick} axisLine={false} tickLine={false} />
+                <YAxis yAxisId="orders" width={30} orientation="right" allowDecimals={false} tick={axisTick} axisLine={false} tickLine={false} />
                 <Tooltip
                   formatter={(value, name) => (name === "revenue" ? money(value) : value)}
                   contentStyle={tooltipContentStyle}
@@ -692,7 +702,7 @@ export default function Dashboard() {
                   strokeWidth={2.5}
                   dot={false}
                 />
-              </AreaChart>
+              </ComposedChart>
             </ResponsiveContainer>
           )}
 
@@ -727,14 +737,14 @@ export default function Dashboard() {
           ) : (
             <>
               <div className="dashboard-category-donut">
-                <ResponsiveContainer width="100%" height={190}>
+                <ResponsiveContainer width="100%" height={220}>
                   <PieChart>
                     <Pie
                       data={categoryBreakdown.rows}
                       dataKey="orders"
                       nameKey="name"
-                      innerRadius={58}
-                      outerRadius={86}
+                      innerRadius="62%"
+                      outerRadius="88%"
                       paddingAngle={2}
                     >
                       {categoryBreakdown.rows.map((row) => (
@@ -751,7 +761,7 @@ export default function Dashboard() {
               </div>
 
               <div className="dashboard-category-legend">
-                {categoryBreakdown.rows.slice(0, 5).map((row) => (
+                {categoryBreakdown.rows.map((row) => (
                   <span key={row.name}>
                     <i style={{ backgroundColor: row.color }} />
                     {row.name}
@@ -866,32 +876,19 @@ export default function Dashboard() {
 
       <div className="dashboard-charts-grid restaurant-chart-grid">
         <ChartBox title="Peak Hours">
-          <BarPanel data={peakHours} dataKey="orders" color="#e11d48" empty="No peak hour data" />
+          <ItemRanking items={peakHours.map((row) => ({ name: row.name, qty: row.orders }))} caption="Orders by hour" period="Selected range" unit="orders" />
         </ChartBox>
 
         <ChartBox title="Peak Days">
-          <BarPanel data={peakDays} dataKey="sale" color="#0d9488" moneyTooltip empty="No peak day data" />
+          <ItemRanking items={peakDays.map((row) => ({ name: row.name, qty: row.sale }))} moneyValue caption="Sales by day" period="Selected range" />
         </ChartBox>
 
         <ChartBox title="Top Best Item Sale">
-          <BarPanel data={topItems} dataKey="amount" color="#2563eb" moneyTooltip empty="No item sale yet" />
+          <ItemRanking items={topItems.map((row) => ({ name: row.name, qty: row.amount }))} moneyValue caption="Revenue by item" period="Selected range" />
         </ChartBox>
 
         <ChartBox title="Payment Section">
-          {paymentData.length === 0 ? (
-            <p>No payment data</p>
-          ) : (
-            <ResponsiveContainer width="100%" height={290}>
-              <PieChart>
-                <Pie data={paymentData} dataKey="amount" nameKey="name" outerRadius={92} innerRadius={48} paddingAngle={2}>
-                  {paymentData.map((_, index) => (
-                    <Cell key={index} fill={chartColors[index % chartColors.length]} stroke="#fff" strokeWidth={2} />
-                  ))}
-                </Pie>
-                <Tooltip formatter={(value) => money(value)} contentStyle={tooltipContentStyle} labelStyle={tooltipLabelStyle} />
-              </PieChart>
-            </ResponsiveContainer>
-          )}
+          <PaymentChart data={paymentData} />
         </ChartBox>
       </div>
 
@@ -914,75 +911,70 @@ export default function Dashboard() {
         />
         <Breakdown
           title="Payment Section"
-          rows={paymentData.length ? paymentData.map((entry) => [entry.name, money(entry.amount)]) : [["No payment", "Rs 0"]]}
+          rows={paymentData.length ? paymentData.map((entry) => [entry.name, money(entry.amount)]) : [["No payment", "₹0"]]}
         />
       </div>
 
       <div className="dashboard-chart-box restaurant-wide-chart">
         <h2>Total Sale & Total Order - Last 20 Days</h2>
+        <ResultLegend />
+        <div className="dashboard-daily-chart-scroll" role="region" aria-label="Sales and orders for every date in the last 20 days" tabIndex={0}>
+        <div className="dashboard-daily-chart-inner">
         <ResponsiveContainer width="100%" height={330}>
-          <BarChart data={last20Days} barGap={4} margin={{ bottom: 24 }}>
+          <ComposedChart data={last20Days} margin={{ top: 12, right: 4, bottom: 8, left: 0 }}>
             <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} vertical={false} />
             <XAxis
               dataKey="name"
               tick={{ ...axisTick, fontSize: 10.5 }}
               axisLine={{ stroke: "#e2e8f0" }}
               tickLine={false}
-              angle={-35}
+              angle={-40}
               textAnchor="end"
-              height={56}
-              interval="preserveStartEnd"
+              height={52}
+              interval={0}
             />
-            <YAxis tick={axisTick} axisLine={false} tickLine={false} />
+            <YAxis yAxisId="sales" width={48} tick={axisTick} axisLine={false} tickLine={false} />
+            <YAxis yAxisId="orders" width={32} orientation="right" allowDecimals={false} tick={axisTick} axisLine={false} tickLine={false} />
             <Tooltip
-              formatter={(value, name) => (name === "sale" ? money(value) : value)}
+              formatter={(value, name) => [name === "sale" ? money(value) : value, name === "sale" ? "Sales" : "Orders"]}
               contentStyle={tooltipContentStyle}
               labelStyle={tooltipLabelStyle}
               cursor={tooltipCursor}
             />
-            <Bar dataKey="sale" fill="#e11d48" radius={[6, 6, 0, 0]} maxBarSize={22} />
-            <Bar dataKey="orders" fill="#0d9488" radius={[6, 6, 0, 0]} maxBarSize={22} />
-          </BarChart>
+            <Bar yAxisId="sales" dataKey="sale" radius={[6, 6, 0, 0]} maxBarSize={30}>
+              {last20Days.map((day) => <Cell key={day.name} fill={resultColor(day.sale, Math.max(...last20Days.map((row) => row.sale)))} />)}
+            </Bar>
+            <Line yAxisId="orders" dataKey="orders" type="linear" stroke="#2563eb" strokeWidth={2.5} dot={{ r: 3 }} activeDot={{ r: 5 }} />
+          </ComposedChart>
         </ResponsiveContainer>
+        </div>
+        </div>
       </div>
 
       <div className="dashboard-charts-grid restaurant-chart-grid">
         <ChartBox title="Hourly Sales (This Month)">
-          <BarPanel
-            data={analytics.hourlyBreakdown.map((h) => ({ name: `${h.hour}:00`, amount: h.amount }))}
-            dataKey="amount"
-            color="#e11d48"
-            moneyTooltip
-            empty="No hourly data"
+          <ItemRanking
+            items={[...analytics.hourlyBreakdown].sort((a, b) => a.hour - b.hour).map((h) => ({ name: `${String(h.hour).padStart(2, "0")}:00`, qty: h.amount }))}
+            moneyValue
+            preserveOrder
+            caption="Sales by hour"
           />
         </ChartBox>
 
         <ChartBox title="Table Performance (This Month)">
-          <BarPanel
-            data={analytics.tablePerformance.map((t) => ({ name: `Table ${t.tableNo}`, revenue: t.revenue }))}
-            dataKey="revenue"
-            color="#0d9488"
-            moneyTooltip
-            empty="No table data"
+          <ItemRanking
+            items={analytics.tablePerformance.map((t) => ({ name: `Table ${t.tableNo}`, qty: t.revenue }))}
+            moneyValue
+            caption="Revenue by table"
           />
         </ChartBox>
 
         <ChartBox title="Top Selling Items">
-          <BarPanel
-            data={analytics.topSelling.map((i) => ({ name: i.name, qty: i.qty }))}
-            dataKey="qty"
-            color="#2563eb"
-            empty="No item data"
-          />
+          <ItemRanking items={analytics.topSelling} />
         </ChartBox>
 
         <ChartBox title="Least Selling Items">
-          <BarPanel
-            data={analytics.leastSelling.map((i) => ({ name: i.name, qty: i.qty }))}
-            dataKey="qty"
-            color="#f59e0b"
-            empty="No item data"
-          />
+          <ItemRanking items={analytics.leastSelling} ascending />
         </ChartBox>
       </div>
 
@@ -1076,35 +1068,119 @@ function ChartBox({ title, children }) {
   );
 }
 
-function BarPanel({ data, dataKey, color, moneyTooltip = false, empty }) {
-  if (!data.length) return <p>{empty}</p>;
+function ResultLegend() {
+  return (
+    <div className="result-legend">
+      <div className="dashboard-trend-legend">
+        <span><i style={{ backgroundColor: "#059669" }} />High</span>
+        <span><i style={{ backgroundColor: "#d97706" }} />Medium</span>
+        <span><i style={{ backgroundColor: "#e11d48" }} />Low</span>
+        <span><i style={{ backgroundColor: "#94a3b8" }} />No sales</span>
+      </div>
+    </div>
+  );
+}
 
-  const rotate = data.length > 4;
+function ItemRanking({ items, ascending = false, moneyValue = false, preserveOrder = false, caption, period = "This month", unit = "sold" }) {
+  const [activeItem, setActiveItem] = useState(null);
+  const rows = items
+    .map((item) => ({ ...item, qty: Math.max(0, Number(item.qty) || 0) }))
+    .sort((a, b) => preserveOrder ? 0 : ascending ? a.qty - b.qty : b.qty - a.qty);
+  const maximum = Math.max(0, ...rows.map((item) => item.qty));
+  const formatValue = (value) => moneyValue ? money(value) : `${value.toLocaleString("en-IN")} ${unit}`;
+
+  if (!rows.length) {
+    return <p className="item-ranking-empty">No sales data yet. Item rankings will appear here after a sale.</p>;
+  }
 
   return (
-    <ResponsiveContainer width="100%" height={290}>
-      <BarChart data={data} margin={{ bottom: rotate ? 28 : 0 }}>
-        <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} vertical={false} />
-        <XAxis
-          dataKey="name"
-          tick={{ ...axisTick, fontSize: 10.5 }}
-          axisLine={{ stroke: "#e2e8f0" }}
-          tickLine={false}
-          angle={rotate ? -35 : 0}
-          textAnchor={rotate ? "end" : "middle"}
-          height={rotate ? 60 : 30}
-          interval="preserveStartEnd"
-        />
-        <YAxis tick={axisTick} axisLine={false} tickLine={false} />
-        <Tooltip
-          formatter={(value) => (moneyTooltip ? money(value) : value)}
-          contentStyle={tooltipContentStyle}
-          labelStyle={tooltipLabelStyle}
-          cursor={tooltipCursor}
-        />
-        <Bar dataKey={dataKey} fill={color} radius={[6, 6, 0, 0]} maxBarSize={40} />
-      </BarChart>
-    </ResponsiveContainer>
+    <div className="item-ranking">
+      <div className="item-ranking-caption">
+        <span>{caption || (ascending ? "Lowest quantity sold" : "Highest quantity sold")}</span>
+        <span>{period}</span>
+      </div>
+      <ResultLegend />
+      <div className="item-chart" onMouseLeave={() => setActiveItem(null)}>
+        <div className="item-chart-detail" aria-live="polite">
+          {activeItem ? (
+            <><strong>{activeItem.name}</strong><span>{formatValue(activeItem.qty)}</span></>
+          ) : <span>Hover or tap a bar to view the item</span>}
+        </div>
+        <ResponsiveContainer width="100%" height={260}>
+          <BarChart data={rows} margin={{ top: 12, right: 8, bottom: 8, left: 0 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} vertical={false} />
+            <XAxis dataKey="name" tick={false} tickLine={false} axisLine={{ stroke: "#e2e8f0" }} height={8} />
+            <YAxis width={moneyValue ? 52 : 36} allowDecimals={false} tick={axisTick} axisLine={false} tickLine={false} />
+            <Bar
+              dataKey="qty"
+              maxBarSize={44}
+              isAnimationActive={false}
+              shape={({ x, y, width, height, payload }) => (
+                <rect
+                  x={x} y={y} width={width} height={Math.max(3, height)} rx={6}
+                  fill={resultColor(payload.qty, maximum)}
+                  opacity={!activeItem || activeItem.name === payload.name ? 1 : 0.35}
+                  tabIndex={0}
+                  role="button"
+                  aria-label={`${payload.name}: ${formatValue(payload.qty)}`}
+                  style={{ cursor: "pointer", transition: "opacity 150ms" }}
+                  onMouseEnter={() => setActiveItem(payload)}
+                  onClick={() => setActiveItem(payload)}
+                  onFocus={() => setActiveItem(payload)}
+                  onBlur={() => setActiveItem(null)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      setActiveItem(payload);
+                    } else if (event.key === "Escape") setActiveItem(null);
+                  }}
+                />
+              )}
+            />
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+    </div>
+  );
+}
+
+function PaymentChart({ data }) {
+  const [selected, setSelected] = useState(null);
+  const total = data.reduce((sum, row) => sum + row.amount, 0);
+  const active = data.find((row) => row.name === selected);
+  const colors = { Cash: "#059669", UPI: "#2563eb", Card: "#7c3aed" };
+  if (!total) return <p className="item-ranking-empty">No payments in this range.</p>;
+
+  return (
+    <div>
+      <div className="item-ranking-caption"><span>Payment breakdown</span><span>Selected range</span></div>
+      <div className="dashboard-category-donut" onMouseLeave={() => setSelected(null)}>
+        <ResponsiveContainer width="100%" height={240}>
+          <PieChart>
+            <Pie data={data} dataKey="amount" nameKey="name" innerRadius="66%" outerRadius="90%" paddingAngle={data.length > 1 ? 3 : 0}
+              onMouseEnter={(entry) => setSelected(entry.name)} onClick={(entry) => setSelected(entry.name)}>
+              {data.map((entry) => <Cell key={entry.name} fill={colors[entry.name]} stroke="#fff" strokeWidth={2} opacity={!selected || selected === entry.name ? 1 : 0.35} />)}
+            </Pie>
+          </PieChart>
+        </ResponsiveContainer>
+        <div className="dashboard-category-donut-center">
+          <span>{active?.name || "Total received"}</span>
+          <b>{money(active?.amount ?? total)}</b>
+          {active && <span>{((active.amount / total) * 100).toFixed(1)}%</span>}
+        </div>
+      </div>
+      <div className="payment-chart-legend">
+        {data.map((entry) => (
+          <button key={entry.name} type="button" aria-pressed={selected === entry.name}
+            onMouseEnter={() => setSelected(entry.name)} onMouseLeave={() => setSelected(null)}
+            onFocus={() => setSelected(entry.name)} onBlur={() => setSelected(null)} onClick={() => setSelected(entry.name)}>
+            <i style={{ backgroundColor: colors[entry.name] }} />
+            <span>{entry.name}</span><strong>{money(entry.amount)}</strong>
+            <small>{((entry.amount / total) * 100).toFixed(1)}%</small>
+          </button>
+        ))}
+      </div>
+    </div>
   );
 }
 

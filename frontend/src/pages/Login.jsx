@@ -1,3 +1,4 @@
+import AsyncForm from "../components/AsyncForm";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Eye, EyeOff, LockKeyhole, Mail, ShieldCheck, Store, Utensils } from "lucide-react";
@@ -36,13 +37,13 @@ export default function Login() {
         setLoginNotice({
           image: "/404.svg",
           title: "Server is not running",
-          message: "Backend server se connection nahi ho pa raha. Server start karke dobara login karein.",
+          message: "Unable to connect to the backend server. Please start the server and try logging in again.",
         });
       } else {
         setLoginNotice({
           image: "/failed.svg",
           title: "Login failed",
-          message: "Email ya password check karke dobara try karein.",
+          message: "Please verify your email and password, then try again.",
         });
       }
     } finally {
@@ -77,7 +78,7 @@ export default function Login() {
         </div>
       </section>
 
-      <form className="login-card" onSubmit={login}>
+      <AsyncForm className="login-card" onSubmit={login}>
         <div className="login-card-head">
           <img src="/BhojanMitra_Logo.png" alt="BhojanMitra" />
           <span>Welcome back</span>
@@ -152,7 +153,7 @@ export default function Login() {
           <ShieldCheck size={16} />
           Protected access for billing and reports
         </p>
-      </form>
+      </AsyncForm>
     </div>
   );
 }

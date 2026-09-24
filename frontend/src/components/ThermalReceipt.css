@@ -1,0 +1,261 @@
+/* Thermal receipt styles for the Tax Invoice and the KOT slip. */
+
+.receipt-print-root {
+  display: none;
+}
+
+.receipt-sheet {
+  box-sizing: border-box;
+  margin: 0 auto;
+  background: #ffffff;
+  color: #111111;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 13px;
+  line-height: 1.35;
+  padding: 14px 12px;
+  text-align: left;
+}
+
+.receipt-sheet * {
+  box-sizing: border-box;
+}
+
+.receipt-80 {
+  width: 302px;
+  max-width: 100%;
+}
+
+.receipt-58 {
+  width: 220px;
+  max-width: 100%;
+  font-size: 11px;
+}
+
+.receipt-a4 {
+  width: 100%;
+  max-width: 640px;
+  font-size: 14px;
+}
+
+.receipt-center {
+  text-align: center;
+}
+
+.receipt-store {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.receipt-store.small {
+  font-size: 14px;
+  font-weight: 700;
+  margin-top: 2px;
+}
+
+.receipt-small {
+  font-size: 11px;
+  color: #333333;
+}
+
+.receipt-title {
+  margin: 2px 0 6px;
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+}
+
+.receipt-title.kot {
+  font-size: 28px;
+  letter-spacing: 3px;
+  margin-top: 4px;
+}
+
+.receipt-line {
+  height: 0;
+  margin: 5px 0;
+  border: 0;
+}
+
+.receipt-line.solid {
+  border-top: 1.5px solid #111111;
+}
+
+.receipt-line.dashed {
+  border-top: 1px dashed #555555;
+}
+
+.receipt-name {
+  font-size: 14px;
+}
+
+.receipt-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.receipt-row > span:last-child {
+  margin-left: auto;
+  text-align: right;
+}
+
+.receipt-row.strong {
+  font-size: 17px;
+  font-weight: 800;
+}
+
+.receipt-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 26px 62px 62px;
+  gap: 4px;
+  align-items: start;
+  padding: 2px 0;
+}
+
+.receipt-grid.head {
+  font-weight: 700;
+}
+
+.receipt-grid .num {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.receipt-grid .item-name {
+  overflow-wrap: anywhere;
+}
+
+.receipt-thanks {
+  margin: 8px 0 4px;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.receipt-powered {
+  margin-top: 4px;
+  font-size: 11px;
+  font-weight: 400;
+  color: #333333;
+}
+
+.receipt-kot-head,
+.receipt-kot-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 40px;
+  gap: 8px;
+  align-items: start;
+}
+
+.receipt-kot-head {
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.receipt-kot-head span:last-child,
+.receipt-kot-row .kot-qty {
+  text-align: right;
+}
+
+.receipt-kot-row {
+  padding: 3px 0;
+  font-size: 14px;
+}
+
+.receipt-kot-row .kot-item {
+  display: flex;
+  gap: 5px;
+}
+
+.receipt-kot-row .kot-index {
+  flex: 0 0 auto;
+}
+
+.receipt-kot-row .kot-item span:last-child {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.receipt-kot-row .kot-qty {
+  font-weight: 800;
+  font-size: 15px;
+}
+
+.receipt-kot-note {
+  margin-top: 6px;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+.receipt-kot-total {
+  text-align: right;
+  font-size: 13px;
+}
+
+/* Modal wrapper used to preview a receipt before printing. */
+.receipt-modal-body {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 8px 0;
+  max-height: 70vh;
+  overflow-y: auto;
+  background: #f1f5f9;
+  border-radius: 12px;
+}
+
+.receipt-modal-body .receipt-sheet {
+  flex: 0 0 auto;
+  height: auto;
+  min-height: min-content;
+  margin: 0;
+  box-shadow: 0 2px 12px rgba(15, 23, 42, 0.15);
+}
+
+@media print {
+  html:has(.receipt-print-root),
+  html:has(.receipt-print-root) body {
+    width: auto !important;
+    min-height: 0 !important;
+    background: #ffffff !important;
+    overflow: visible !important;
+  }
+
+  body:has(.receipt-print-root) > *:not(.receipt-print-root) {
+    display: none !important;
+  }
+
+  body > .receipt-print-root {
+    display: block !important;
+    visibility: visible !important;
+    position: static !important;
+    width: 100% !important;
+  }
+
+  body > .receipt-print-root * {
+    visibility: visible !important;
+  }
+
+  body > .receipt-print-root .receipt-sheet {
+    margin: 0 auto !important;
+    box-shadow: none !important;
+    padding: 4mm 3mm !important;
+    color: #000000 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  body > .receipt-print-root .receipt-80 {
+    width: 80mm !important;
+  }
+
+  body > .receipt-print-root .receipt-58 {
+    width: 58mm !important;
+  }
+
+  body > .receipt-print-root .receipt-grid,
+  body > .receipt-print-root .receipt-kot-row {
+    page-break-inside: avoid;
+  }
+}

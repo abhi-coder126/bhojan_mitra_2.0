@@ -2,6 +2,14 @@
 @tailwind components;
 @tailwind utilities;
 
+@keyframes action-spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .action-spinner { animation: none !important; }
+}
+
 @layer base {
   * {
     @apply box-border;
@@ -34,7 +42,12 @@
   }
 
   button {
-    @apply cursor-pointer rounded-xl border-0 bg-brand px-4 py-3 font-bold text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50;
+    @apply touch-manipulation cursor-pointer rounded-xl border-0 bg-red-600 px-4 py-3 font-bold text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  button:focus-visible,
+  a:focus-visible {
+    @apply outline outline-2 outline-offset-2 outline-red-700;
   }
 
   table {
@@ -56,6 +69,35 @@
 }
 
 @layer components {
+  .async-form-fields {
+    display: contents;
+  }
+
+  .async-form-status,
+  .async-form-error {
+    @apply col-span-full rounded-lg px-3 py-2 text-sm;
+  }
+
+  .async-form-status {
+    @apply bg-slate-50 text-slate-700;
+  }
+
+  .async-form-error {
+    @apply bg-red-50 text-red-800;
+  }
+
+  .action-spinner {
+    display: inline-block;
+    width: 0.85em;
+    height: 0.85em;
+    margin-right: 0.4em;
+    border: 2px solid currentColor;
+    border-right-color: transparent;
+    border-radius: 50%;
+    vertical-align: middle;
+    animation: action-spin 0.7s linear infinite;
+  }
+
   .app-layout {
     @apply flex min-h-screen bg-app-bg;
   }
@@ -105,7 +147,7 @@
   }
 
   .delete-confirm-modal {
-    @apply relative grid w-[min(440px,94vw)] gap-4 rounded-2xl bg-white p-6 text-center shadow-[0_28px_90px_rgba(15,23,42,0.32)];
+    @apply relative grid max-h-[90dvh] w-[min(440px,94vw)] max-w-full gap-4 overflow-y-auto rounded-2xl bg-white p-6 text-center shadow-[0_28px_90px_rgba(15,23,42,0.32)];
   }
 
   .delete-confirm-close {
@@ -157,7 +199,7 @@
   }
 
   .confirm-action-modal {
-    @apply relative grid w-[min(420px,94vw)] gap-4 rounded-2xl bg-white p-6 text-center shadow-[0_28px_90px_rgba(15,23,42,0.3)];
+    @apply relative grid max-h-[90dvh] w-[min(420px,94vw)] max-w-full gap-4 overflow-y-auto rounded-2xl bg-white p-6 text-center shadow-[0_28px_90px_rgba(15,23,42,0.3)];
   }
 
   .confirm-action-close {
@@ -449,7 +491,7 @@
 
   .two-grid,
   .grn-layout {
-    @apply grid grid-cols-2 gap-4;
+    @apply grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-4;
   }
 
   .search-line,
@@ -752,7 +794,7 @@
   .customer-pagination,
   .customer-info-actions,
   .grn-pagination {
-    @apply mt-5 flex items-center justify-end gap-3.5;
+    @apply mt-5 flex flex-wrap items-center justify-end gap-3.5;
   }
 
   .settings-grid {
@@ -937,7 +979,7 @@
 
   /* Main analytics grid (trend + category, dishes + status) */
   .dashboard-main-grid {
-    @apply mb-4 grid grid-cols-[1.6fr_1fr] gap-3.5;
+    @apply mb-4 grid grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)] gap-3.5;
   }
 
   .dashboard-trend-head {
@@ -945,19 +987,20 @@
   }
 
   .dashboard-trend-tabs {
-    @apply flex gap-1 rounded-lg border border-slate-200 bg-slate-50 p-1;
+    @apply grid w-full max-w-[320px] grid-cols-3 gap-1 rounded-xl border border-slate-200 bg-slate-50 p-1;
   }
 
   .dashboard-trend-tabs button {
-    @apply rounded-md px-3 py-1.5 text-xs font-semibold text-slate-500 hover:bg-white hover:text-slate-800;
+    @apply min-h-10 rounded-lg bg-transparent px-2 py-2 text-xs font-semibold text-slate-700 transition-colors hover:bg-red-50 hover:text-red-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-700;
   }
 
   .dashboard-trend-tabs button.active {
-    @apply bg-white text-[#84091e] shadow-none ring-1 ring-slate-200;
+    @apply bg-red-700 text-white shadow-sm hover:bg-red-800 hover:text-white;
   }
 
   .dashboard-trend-strip {
-    @apply mt-3 grid grid-cols-4 gap-2.5 border-t border-slate-100 pt-3;
+    @apply mt-3 grid gap-2.5 border-t border-slate-100 pt-3;
+    grid-template-columns: repeat(auto-fit, minmax(125px, 1fr));
   }
 
   .dashboard-trend-strip div {
@@ -977,11 +1020,11 @@
   }
 
   .dashboard-category-donut {
-    @apply relative;
+    @apply relative mx-auto w-full max-w-[280px];
   }
 
   .dashboard-category-donut-center {
-    @apply pointer-events-none absolute inset-0 grid place-items-center;
+    @apply pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-1;
   }
 
   .dashboard-category-donut-center b {
@@ -989,7 +1032,7 @@
   }
 
   .dashboard-category-donut-center span {
-    @apply block text-center text-[10px] font-black uppercase tracking-[0.05em] text-slate-400;
+    @apply block text-center text-[10px] font-bold uppercase tracking-[0.05em] text-slate-600;
   }
 
   .dashboard-category-legend {
@@ -1320,7 +1363,7 @@
   }
 
   .pos-topbar > button:first-child {
-    @apply w-fit !bg-[#84091e] hover:!bg-[#6b0718];
+    @apply w-fit !bg-[#84091e] !text-white hover:!bg-[#6b0718];
   }
 
   .pos-title-block {
@@ -1516,7 +1559,7 @@
   }
 
   .pos-last-invoice button + button {
-    @apply !bg-[#84091e];
+    @apply !bg-[#84091e] !text-white;
   }
 
   .pos-bottom-payment {
@@ -1710,7 +1753,11 @@
   }
 
   .grn-table-wrap {
-    @apply overflow-hidden rounded-[22px] border border-gray-200 bg-white;
+    @apply max-w-full overflow-x-auto rounded-[22px] border border-gray-200 bg-white;
+  }
+
+  .grn-table {
+    @apply min-w-[760px];
   }
 
   .grn-table thead th {
@@ -2055,7 +2102,7 @@
   }
 
   .pos-toast.error {
-    @apply !bg-red-600;
+    @apply !bg-red-600 !text-white;
   }
 
   .pos-toast.warning {
@@ -3127,16 +3174,38 @@
     @apply !bg-emerald-600 !text-white hover:!bg-emerald-700;
   }
 
-  .captain-order-modal {
-    @apply w-[min(960px,96vw)];
+  .modal-card.large.captain-order-modal {
+    @apply w-[min(960px,96vw)] max-w-full overflow-y-auto p-0;
+    max-height: calc(100dvh - 32px);
+  }
+
+  .captain-order-modal .product-modal-head {
+    @apply sticky top-0 z-10 gap-3;
+  }
+
+  .captain-order-modal .product-modal-head button {
+    @apply grid h-11 w-11 shrink-0 place-items-center;
+  }
+
+  .captain-order-modal button {
+    @apply touch-manipulation transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-700;
+  }
+
+  .captain-order-modal button:disabled {
+    @apply cursor-not-allowed;
+  }
+
+  .captain-order-modal input,
+  .captain-order-modal select {
+    @apply min-w-0 w-full;
   }
 
   .captain-order-body {
-    @apply grid grid-cols-1 gap-4 p-5 lg:grid-cols-[1fr_300px];
+    @apply grid grid-cols-1 gap-4 p-3 sm:p-5 lg:grid-cols-[minmax(0,1fr)_300px];
   }
 
   .captain-order-left {
-    @apply grid content-start gap-3;
+    @apply grid min-w-0 content-start gap-3;
   }
 
   .captain-order-toggle {
@@ -3144,11 +3213,11 @@
   }
 
   .captain-order-toggle button {
-    @apply inline-flex h-11 items-center justify-center rounded-xl bg-slate-100 text-sm font-black text-slate-600;
+    @apply inline-flex min-h-11 items-center justify-center rounded-xl bg-slate-100 px-2 py-2 text-sm font-black text-slate-600 hover:bg-slate-200;
   }
 
   .captain-order-toggle button.active {
-    @apply bg-slate-900 text-white;
+    @apply bg-slate-900 text-white hover:bg-slate-800;
   }
 
   .captain-order-toggle button {
@@ -3164,7 +3233,7 @@
   }
 
   .captain-order-table-select {
-    @apply grid gap-1.5;
+    @apply grid min-w-0 gap-1.5;
   }
 
   .captain-order-table-select span {
@@ -3185,7 +3254,19 @@
   }
 
   .captain-order-item-row {
-    @apply grid grid-cols-[40px_1fr_auto] items-center gap-3 rounded-xl bg-white p-2.5 shadow-sm transition;
+    @apply grid grid-cols-[40px_minmax(0,1fr)] items-center gap-3 rounded-xl bg-white p-2.5 shadow-sm transition sm:grid-cols-[40px_minmax(0,1fr)_auto];
+  }
+
+  .captain-order-item-row .menu-add-control {
+    @apply col-span-full h-auto min-h-11 justify-end sm:col-span-1;
+  }
+
+  .captain-order-item-row .menu-add-control button {
+    @apply h-11 min-w-11 shrink-0 rounded-xl px-3 text-sm active:scale-95;
+  }
+
+  .captain-order-item-row .menu-add-control b {
+    @apply min-w-8 text-center tabular-nums;
   }
 
   .captain-order-item-row.in-cart {
@@ -3213,7 +3294,7 @@
   }
 
   .captain-order-right {
-    @apply grid content-start gap-3 rounded-2xl border border-slate-200 bg-white p-4 lg:sticky lg:top-0;
+    @apply grid min-w-0 content-start gap-3 rounded-2xl border border-slate-200 bg-white p-4;
   }
 
   .captain-order-right h3 {
@@ -3233,7 +3314,7 @@
   }
 
   .captain-order-submit-btn {
-    @apply h-12 w-full rounded-xl bg-emerald-600 text-sm font-black text-white hover:bg-emerald-700 disabled:opacity-60;
+    @apply min-h-12 w-full rounded-xl bg-emerald-600 px-3 py-3 text-sm font-black text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-500;
   }
 
   .order-alert-overlay {
@@ -4926,10 +5007,6 @@
     @apply focus:border-red-500 focus:ring-red-500/10;
   }
 
-  button {
-    @apply bg-red-600 hover:bg-red-700;
-  }
-
   .sidebar,
   .sidebar-mini {
     @apply bg-[#21050a];
@@ -4959,6 +5036,16 @@
     @apply bg-[linear-gradient(135deg,#7f0615,#dc2626_62%,#fca5a5)] shadow-[0_18px_45px_rgba(220,38,38,0.18)];
   }
 
+  .dashboard-header.dashboard-greeting-header {
+    @apply border-red-800 bg-[linear-gradient(135deg,#7f0615,#b91c1c_62%,#991b1b)] text-white;
+  }
+
+  .dashboard-greeting-header h1,
+  .dashboard-greeting-header p,
+  .dashboard-greeting-header .dashboard-greeting-date {
+    @apply text-white;
+  }
+
   .product-modal-head,
   .customer-modal-head,
   .sales-return-modal-head,
@@ -4986,7 +5073,7 @@
   .save-grn-btn,
   .add-product-main-btn,
   .delete-invoice-btn {
-    @apply !bg-red-600 hover:!bg-red-700;
+    @apply !bg-red-600 !text-white hover:!bg-red-700 hover:!text-white;
   }
 
   .current-order-card,
@@ -4996,7 +5083,7 @@
 
   .food-type-row button.active.veg,
   .food-type-row button.active.non-veg {
-    @apply !bg-red-600 hover:!bg-red-700;
+    @apply !bg-red-600 !text-white hover:!bg-red-700 hover:!text-white;
   }
 
   .menu-image-uploader {
@@ -5176,7 +5263,87 @@
   }
 
   .dashboard-chart-box {
-    @apply min-h-[360px] rounded-[22px] p-5;
+    @apply min-w-0 min-h-[360px] rounded-[22px] p-4 sm:p-5;
+  }
+
+  .dashboard-chart-box .dashboard-trend-head h2 {
+    @apply mb-0 border-0 pb-0;
+  }
+
+  .dashboard-trend-head {
+    @apply mb-4 gap-3 border-b border-slate-100 pb-4;
+  }
+
+  .dashboard-trend-legend {
+    @apply mb-3 flex flex-wrap gap-4 text-xs font-semibold text-slate-700;
+  }
+
+  .dashboard-trend-legend span {
+    @apply inline-flex items-center gap-2;
+  }
+
+  .dashboard-trend-legend i {
+    @apply h-2.5 w-2.5 rounded-full;
+  }
+
+  .item-ranking-caption {
+    @apply mb-4 flex flex-wrap items-center justify-between gap-2 text-xs font-medium text-slate-600;
+  }
+
+  .result-legend {
+    @apply mb-4;
+  }
+
+  .dashboard-daily-chart-scroll {
+    @apply w-full overflow-x-auto;
+  }
+
+  .dashboard-daily-chart-inner {
+    @apply min-w-[820px];
+  }
+
+  .result-legend .dashboard-trend-legend {
+    @apply mb-1;
+  }
+
+  .payment-chart-legend {
+    @apply mt-3 grid gap-2;
+  }
+
+  .payment-chart-legend button {
+    @apply flex flex-wrap items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs text-slate-700 hover:bg-slate-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-600;
+  }
+
+  .payment-chart-legend i {
+    @apply h-2.5 w-2.5 shrink-0 rounded-full;
+  }
+
+  .payment-chart-legend strong {
+    @apply ml-auto text-slate-950;
+  }
+
+  .payment-chart-legend small {
+    @apply text-slate-600;
+  }
+
+  .item-ranking-caption span:last-child {
+    @apply rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-600;
+  }
+
+  .item-chart-detail {
+    @apply mb-2 flex min-h-12 flex-wrap items-center justify-between gap-2 rounded-xl bg-slate-50 px-3 py-2 text-xs text-slate-600;
+  }
+
+  .item-chart-detail strong {
+    @apply text-sm font-bold text-slate-900;
+    overflow-wrap: anywhere;
+  }
+
+  .item-chart-detail > span {
+    @apply shrink-0;
+  }
+  .item-ranking-empty {
+    @apply flex min-h-48 items-center justify-center rounded-xl border border-dashed border-slate-200 bg-slate-50 p-6 text-center text-sm text-slate-600;
   }
 
   .dashboard-chart-box h2 {

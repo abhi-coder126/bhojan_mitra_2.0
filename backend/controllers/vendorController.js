@@ -45,7 +45,7 @@ exports.deleteVendor = async (req, res) => {
       recordNo: vendor.gstNumber || vendor.phone || "",
       title: vendor.name,
       deletedBy: user.name,
-      details: `Pending Rs ${Number(vendor.pendingAmount || 0).toFixed(2)}`,
+      details: `Pending ₹${Number(vendor.pendingAmount || 0).toFixed(2)}`,
     });
     res.json({ success: true, message: "Vendor deleted" });
   } catch (error) {

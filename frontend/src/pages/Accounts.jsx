@@ -1,3 +1,4 @@
+import AsyncForm from "../components/AsyncForm";
 import { useEffect, useState } from "react";
 import API from "../api/axios";
 
@@ -100,7 +101,7 @@ export default function Accounts() {
           </table>
         </div>
 
-        <form className="panel form-grid" onSubmit={submitPayment}>
+        <AsyncForm className="panel form-grid" onSubmit={submitPayment}>
           <h2>Add Vendor Payment</h2>
 
           <input
@@ -165,7 +166,7 @@ export default function Accounts() {
           />
 
           <button>Add Payment</button>
-        </form>
+        </AsyncForm>
       </div>
 
       <div className="panel">

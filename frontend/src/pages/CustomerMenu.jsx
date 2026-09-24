@@ -1,11 +1,11 @@
+import AsyncButton from "../components/AsyncButton";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { BadgePercent, CheckCircle2, ChefHat, Clock, Flame, Gift, Heart, History, Leaf, LogOut, Mail, MapPin, Minus, PackageCheck, PartyPopper, Phone, Plus, Search, ShieldCheck, ShoppingBag, Sparkles, Star, UserCircle2, Utensils, X } from "lucide-react";
+import { BadgePercent, CheckCircle2, ChefHat, Clock, Flame, Gift, Heart, History, Leaf, LogOut, Mail, MapPin, Minus, PackageCheck, PartyPopper, Plus, Search, ShieldCheck, ShoppingBag, Sparkles, Star, UserCircle2, Utensils, X } from "lucide-react";
 import { useParams } from "react-router-dom";
 import API from "../api/axios";
 import PhoneInput from "../components/PhoneInput";
 import PublicLottie from "../components/PublicLottie";
 import { ToastViewport, useToast } from "../components/Toast";
-import { resetRecaptchaVerifier, sendPhoneOtp } from "../firebase";
 import ScratchCard from "../components/ScratchCard";
 import StatusBadge from "../components/StatusBadge";
 
@@ -64,12 +64,9 @@ export default function CustomerMenu() {
   const cartPanelRef = useRef(null);
   const { toast, showToast } = useToast();
 
-  // Delivery orders require both email and phone verification before checkout.
+  // Email verification state for delivery checkout.
   const [emailOtp, setEmailOtp] = useState({ sent: false, code: "", verified: false, sending: false, verifying: false });
-  const [phoneOtp, setPhoneOtp] = useState({ sent: false, code: "", verified: false, sending: false, verifying: false });
-  const [confirmationResult, setConfirmationResult] = useState(null);
   const [verifiedEmail, setVerifiedEmail] = useState("");
-  const [verifiedPhone, setVerifiedPhone] = useState("");
 
   // Customer account (email-OTP login) -- persisted so a delivery customer isn't
   // asked to re-verify or retype their address on their next visit. Dine-in login
@@ -381,8 +378,7 @@ export default function CustomerMenu() {
   const isEmailVerified = isReturningCustomer || (emailOtp.verified && verifiedEmail === normalizedEmail && normalizedEmail !== "");
   // Phone OTP verification is disabled for now (Firebase phone auth needs a
   // Blaze billing plan we haven't enabled yet) -- treat every phone as verified
-  // so checkout isn't blocked. Re-enable by restoring the check below once billing is set up:
-  // isReturningCustomer || (phoneOtp.verified && verifiedPhone === customer.customerPhone && customer.customerPhone !== "");
+  // so checkout isn't blocked. The disabled phone-OTP UI has no active handlers.
   const isPhoneVerified = true;
   const savedAddresses = customerAuth.profile?.addresses || [];
 
@@ -484,48 +480,6 @@ export default function CustomerMenu() {
     }
   };
 
-  const sendPhoneOtpHandler = async () => {
-    if (customer.customerPhone.length !== 10) {
-      return showToast("Enter a valid 10-digit phone number first", "warning");
-    }
-
-    setPhoneOtp((prev) => ({ ...prev, sending: true }));
-    try {
-      const result = await sendPhoneOtp(`+91${customer.customerPhone}`, "recaptcha-container");
-      setConfirmationResult(result);
-      setPhoneOtp({ sent: true, code: "", verified: false, sending: false, verifying: false });
-      showToast("OTP sent to your phone", "success");
-    } catch (error) {
-      // eslint-disable-next-line no-console -- surfaced on purpose while diagnosing
-      // Firebase phone-auth failures in production; the toast alone hides the real
-      // error code (e.g. auth/invalid-app-credential, auth/billing-not-enabled).
-      console.error("Phone OTP send failed:", error.code, error.message, error);
-      resetRecaptchaVerifier();
-      setPhoneOtp((prev) => ({ ...prev, sending: false }));
-      showToast(
-        error.code === "auth/too-many-requests"
-          ? "Too many attempts, try again later"
-          : `Could not send phone OTP (${error.code || "unknown error"})`
-      );
-    }
-  };
-
-  const verifyPhoneOtpHandler = async () => {
-    if (!confirmationResult) return showToast("Send the phone OTP first", "warning");
-    if (!phoneOtp.code.trim()) return showToast("Enter the OTP sent to your phone", "warning");
-
-    setPhoneOtp((prev) => ({ ...prev, verifying: true }));
-    try {
-      await confirmationResult.confirm(phoneOtp.code.trim());
-      setVerifiedPhone(customer.customerPhone);
-      setPhoneOtp((prev) => ({ ...prev, verified: true, verifying: false }));
-      showToast("Phone verified", "success");
-    } catch {
-      setPhoneOtp((prev) => ({ ...prev, verifying: false }));
-      showToast("Incorrect OTP");
-    }
-  };
-
   const saveAddressHandler = async () => {
     if (!customer.deliveryAddress.trim()) {
       return showToast("Type the delivery address first, then save it", "warning");
@@ -621,10 +575,9 @@ export default function CustomerMenu() {
       if (!customerAuth.token) {
         setCustomer({ customerName: "", customerPhone: "", customerEmail: "", deliveryAddress: "", note: "" });
         setEmailOtp({ sent: false, code: "", verified: false, sending: false, verifying: false });
-        setPhoneOtp({ sent: false, code: "", verified: false, sending: false, verifying: false });
-        setConfirmationResult(null);
+
         setVerifiedEmail("");
-        setVerifiedPhone("");
+
       } else {
         setCustomer((prev) => ({ ...prev, note: "" }));
       }
@@ -724,11 +677,11 @@ export default function CustomerMenu() {
           <div className="foodora-card-foot">
             {Number(product.offerPercent || 0) > 0 ? (
               <span className="foodora-card-price">
-                <strong>Rs {(Number(product.mrp || product.sellingPrice || 0) * (1 - product.offerPercent / 100)).toFixed(2)}</strong>
-                <s>Rs {Number(product.mrp || product.sellingPrice || 0).toFixed(2)}</s>
+                <strong>₹{(Number(product.mrp || product.sellingPrice || 0) * (1 - product.offerPercent / 100)).toFixed(2)}</strong>
+                <s>₹{Number(product.mrp || product.sellingPrice || 0).toFixed(2)}</s>
               </span>
             ) : (
-              <strong>Rs {Number(product.mrp || product.sellingPrice || 0).toFixed(2)}</strong>
+              <strong>₹{Number(product.mrp || product.sellingPrice || 0).toFixed(2)}</strong>
             )}
             <div className="menu-add-control">
               {cartItem ? (
@@ -849,7 +802,7 @@ export default function CustomerMenu() {
         </div>
         <div className="foodora-hero-deal">
           <span><Sparkles size={14} /> Your cart</span>
-          <strong>Rs {payableTotal.toFixed(2)}</strong>
+          <strong>₹{payableTotal.toFixed(2)}</strong>
           <p>{cartQty} items added</p>
         </div>
       </section>
@@ -877,8 +830,8 @@ export default function CustomerMenu() {
                 </div>
                 <span>{product.name}</span>
                 <small>
-                  Rs {(Number(product.mrp || product.sellingPrice || 0) * (1 - product.offerPercent / 100)).toFixed(0)}{" "}
-                  <s>Rs {Number(product.mrp || product.sellingPrice || 0).toFixed(0)}</s>
+                  ₹{(Number(product.mrp || product.sellingPrice || 0) * (1 - product.offerPercent / 100)).toFixed(0)}{" "}
+                  <s>₹{Number(product.mrp || product.sellingPrice || 0).toFixed(0)}</s>
                 </small>
               </button>
             ))}
@@ -931,7 +884,7 @@ export default function CustomerMenu() {
             {orderPlaced.items?.map((item, index) => (
               <p key={`${item.productId}-${index}`}>
                 <span>{item.qty} x {item.name}</span>
-                <b>Rs {Number(item.total || 0).toFixed(2)}</b>
+                <b>₹{Number(item.total || 0).toFixed(2)}</b>
               </p>
             ))}
           </div>
@@ -962,9 +915,9 @@ export default function CustomerMenu() {
                       </div>
                     ))}
                   </div>
-                  <button type="button" className="submit-rating-btn" disabled={submittingRating} onClick={submitRatings}>
+                  <AsyncButton type="button" className="submit-rating-btn" disabled={submittingRating} onClick={submitRatings}>
                     {submittingRating ? "Submitting..." : "Submit Rating"}
-                  </button>
+                  </AsyncButton>
                 </>
               )}
             </div>
@@ -1039,13 +992,13 @@ export default function CustomerMenu() {
                 <ShieldCheck size={14} /> You are our Verified Customer
               </span>
               {isDelivery && (
-                <button type="button" onClick={fetchOrderHistory}>
+                <AsyncButton type="button" onClick={fetchOrderHistory}>
                   <History size={13} /> My Orders
-                </button>
+                </AsyncButton>
               )}
-              <button type="button" onClick={fetchMyRewards}>
+              <AsyncButton type="button" onClick={fetchMyRewards}>
                 <Gift size={13} /> My Rewards
-              </button>
+              </AsyncButton>
             </div>
           )}
 
@@ -1057,7 +1010,7 @@ export default function CustomerMenu() {
                 orderHistory.map((order) => (
                   <div key={order._id}>
                     <span>{order.orderNo}</span>
-                    <b>Rs {Number(order.grandTotal || 0).toFixed(2)}</b>
+                    <b>₹{Number(order.grandTotal || 0).toFixed(2)}</b>
                     <StatusBadge status={order.status} orderType={order.orderType} className="!px-2 !py-0.5 !text-[10px]" />
                   </div>
                 ))
@@ -1093,11 +1046,11 @@ export default function CustomerMenu() {
                   <span className="cart-item-price">
                     {item.offerPercent > 0 && (
                       <>
-                        <s>Rs {Number(item.originalRate).toFixed(2)}</s>
+                        <s>₹{Number(item.originalRate).toFixed(2)}</s>
                         <small className="cart-item-offer">{item.offerPercent}% OFF</small>
                       </>
                     )}
-                    <b>{item.qty} x Rs {Number(item.rate).toFixed(2)}</b>
+                    <b>{item.qty} x ₹{Number(item.rate).toFixed(2)}</b>
                   </span>
                 </div>
               ))}
@@ -1128,7 +1081,7 @@ export default function CustomerMenu() {
                 value={customer.customerPhone}
                 onChange={(value) => {
                   setCustomer({ ...customer, customerPhone: value });
-                  setPhoneOtp({ sent: false, code: "", verified: false, sending: false, verifying: false });
+
                 }}
                 required
               />
@@ -1151,9 +1104,9 @@ export default function CustomerMenu() {
                   {!isEmailVerified && (
                     <div className="otp-verify-row">
                       {!emailOtp.sent ? (
-                        <button type="button" disabled={emailOtp.sending} onClick={sendEmailOtpHandler}>
+                        <AsyncButton type="button" disabled={emailOtp.sending} onClick={sendEmailOtpHandler}>
                           {emailOtp.sending ? "Sending..." : "Send OTP"}
-                        </button>
+                        </AsyncButton>
                       ) : (
                         <>
                           <input
@@ -1163,12 +1116,12 @@ export default function CustomerMenu() {
                             value={emailOtp.code}
                             onChange={(e) => setEmailOtp((prev) => ({ ...prev, code: e.target.value.replace(/\D/g, "") }))}
                           />
-                          <button type="button" disabled={emailOtp.verifying} onClick={verifyEmailOtpHandler}>
+                          <AsyncButton type="button" disabled={emailOtp.verifying} onClick={verifyEmailOtpHandler}>
                             {emailOtp.verifying ? "Checking..." : "Verify"}
-                          </button>
-                          <button type="button" className="otp-resend-btn" disabled={emailOtp.sending} onClick={sendEmailOtpHandler}>
+                          </AsyncButton>
+                          <AsyncButton type="button" className="otp-resend-btn" disabled={emailOtp.sending} onClick={sendEmailOtpHandler}>
                             Resend
-                          </button>
+                          </AsyncButton>
                         </>
                       )}
                     </div>
@@ -1204,9 +1157,9 @@ export default function CustomerMenu() {
                     <option value="Work">Work</option>
                     <option value="Other">Other</option>
                   </select>
-                  <button type="button" disabled={addingAddress} onClick={saveAddressHandler}>
+                  <AsyncButton type="button" disabled={addingAddress} onClick={saveAddressHandler}>
                     {addingAddress ? "Saving..." : "Save this address"}
-                  </button>
+                  </AsyncButton>
                 </div>
               )}
               <textarea
@@ -1230,15 +1183,15 @@ export default function CustomerMenu() {
                   {coupon ? (
                     <button type="button" onClick={removeCoupon}>Remove</button>
                   ) : (
-                    <button type="button" disabled={applyingCoupon} onClick={applyCoupon}>
+                    <AsyncButton type="button" disabled={applyingCoupon} onClick={applyCoupon}>
                       {applyingCoupon ? "Checking" : "Apply"}
-                    </button>
+                    </AsyncButton>
                   )}
                 </div>
                 {coupon && (
                   <p>
                     <span>{coupon.code}</span>
-                    <b>- Rs {discountAmount.toFixed(2)}</b>
+                    <b>- ₹{discountAmount.toFixed(2)}</b>
                   </p>
                 )}
               </div>
@@ -1246,10 +1199,10 @@ export default function CustomerMenu() {
           )}
 
           <div className="menu-total-lines">
-            <p><span>{gstAmount > 0 ? "Base Price" : "Price"}</span><b>Rs {subTotal.toFixed(2)}</b></p>
-            {gstAmount > 0 && <p><span>GST Included</span><b>Rs {gstAmount.toFixed(2)}</b></p>}
-            {discountAmount > 0 && <p><span>Coupon Discount</span><b>- Rs {discountAmount.toFixed(2)}</b></p>}
-            <h3><span>Total</span><b>Rs {payableTotal.toFixed(2)}</b></h3>
+            <p><span>{gstAmount > 0 ? "Base Price" : "Price"}</span><b>₹{subTotal.toFixed(2)}</b></p>
+            {gstAmount > 0 && <p><span>GST Included</span><b>₹{gstAmount.toFixed(2)}</b></p>}
+            {discountAmount > 0 && <p><span>Coupon Discount</span><b>- ₹{discountAmount.toFixed(2)}</b></p>}
+            <h3><span>Total</span><b>₹{payableTotal.toFixed(2)}</b></h3>
           </div>
 
           {checkoutStep === "cart" ? (
@@ -1257,12 +1210,12 @@ export default function CustomerMenu() {
               Continue
             </button>
           ) : (
-            <button
+            <AsyncButton
               disabled={placing || cart.length === 0 || (isDelivery && (!isEmailVerified || !isPhoneVerified))}
               onClick={placeOrder}
             >
               {placing ? "Sending..." : "Place Order"}
-            </button>
+            </AsyncButton>
           )}
         </aside>
       </main>
@@ -1271,20 +1224,20 @@ export default function CustomerMenu() {
         <div className="mobile-cart-cta">
           <div>
             <span>{cartQty} items</span>
-            <strong>Rs {payableTotal.toFixed(2)}</strong>
+            <strong>₹{payableTotal.toFixed(2)}</strong>
           </div>
           {checkoutStep === "cart" ? (
             <button type="button" onClick={startCheckout}>
               Continue
             </button>
           ) : (
-            <button
+            <AsyncButton
               type="button"
               disabled={placing || (isDelivery && (!isEmailVerified || !isPhoneVerified))}
               onClick={placeOrder}
             >
               {placing ? "Sending..." : "Place Order"}
-            </button>
+            </AsyncButton>
           )}
         </div>
       )}
@@ -1307,7 +1260,7 @@ export default function CustomerMenu() {
             <span className="coupon-confetti c3">🎊</span>
             <span className="coupon-confetti c4">✨</span>
             <div className="coupon-saved-icon"><PartyPopper size={30} /></div>
-            <h2>You saved Rs {couponSavedPopup.amount.toFixed(0)}!</h2>
+            <h2>You saved ₹{couponSavedPopup.amount.toFixed(0)}!</h2>
             <p>Coupon <b>{couponSavedPopup.code}</b> applied successfully.</p>
             <button type="button" onClick={() => setCouponSavedPopup(null)}>Yay, Continue</button>
           </div>
@@ -1363,13 +1316,13 @@ export default function CustomerMenu() {
 
                 <div className="otp-verify-row">
                   {!emailOtp.sent ? (
-                    <button
+                    <AsyncButton
                       type="button"
                       disabled={emailOtp.sending}
                       onClick={sendEmailOtpHandler}
                     >
                       {emailOtp.sending ? "Sending..." : "Send OTP"}
-                    </button>
+                    </AsyncButton>
                   ) : (
                     <>
                       <input
@@ -1379,12 +1332,12 @@ export default function CustomerMenu() {
                         value={emailOtp.code}
                         onChange={(e) => setEmailOtp((prev) => ({ ...prev, code: e.target.value.replace(/\D/g, "") }))}
                       />
-                      <button type="button" disabled={emailOtp.verifying} onClick={verifyEmailOtpHandler}>
+                      <AsyncButton type="button" disabled={emailOtp.verifying} onClick={verifyEmailOtpHandler}>
                         {emailOtp.verifying ? "Checking..." : "Verify & Login"}
-                      </button>
-                      <button type="button" className="otp-resend-btn" disabled={emailOtp.sending} onClick={sendEmailOtpHandler}>
+                      </AsyncButton>
+                      <AsyncButton type="button" className="otp-resend-btn" disabled={emailOtp.sending} onClick={sendEmailOtpHandler}>
                         Resend
-                      </button>
+                      </AsyncButton>
                     </>
                   )}
                 </div>
@@ -1423,9 +1376,9 @@ export default function CustomerMenu() {
                       value={passwordAuth.password}
                       onChange={(e) => setPasswordAuth((prev) => ({ ...prev, password: e.target.value }))}
                     />
-                    <button type="button" disabled={passwordAuth.loading} onClick={passwordSignupHandler}>
+                    <AsyncButton type="button" disabled={passwordAuth.loading} onClick={passwordSignupHandler}>
                       {passwordAuth.loading ? "Creating..." : "Create account"}
-                    </button>
+                    </AsyncButton>
                   </>
                 )}
 
@@ -1442,9 +1395,9 @@ export default function CustomerMenu() {
                       value={passwordAuth.password}
                       onChange={(e) => setPasswordAuth((prev) => ({ ...prev, password: e.target.value }))}
                     />
-                    <button type="button" disabled={passwordAuth.loading} onClick={passwordLoginHandler}>
+                    <AsyncButton type="button" disabled={passwordAuth.loading} onClick={passwordLoginHandler}>
                       {passwordAuth.loading ? "Logging in..." : "Log in"}
-                    </button>
+                    </AsyncButton>
                   </>
                 )}
               </>
@@ -1477,13 +1430,13 @@ export default function CustomerMenu() {
 
             <div className="verified-customer-strip">
               {isDelivery && (
-                <button type="button" onClick={fetchOrderHistory}>
+                <AsyncButton type="button" onClick={fetchOrderHistory}>
                   <History size={13} /> My Orders
-                </button>
+                </AsyncButton>
               )}
-              <button type="button" onClick={fetchMyRewards}>
+              <AsyncButton type="button" onClick={fetchMyRewards}>
                 <Gift size={13} /> My Rewards
-              </button>
+              </AsyncButton>
             </div>
 
             {historyOpen && orderHistory && (
@@ -1494,7 +1447,7 @@ export default function CustomerMenu() {
                   orderHistory.map((order) => (
                     <div key={order._id}>
                       <span>{order.orderNo}</span>
-                      <b>Rs {Number(order.grandTotal || 0).toFixed(2)}</b>
+                      <b>₹{Number(order.grandTotal || 0).toFixed(2)}</b>
                       <StatusBadge status={order.status} orderType={order.orderType} className="!px-2 !py-0.5 !text-[10px]" />
                     </div>
                   ))

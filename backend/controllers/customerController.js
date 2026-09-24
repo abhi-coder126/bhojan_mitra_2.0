@@ -172,7 +172,7 @@ exports.deleteCustomer = async (req, res) => {
     });
   }
 };
-// 1 loyalty point earned for every Rs 100 spent; redeem 10 points = Rs 10 off (1 point = Re 1)
+// 1 loyalty point earned for every ₹100 spent; redeem 10 points = ₹10 off (1 point = Re 1)
 const POINTS_PER_RUPEES = 100;
 
 exports.earnLoyaltyPoints = async (customerId, grandTotal) => {

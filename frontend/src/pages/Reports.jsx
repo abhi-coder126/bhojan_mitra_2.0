@@ -1,3 +1,4 @@
+import AsyncButton from "../components/AsyncButton";
 import { useEffect, useMemo, useState } from "react";
 import { Info, Search, Trash2 } from "lucide-react";
 import API from "../api/axios";
@@ -140,7 +141,7 @@ export default function Reports() {
                   <td>{formatDate(row.date)}</td>
                   <td>{row.customer}</td>
                   <td>{row.title}</td>
-                  <td>Rs {row.total.toFixed(2)}</td>
+                  <td>₹{row.total.toFixed(2)}</td>
                   <td><span className={`report-status ${row.status}`}>{row.status}</span></td>
                   <td>
                     <button className="report-info-btn" onClick={() => setSelectedReport(row)}>
@@ -148,9 +149,9 @@ export default function Reports() {
                     </button>
                   </td>
                   <td>
-                    <button className="report-delete-btn" onClick={() => deleteReport(row)}>
+                    <AsyncButton className="report-delete-btn" onClick={() => deleteReport(row)}>
                       <Trash2 size={15} />
-                    </button>
+                    </AsyncButton>
                   </td>
                 </tr>
               ))
@@ -174,10 +175,10 @@ export default function Reports() {
               <InfoBlock label="Mobile" value={selectedReport.phone || "N/A"} />
               <InfoBlock label="Type" value={selectedReport.title} />
               <InfoBlock label="Status" value={selectedReport.status} />
-              <InfoBlock label="Sub Total" value={`Rs ${Number(selectedReport.subTotal || selectedReport.total || 0).toFixed(2)}`} />
-              <InfoBlock label="GST" value={`Rs ${Number(selectedReport.gstAmount || 0).toFixed(2)}`} />
-              <InfoBlock label="Discount" value={`Rs ${Number(selectedReport.discountAmount || 0).toFixed(2)}`} />
-              <InfoBlock label="Grand Total" value={`Rs ${Number(selectedReport.total || 0).toFixed(2)}`} />
+              <InfoBlock label="Sub Total" value={`₹${Number(selectedReport.subTotal || selectedReport.total || 0).toFixed(2)}`} />
+              <InfoBlock label="GST" value={`₹${Number(selectedReport.gstAmount || 0).toFixed(2)}`} />
+              <InfoBlock label="Discount" value={`₹${Number(selectedReport.discountAmount || 0).toFixed(2)}`} />
+              <InfoBlock label="Grand Total" value={`₹${Number(selectedReport.total || 0).toFixed(2)}`} />
             </div>
 
             <h3>Items</h3>
@@ -198,18 +199,18 @@ export default function Reports() {
                     <td>{item.name}</td>
                     <td>{item.category || item.barcode || "N/A"}</td>
                     <td>{item.qty}</td>
-                    <td>Rs {Number(item.rate || 0).toFixed(2)}</td>
+                    <td>₹{Number(item.rate || 0).toFixed(2)}</td>
                     <td>{Number(item.gst || 0)}%</td>
-                    <td>Rs {Number(item.total || 0).toFixed(2)}</td>
+                    <td>₹{Number(item.total || 0).toFixed(2)}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
 
-            <button className="report-delete-detail-btn" onClick={() => deleteReport(selectedReport)}>
+            <AsyncButton className="report-delete-detail-btn" onClick={() => deleteReport(selectedReport)}>
               <Trash2 size={16} />
               Delete This Record
-            </button>
+            </AsyncButton>
           </div>
         </div>
       )}

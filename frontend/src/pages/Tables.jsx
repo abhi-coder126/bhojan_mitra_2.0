@@ -1,4 +1,6 @@
-import { useEffect, useState } from "react";
+import AsyncForm from "../components/AsyncForm";
+import AsyncButton from "../components/AsyncButton";
+import { useCallback, useEffect, useState } from "react";
 import API from "../api/axios";
 import { ToastViewport, useToast } from "../components/Toast";
 
@@ -18,20 +20,20 @@ export default function Tables() {
   const [seedCount, setSeedCount] = useState(28);
   const { toast, showToast } = useToast();
 
-  const fetchTables = async () => {
+  const fetchTables = useCallback(async () => {
     try {
       const res = await API.get("/tables");
       setTables(res.data.tables || []);
     } catch (error) {
       showToast(error.response?.data?.message || "Could not load tables", "warning");
     }
-  };
+  }, [showToast]);
 
   useEffect(() => {
     fetchTables();
     const interval = setInterval(fetchTables, 8000);
     return () => clearInterval(interval);
-  }, []);
+  }, [fetchTables]);
 
   const addTable = async (e) => {
     e.preventDefault();
@@ -95,17 +97,17 @@ export default function Tables() {
       {tables.length === 0 && (
         <div className="panel form-grid">
           <input type="number" min="1" placeholder="How many tables?" value={seedCount} onChange={(e) => setSeedCount(e.target.value)} />
-          <button onClick={seed}>Generate Tables</button>
+          <AsyncButton onClick={seed}>Generate Tables</AsyncButton>
         </div>
       )}
 
-      <form className="panel form-grid" onSubmit={addTable}>
+      <AsyncForm className="panel form-grid" onSubmit={addTable}>
         <input placeholder="Table Number" value={form.number} onChange={(e) => setForm({ ...form, number: e.target.value })} required />
         <input placeholder="Floor" value={form.floor} onChange={(e) => setForm({ ...form, floor: e.target.value })} />
         <input placeholder="Section" value={form.section} onChange={(e) => setForm({ ...form, section: e.target.value })} />
         <input type="number" min="1" placeholder="Capacity" value={form.capacity} onChange={(e) => setForm({ ...form, capacity: e.target.value })} />
         <button>Add Table</button>
-      </form>
+      </AsyncForm>
 
       <div className="panel">
         <div style={{ display: "flex", gap: "16px", marginBottom: "16px", flexWrap: "wrap" }}>
@@ -146,13 +148,13 @@ export default function Tables() {
                       <option key={s} value={s}>{s}</option>
                     ))}
                   </select>
-                  <button
+                  <AsyncButton
                     style={{ fontSize: "11px", padding: "4px 8px" }}
                     disabled={table.status === "occupied" || table.status === "billing"}
                     onClick={() => removeTable(table)}
                   >
                     Remove
-                  </button>
+                  </AsyncButton>
                 </div>
               ))}
             </div>

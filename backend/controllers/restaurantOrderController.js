@@ -237,7 +237,7 @@ exports.createRestaurantOrder = async (req, res) => {
 
       if (billAmount < Number(coupon.minimumBillAmount || 0)) {
         return res.status(400).json({
-          message: `Minimum bill amount Rs ${coupon.minimumBillAmount} required`,
+          message: `Minimum bill amount ₹${coupon.minimumBillAmount} required`,
         });
       }
 
@@ -419,7 +419,7 @@ exports.deleteRestaurantOrder = async (req, res) => {
       recordNo: order.invoiceNo || order.orderNo,
       title: order.customerName || "Restaurant order",
       deletedBy: user.name,
-      details: `${order.orderType === "delivery" ? "Delivery" : `Table ${order.tableNo}`} | Rs ${Number(order.grandTotal || 0).toFixed(2)}`,
+      details: `${order.orderType === "delivery" ? "Delivery" : `Table ${order.tableNo}`} | ₹${Number(order.grandTotal || 0).toFixed(2)}`,
     });
 
     res.json({

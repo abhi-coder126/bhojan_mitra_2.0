@@ -1,47 +1,13 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import AsyncButton from "../components/AsyncButton";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Banknote, Bell, CheckCircle2, ClipboardList, CreditCard, Printer, QrCode, RefreshCcw, Search, Smartphone, Utensils, X } from "lucide-react";
 import API from "../api/axios";
 import { ToastViewport, useToast } from "../components/Toast";
 import DeleteConfirmModal from "../components/DeleteConfirmModal";
 import ConfirmActionModal from "../components/ConfirmActionModal";
 import StatusBadge from "../components/StatusBadge";
-
-const ONES = ["", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten", "Eleven", "Twelve", "Thirteen", "Fourteen", "Fifteen", "Sixteen", "Seventeen", "Eighteen", "Nineteen"];
-const TENS = ["", "", "Twenty", "Thirty", "Forty", "Fifty", "Sixty", "Seventy", "Eighty", "Ninety"];
-
-const threeDigitsToWords = (num) => {
-  let words = "";
-  if (num >= 100) {
-    words += `${ONES[Math.floor(num / 100)]} Hundred `;
-    num %= 100;
-  }
-  if (num >= 20) {
-    words += `${TENS[Math.floor(num / 10)]} `;
-    num %= 10;
-  }
-  if (num > 0) words += `${ONES[num]} `;
-  return words.trim();
-};
-
-// Converts a rupee amount into Indian numbering (lakh/crore) words for the invoice footer,
-// matching how real GST invoices print "Amount in Words".
-const amountInWords = (value) => {
-  const rupees = Math.floor(Number(value) || 0);
-  if (rupees === 0) return "Zero Rupees Only";
-
-  const crore = Math.floor(rupees / 10000000);
-  const lakh = Math.floor((rupees % 10000000) / 100000);
-  const thousand = Math.floor((rupees % 100000) / 1000);
-  const rest = rupees % 1000;
-
-  const parts = [];
-  if (crore) parts.push(`${threeDigitsToWords(crore)} Crore`);
-  if (lakh) parts.push(`${threeDigitsToWords(lakh)} Lakh`);
-  if (thousand) parts.push(`${threeDigitsToWords(thousand)} Thousand`);
-  if (rest) parts.push(threeDigitsToWords(rest));
-
-  return `${parts.join(" ")} Rupees Only`;
-};
+import { KotReceipt, TaxInvoiceReceipt } from "../components/ThermalReceipt";
+import { toInvoiceData } from "../components/receiptData";
 
 const statuses = ["new", "accepted", "preparing", "ready", "served", "cancelled"];
 const workflowStatuses = ["new", "accepted", "preparing", "ready", "served"];
@@ -92,6 +58,7 @@ export default function RestaurantOrders() {
   const [activePopupOrderId, setActivePopupOrderId] = useState(null);
   const [paymentOrder, setPaymentOrder] = useState(null);
   const [paidInvoice, setPaidInvoice] = useState(null);
+  const [kotOrder, setKotOrder] = useState(null);
   const [invoiceSearch, setInvoiceSearch] = useState("");
   const [paymentForm, setPaymentForm] = useState({ mode: "", cash: "", upi: "", card: "" });
   const [deleteTarget, setDeleteTarget] = useState(null);
@@ -115,7 +82,7 @@ export default function RestaurantOrders() {
   const ringTimer = useRef(null);
   const { toast, showToast } = useToast();
 
-  const playOrderTune = (force = false) => {
+  const playOrderTune = useCallback((force = false) => {
     if (!force && !orderSettings.restaurantOrderSoundEnabled) return;
 
     const AudioContext = window.AudioContext || window.webkitAudioContext;
@@ -146,9 +113,9 @@ export default function RestaurantOrders() {
     window.setTimeout(() => {
       context.close?.();
     }, 700);
-  };
+  }, [orderSettings.restaurantOrderSoundEnabled]);
 
-  const fetchOrderSettings = async () => {
+  const fetchOrderSettings = useCallback(async () => {
     try {
       const res = await API.get("/settings");
       const nextSettings = { ...defaultOrderSettings, ...(res.data.settings || {}) };
@@ -157,14 +124,14 @@ export default function RestaurantOrders() {
     } catch (error) {
       showToast(error.response?.data?.message || "Order settings could not be loaded", "warning");
     }
-  };
+  }, [showToast]);
 
   useEffect(() => {
     fetchOrderSettings();
     API.get("/products")
       .then((res) => setProducts(res.data.products || []))
       .catch(() => {});
-  }, []);
+  }, [fetchOrderSettings]);
 
   useEffect(() => {
     const unlockAudio = () => {
@@ -185,9 +152,9 @@ export default function RestaurantOrders() {
       window.removeEventListener("keydown", unlockAudio);
       window.removeEventListener("touchstart", unlockAudio);
     };
-  }, [orderSettings.restaurantOrderSoundEnabled]);
+  }, [orderSettings.restaurantOrderSoundEnabled, playOrderTune]);
 
-  const fetchOrders = async () => {
+  const fetchOrders = useCallback(async () => {
     try {
       const res = await API.get("/restaurant-orders");
       const latestOrders = res.data.orders || [];
@@ -213,7 +180,7 @@ export default function RestaurantOrders() {
     } catch (error) {
       showToast(error.response?.data?.message || "Orders could not be loaded");
     }
-  };
+  }, [orderSettings.restaurantOrderPopupEnabled, orderSettings.restaurantOrderSoundEnabled, playOrderTune, showToast]);
 
   useEffect(() => {
     fetchOrders();
@@ -221,7 +188,7 @@ export default function RestaurantOrders() {
     const refreshMs = Math.max(3, Number(orderSettings.restaurantOrderRefreshSeconds || 5)) * 1000;
     const timer = setInterval(fetchOrders, refreshMs);
     return () => clearInterval(timer);
-  }, [orderSettings.restaurantOrderRefreshSeconds, orderSettings.restaurantOrderPopupEnabled]);
+  }, [orderSettings.restaurantOrderRefreshSeconds, fetchOrders]);
 
   useEffect(() => {
     const hasNewOrders = orders.some((order) => order.status === "new");
@@ -245,7 +212,7 @@ export default function RestaurantOrders() {
         ringTimer.current = null;
       }
     };
-  }, [orders, orderSettings.restaurantOrderSoundEnabled, orderSettings.restaurantOrderRepeatSound]);
+  }, [orders, orderSettings.restaurantOrderSoundEnabled, orderSettings.restaurantOrderRepeatSound, playOrderTune]);
 
   const activeOrders = useMemo(
     () => orders.filter((order) => order.status !== "cancelled" && order.paymentStatus !== "paid"),
@@ -264,9 +231,12 @@ export default function RestaurantOrders() {
       if (statusTarget.status !== "new" && activePopupOrderId === statusTarget.orderId) {
         setActivePopupOrderId(null);
       }
+      const acceptedOrder =
+        statusTarget.status === "accepted" ? orders.find((item) => item._id === statusTarget.orderId) : null;
       setStatusTarget(null);
       fetchOrders();
       showToast("Order status updated", "success");
+      if (acceptedOrder) setKotOrder(acceptedOrder);
     } catch (error) {
       showToast(error.response?.data?.message || "Status update failed");
     }
@@ -315,6 +285,7 @@ export default function RestaurantOrders() {
   };
 
   const submitNewOrder = async () => {
+    if (placingNewOrder) return;
     if (newOrderCart.length === 0) return showToast("Add at least one item", "warning");
     if (newOrderIsDelivery && !newOrderCustomerName.trim()) {
       return showToast("Customer name required for delivery orders", "warning");
@@ -638,7 +609,7 @@ export default function RestaurantOrders() {
                 <span>{tableOrders.length ? `${tableOrders.length} order` : "Blank"}</span>
                 {tableOrders.length > 0 && (
                   <small>
-                    Rs {tableTotal.toFixed(2)}
+                    ₹{tableTotal.toFixed(2)}
                     {hasCoupon ? " after coupon" : ""}
                   </small>
                 )}
@@ -695,7 +666,7 @@ export default function RestaurantOrders() {
                   </div>
                   <div>
                     <span>Bill</span>
-                    <b>Rs {Number(order.grandTotal || 0).toFixed(2)}</b>
+                    <b>₹{Number(order.grandTotal || 0).toFixed(2)}</b>
                   </div>
                 </div>
 
@@ -710,7 +681,7 @@ export default function RestaurantOrders() {
                   {order.items.map((item, index) => (
                     <p key={`${item.productId}-${index}`}>
                       <span>{item.qty} x {item.name}</span>
-                      <b>Rs {Number(item.total || 0).toFixed(2)}</b>
+                      <b>₹{Number(item.total || 0).toFixed(2)}</b>
                     </p>
                   ))}
                 </div>
@@ -719,30 +690,30 @@ export default function RestaurantOrders() {
 
                 <div className="restaurant-order-total">
                   <span>{order.couponCode ? `Total after ${order.couponCode}` : "Total"}</span>
-                  <strong>Rs {Number(order.grandTotal || 0).toFixed(2)}</strong>
+                  <strong>₹{Number(order.grandTotal || 0).toFixed(2)}</strong>
                 </div>
                 {Number(order.discountAmount || 0) > 0 && (
-                  <p className="restaurant-note">Coupon discount: Rs {Number(order.discountAmount || 0).toFixed(2)}</p>
+                  <p className="restaurant-note">Coupon discount: ₹{Number(order.discountAmount || 0).toFixed(2)}</p>
                 )}
 
                 <div className="current-order-actions">
                   {order.status === "new" && (
-                    <button className="accept-order-btn" onClick={() => updateStatus(order._id, "accepted")}>
+                    <AsyncButton className="accept-order-btn" onClick={() => updateStatus(order._id, "accepted")}>
                       <CheckCircle2 size={17} />
                       Accept
-                    </button>
+                    </AsyncButton>
                   )}
                   {order.status === "accepted" && (
-                    <button onClick={() => updateStatus(order._id, "preparing")}>Start Preparing</button>
+                    <AsyncButton onClick={() => updateStatus(order._id, "preparing")}>Start Preparing</AsyncButton>
                   )}
                   {order.status === "preparing" && (
-                    <button onClick={() => updateStatus(order._id, "ready")}>Mark Ready</button>
+                    <AsyncButton onClick={() => updateStatus(order._id, "ready")}>Mark Ready</AsyncButton>
                   )}
                   {order.status === "ready" && (
-                    <button className="serve-order-btn" onClick={() => updateStatus(order._id, "served")}>
+                    <AsyncButton className="serve-order-btn" onClick={() => updateStatus(order._id, "served")}>
                       <Utensils size={16} />
                       {order.orderType === "delivery" ? "Mark Delivered" : "Mark Served"}
-                    </button>
+                    </AsyncButton>
                   )}
                   {order.status === "served" && (
                     <button className="payment-action-btn" onClick={() => openPayment(order)}>
@@ -751,14 +722,20 @@ export default function RestaurantOrders() {
                     </button>
                   )}
                   {order.status !== "served" && (
-                    <button className="reject-order-btn" onClick={() => updateStatus(order._id, "cancelled")}>
+                    <AsyncButton className="reject-order-btn" onClick={() => updateStatus(order._id, "cancelled")}>
                       Cancel
-                    </button>
+                    </AsyncButton>
                   )}
                   {!order.isHeld ? (
-                    <button onClick={() => holdOrder(order)}>Hold</button>
+                    <AsyncButton onClick={() => holdOrder(order)}>Hold</AsyncButton>
                   ) : (
-                    <button onClick={() => resumeOrder(order)}>Resume</button>
+                    <AsyncButton onClick={() => resumeOrder(order)}>Resume</AsyncButton>
+                  )}
+                  {["accepted", "preparing", "ready", "served"].includes(order.status) && (
+                    <button className="print-kot-btn" onClick={() => setKotOrder(order)}>
+                      <Printer size={16} />
+                      Print KOT
+                    </button>
                   )}
                   <button onClick={() => openDiscount(order)}>Discount</button>
                   <button onClick={() => openSplit(order)}>Split Bill</button>
@@ -811,9 +788,9 @@ export default function RestaurantOrders() {
                     <td>{formatDateTime(order.payment?.paidAt || order.updatedAt || order.createdAt)}</td>
                     <td>{order.customerName || "Walk-in Customer"}</td>
                     <td>{order.orderType === "delivery" ? "Delivery" : `Table ${order.tableNo}`}</td>
-                    <td>Rs {Number(order.grandTotal || 0).toFixed(2)}</td>
+                    <td>₹{Number(order.grandTotal || 0).toFixed(2)}</td>
                     <td><button className="icon-view" onClick={() => setPaidInvoice(order)}>View</button></td>
-                    <td><button type="button" className="invoice-delete-btn" onClick={() => deleteRestaurantInvoice(order)}>Delete</button></td>
+                    <td><AsyncButton type="button" className="invoice-delete-btn" onClick={() => deleteRestaurantInvoice(order)}>Delete</AsyncButton></td>
                   </tr>
                 ))}
               </tbody>
@@ -851,7 +828,7 @@ export default function RestaurantOrders() {
                       {order.items.map((item, index) => (
                         <p key={`${item.productId}-${index}`}>
                           <span>{item.qty} x {item.name}</span>
-                          <b>Rs {Number(item.total || 0).toFixed(2)}</b>
+                          <b>₹{Number(item.total || 0).toFixed(2)}</b>
                         </p>
                       ))}
                     </div>
@@ -860,10 +837,10 @@ export default function RestaurantOrders() {
 
                     <div className="restaurant-order-total">
                       <span>{order.couponCode ? `Total after ${order.couponCode}` : "Total"}</span>
-                      <strong>Rs {Number(order.grandTotal || 0).toFixed(2)}</strong>
+                      <strong>₹{Number(order.grandTotal || 0).toFixed(2)}</strong>
                     </div>
                     {Number(order.discountAmount || 0) > 0 && (
-                      <p className="restaurant-note">Coupon discount: Rs {Number(order.discountAmount || 0).toFixed(2)}</p>
+                      <p className="restaurant-note">Coupon discount: ₹{Number(order.discountAmount || 0).toFixed(2)}</p>
                     )}
 
                     <div className="restaurant-order-actions">
@@ -924,7 +901,7 @@ export default function RestaurantOrders() {
               {popupOrder.items.map((item, index) => (
                 <div key={`${item.productId}-${index}`}>
                   <b>{item.qty} x {item.name}</b>
-                  <strong>Rs {Number(item.total || 0).toFixed(2)}</strong>
+                  <strong>₹{Number(item.total || 0).toFixed(2)}</strong>
                 </div>
               ))}
             </div>
@@ -933,17 +910,17 @@ export default function RestaurantOrders() {
 
             <div className="order-alert-total">
               <span>Total Bill</span>
-              <strong>Rs {Number(popupOrder.grandTotal || 0).toFixed(2)}</strong>
+              <strong>₹{Number(popupOrder.grandTotal || 0).toFixed(2)}</strong>
             </div>
 
             <div className="order-alert-actions">
-              <button onClick={() => updateStatus(popupOrder._id, "accepted")}>
+              <AsyncButton onClick={() => updateStatus(popupOrder._id, "accepted")}>
                 <CheckCircle2 size={18} />
                 Accept Order
-              </button>
-              <button className="reject-order-btn" onClick={() => updateStatus(popupOrder._id, "cancelled")}>
+              </AsyncButton>
+              <AsyncButton className="reject-order-btn" onClick={() => updateStatus(popupOrder._id, "cancelled")}>
                 Cancel
-              </button>
+              </AsyncButton>
             </div>
           </div>
         </div>
@@ -959,7 +936,7 @@ export default function RestaurantOrders() {
 
             <div className="payment-summary-box">
               <span>{paymentOrder.orderType === "delivery" ? "Delivery" : `Table ${paymentOrder.tableNo}`}</span>
-              <strong>Rs {Number(paymentOrder.grandTotal || 0).toFixed(2)}</strong>
+              <strong>₹{Number(paymentOrder.grandTotal || 0).toFixed(2)}</strong>
             </div>
 
             <div className="payment-mode-grid">
@@ -977,8 +954,28 @@ export default function RestaurantOrders() {
               </div>
             )}
 
-            <button className="save-grn-btn" onClick={submitPayment}>
+            <AsyncButton className="save-grn-btn" onClick={submitPayment}>
               Save Payment & Generate Invoice
+            </AsyncButton>
+          </div>
+        </div>
+      )}
+
+      {kotOrder && (
+        <div className="modal-overlay">
+          <div className="modal-card invoice-modal">
+            <div className="modal-head no-print">
+              <h2>KOT - {kotOrder.orderNo}</h2>
+              <button onClick={() => setKotOrder(null)}>x</button>
+            </div>
+
+            <div className="receipt-modal-body">
+              <KotReceipt order={kotOrder} settings={orderSettings} />
+            </div>
+
+            <button className="no-print" onClick={() => window.print()}>
+              <Printer size={17} />
+              Print KOT
             </button>
           </div>
         </div>
@@ -992,129 +989,17 @@ export default function RestaurantOrders() {
               <button onClick={() => setPaidInvoice(null)}>x</button>
             </div>
 
-            <div className={`restaurant-invoice-print invoice-print-area restaurant-print-${String(orderSettings.invoicePrintSize || "80MM").toLowerCase()}`}>
-              <div className="restaurant-invoice-brand">
-                <div>
-                  {orderSettings.logo ? (
-                    <img src={orderSettings.logo} alt={orderSettings.storeName || "BhojanMitra"} />
-                  ) : (
-                    <strong>{orderSettings.storeShortName || "BM"}</strong>
-                  )}
-                </div>
-                <section>
-                  <h1>{orderSettings.storeName || "BhojanMitra"}</h1>
-                  {(orderSettings.showStoreDetails ?? true) && (
-                    <>
-                      <p>{orderSettings.storeAddress || "Restaurant & Billing Management"}</p>
-                      {orderSettings.storeContact && <p>Phone: {orderSettings.storeContact}</p>}
-                      {orderSettings.storeEmail && <p>Email: {orderSettings.storeEmail}</p>}
-                    </>
-                  )}
-                  {(orderSettings.showGSTDetails ?? true) && orderSettings.gstNumber && <p>GSTIN: {orderSettings.gstNumber}</p>}
-                </section>
-              </div>
-
-              <div className="restaurant-invoice-title">
-                <div>
-                  <span>Tax Invoice</span>
-                  <h2>{getInvoiceNo(paidInvoice)}</h2>
-                </div>
-                <b>{String(orderSettings.invoicePrintSize || "80MM").toUpperCase()}</b>
-              </div>
-
-              <div className="invoice-meta-grid">
-                <div><span>Order No</span><b>{paidInvoice.orderNo}</b></div>
-                <div><span>Order Type</span><b>{paidInvoice.orderType === "delivery" ? "Delivery" : `Dine-in Table ${paidInvoice.tableNo}`}</b></div>
-                <div><span>Invoice Date</span><b>{formatDateTime(paidInvoice.payment?.paidAt || paidInvoice.updatedAt || paidInvoice.createdAt)}</b></div>
-                <div><span>Payment Mode</span><b>{paidInvoice.payment?.mode || "Paid"}</b></div>
-                {(orderSettings.showCustomerDetails ?? true) && (
-                  <>
-                    <div><span>Customer</span><b>{paidInvoice.customerName || "Walk-in Customer"}</b></div>
-                    <div><span>Contact</span><b>{paidInvoice.customerPhone || "N/A"}</b></div>
-                    {paidInvoice.customerEmail && <div><span>Email</span><b>{paidInvoice.customerEmail}</b></div>}
-                    {paidInvoice.deliveryAddress && <div><span>Address</span><b>{paidInvoice.deliveryAddress}</b></div>}
-                  </>
-                )}
-              </div>
-
-              <table className="invoice-table">
-                <thead>
-                  <tr>
-                    <th>Item</th>
-                    <th>Qty</th>
-                    <th>MRP</th>
-                    <th>GST</th>
-                    <th>Total</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {paidInvoice.items?.map((item, index) => (
-                    <tr key={`${item.productId}-${index}`}>
-                      <td>{item.name}</td>
-                      <td>{item.qty}</td>
-                      <td>Rs {Number(item.rate || 0).toFixed(2)}</td>
-                      <td>{Number(item.gst || 0) > 0 ? `${item.gst}%` : "N/A"}</td>
-                      <td>Rs {Number(item.total || 0).toFixed(2)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-
-              <div className="invoice-total">
-                <p><span>{Number(paidInvoice.gstAmount || 0) > 0 ? "Base Price" : "Price"}</span><b>Rs {Number(paidInvoice.subTotal || 0).toFixed(2)}</b></p>
-                {Number(paidInvoice.gstAmount || 0) > 0 && <p><span>GST Included</span><b>Rs {Number(paidInvoice.gstAmount || 0).toFixed(2)}</b></p>}
-                {Number(paidInvoice.discountAmount || 0) > 0 && <p><span>Coupon {paidInvoice.couponCode}</span><b>- Rs {Number(paidInvoice.discountAmount || 0).toFixed(2)}</b></p>}
-                <h2><span>Total Paid</span><b>Rs {Number(paidInvoice.grandTotal || 0).toFixed(2)}</b></h2>
-              </div>
-
-              <p className="invoice-amount-words">
-                <span>Amount in Words:</span> {amountInWords(paidInvoice.grandTotal)}
-              </p>
-
-              <div className="restaurant-invoice-policies">
-                {(orderSettings.showTerms ?? true) && (
-                  <section>
-                    <h3>Terms</h3>
-                    <p>{orderSettings.termsAndConditions || "Goods once served cannot be cancelled after billing."}</p>
-                  </section>
-                )}
-                {(orderSettings.showReturnPolicy ?? true) && (
-                  <section>
-                    <h3>Return Policy</h3>
-                    <p>{orderSettings.returnPolicy || "Please contact the counter for any billing correction."}</p>
-                  </section>
-                )}
-              </div>
-
-              <div className="invoice-signature-row">
-                <div>
-                  <span>Customer Signature</span>
-                </div>
-                <div>
-                  <b>For {orderSettings.storeName || "BhojanMitra"}</b>
-                  <span>Authorized Signatory</span>
-                </div>
-              </div>
-
-              {(orderSettings.showThankYou ?? true) && (
-                <div className="restaurant-invoice-footer">
-                  <p>{orderSettings.thankYouMessage || "Thank you for dining with us!"}</p>
-                  <b>{orderSettings.storeName || "BhojanMitra"}</b>
-                </div>
-              )}
-
-              <p className="invoice-authenticity-note">
-                This is a computer-generated invoice and does not require a physical stamp.
-              </p>
+            <div className="receipt-modal-body">
+              <TaxInvoiceReceipt data={toInvoiceData(paidInvoice, "order")} settings={orderSettings} />
             </div>
 
             <button className="no-print" onClick={() => window.print()}>
               <Printer size={17} />
               Print Bill / Invoice
             </button>
-            <button className="no-print invoice-delete-btn wide" onClick={() => deleteRestaurantInvoice(paidInvoice)}>
+            <AsyncButton className="no-print invoice-delete-btn wide" onClick={() => deleteRestaurantInvoice(paidInvoice)}>
               Delete Invoice
-            </button>
+            </AsyncButton>
           </div>
         </div>
       )}
@@ -1127,7 +1012,7 @@ export default function RestaurantOrders() {
               <button onClick={() => setDiscountOrder(null)}>x</button>
             </div>
             <label>
-              Discount Amount (Rs)
+              Discount Amount (₹)
               <input
                 type="number"
                 value={discountForm.amount}
@@ -1143,7 +1028,7 @@ export default function RestaurantOrders() {
                 onChange={(e) => setDiscountForm({ ...discountForm, reason: e.target.value })}
               />
             </label>
-            <button className="save-grn-btn" onClick={submitDiscount}>Apply Discount</button>
+            <AsyncButton className="save-grn-btn" onClick={submitDiscount}>Apply Discount</AsyncButton>
           </div>
         </div>
       )}
@@ -1165,11 +1050,11 @@ export default function RestaurantOrders() {
                     onChange={() => toggleSplitItem(index)}
                   />
                   <span>{item.qty} x {item.name}</span>
-                  <b>Rs {Number(item.total || 0).toFixed(2)}</b>
+                  <b>₹{Number(item.total || 0).toFixed(2)}</b>
                 </label>
               ))}
             </div>
-            <button className="save-grn-btn" onClick={submitSplit}>Split Selected Items</button>
+            <AsyncButton className="save-grn-btn" onClick={submitSplit}>Split Selected Items</AsyncButton>
           </div>
         </div>
       )}
@@ -1192,7 +1077,7 @@ export default function RestaurantOrders() {
                   </option>
                 ))}
             </select>
-            <button className="save-grn-btn" onClick={submitMerge}>Merge Into Selected Order</button>
+            <AsyncButton className="save-grn-btn" onClick={submitMerge}>Merge Into Selected Order</AsyncButton>
           </div>
         </div>
       )}
@@ -1208,7 +1093,7 @@ export default function RestaurantOrders() {
       <ConfirmActionModal
         open={!!statusTarget}
         title="Update Order Status?"
-        message={`${statusTarget?.orderNo || "Order"} ko "${statusTarget?.status || ""}" mark karna hai?`}
+        message={`${statusTarget?.orderNo || "Order"} will be marked as "${statusTarget?.status || ""}". Do you want to continue?`}
         confirmText="Update Status"
         onCancel={() => setStatusTarget(null)}
         onConfirm={confirmStatusUpdate}
@@ -1216,21 +1101,22 @@ export default function RestaurantOrders() {
 
       {newOrderOpen && (
         <div className="product-modal-overlay">
-          <div className="modal-card large captain-order-modal">
+          <div className="modal-card large captain-order-modal" role="dialog" aria-modal="true" aria-labelledby="new-order-title" aria-busy={placingNewOrder}>
             <div className="product-modal-head">
               <div>
-                <h2>New Order</h2>
+                <h2 id="new-order-title">New Order</h2>
                 <p className="captain-order-subhead">Take an order table-side, waiter/captain style</p>
               </div>
-              <button type="button" onClick={() => setNewOrderOpen(false)} aria-label="Close"><X size={18} /></button>
+              <button type="button" disabled={placingNewOrder} onClick={() => setNewOrderOpen(false)} aria-label="Close"><X size={18} /></button>
             </div>
 
             <div className="captain-order-body">
-              <div className="captain-order-left">
+              <fieldset className="captain-order-left" disabled={placingNewOrder}>
                 <div className="captain-order-toggle">
                   <button
                     type="button"
                     className={!newOrderIsDelivery ? "active" : ""}
+                    aria-pressed={!newOrderIsDelivery}
                     onClick={() => setNewOrderIsDelivery(false)}
                   >
                     <Utensils size={15} /> Dine-in
@@ -1238,6 +1124,7 @@ export default function RestaurantOrders() {
                   <button
                     type="button"
                     className={newOrderIsDelivery ? "active" : ""}
+                    aria-pressed={newOrderIsDelivery}
                     onClick={() => setNewOrderIsDelivery(true)}
                   >
                     <ClipboardList size={15} /> Delivery
@@ -1287,24 +1174,24 @@ export default function RestaurantOrders() {
                         </div>
                         <div className="captain-order-item-name">
                           <b>{product.name}</b>
-                          <span>Rs {Number(product.mrp || product.sellingPrice || 0).toFixed(2)}</span>
+                          <span>₹{Number(product.mrp || product.sellingPrice || 0).toFixed(2)}</span>
                         </div>
                         <div className="menu-add-control">
                           {inCart ? (
                             <>
-                              <button type="button" onClick={() => changeNewOrderQty(product, -1)}>-</button>
+                              <button type="button" aria-label={`Remove one ${product.name}`} onClick={() => changeNewOrderQty(product, -1)}>-</button>
                               <b>{inCart.qty}</b>
-                              <button type="button" onClick={() => changeNewOrderQty(product, 1)}>+</button>
+                              <button type="button" aria-label={`Add one ${product.name}`} onClick={() => changeNewOrderQty(product, 1)}>+</button>
                             </>
                           ) : (
-                            <button type="button" onClick={() => changeNewOrderQty(product, 1)}>Add</button>
+                            <button type="button" aria-label={`Add ${product.name}`} onClick={() => changeNewOrderQty(product, 1)}>Add</button>
                           )}
                         </div>
                       </div>
                     );
                   })}
                 </div>
-              </div>
+              </fieldset>
 
               <div className="captain-order-right">
                 <h3>Order Summary</h3>
@@ -1315,7 +1202,7 @@ export default function RestaurantOrders() {
                     {newOrderCart.map((item) => (
                       <div key={item.productId}>
                         <span>{item.name}</span>
-                        <b>{item.qty} x Rs {item.rate.toFixed(2)}</b>
+                        <b>{item.qty} x ₹{item.rate.toFixed(2)}</b>
                       </div>
                     ))}
                   </div>
@@ -1323,17 +1210,17 @@ export default function RestaurantOrders() {
 
                 <div className="captain-order-total">
                   <span>{newOrderCartQty} items</span>
-                  <b>Rs {newOrderCartTotal.toFixed(2)}</b>
+                  <b>₹{newOrderCartTotal.toFixed(2)}</b>
                 </div>
 
-                <button
+                <AsyncButton
                   type="button"
                   className="captain-order-submit-btn"
                   disabled={placingNewOrder || newOrderCart.length === 0}
                   onClick={submitNewOrder}
                 >
-                  {placingNewOrder ? "Placing..." : "Place Order"}
-                </button>
+                  {placingNewOrder ? "Placing..." : newOrderCart.length === 0 ? "Add items to place order" : "Place Order"}
+                </AsyncButton>
               </div>
             </div>
           </div>

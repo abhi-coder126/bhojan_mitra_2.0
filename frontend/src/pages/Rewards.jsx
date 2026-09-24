@@ -1,3 +1,5 @@
+import AsyncForm from "../components/AsyncForm";
+import AsyncButton from "../components/AsyncButton";
 import { useEffect, useState } from "react";
 import API from "../api/axios";
 
@@ -67,7 +69,7 @@ export default function Rewards() {
         </div>
       </div>
 
-      <form className="panel form-grid" onSubmit={submit}>
+      <AsyncForm className="panel form-grid" onSubmit={submit}>
         <input
           placeholder="Tier title (e.g. First Order Bonus)"
           value={form.title}
@@ -113,7 +115,7 @@ export default function Rewards() {
         />
 
         <button>Create Reward Tier</button>
-      </form>
+      </AsyncForm>
 
       <div className="panel">
         <h2>Reward Tiers</h2>
@@ -142,8 +144,8 @@ export default function Rewards() {
                   <td>{tier.validityDays} days</td>
                   <td>{tier.isActive ? "Active" : "Paused"}</td>
                   <td>
-                    <button onClick={() => toggleActive(tier)}>{tier.isActive ? "Pause" : "Activate"}</button>
-                    <button onClick={() => remove(tier._id)}>Delete</button>
+                    <AsyncButton onClick={() => toggleActive(tier)}>{tier.isActive ? "Pause" : "Activate"}</AsyncButton>
+                    <AsyncButton onClick={() => remove(tier._id)}>Delete</AsyncButton>
                   </td>
                 </tr>
               ))
