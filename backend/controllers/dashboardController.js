@@ -9,6 +9,7 @@ const RawMaterial = require("../models/RawMaterial");
 const Table = require("../models/Table");
 const RestaurantOrder = require("../models/RestaurantOrder");
 const Branch = require("../models/Branch");
+const Setting = require("../models/Setting");
 const { customerBranchFilter } = require("../utils/customerUpsert");
 const { royaltyPeriods } = require("../utils/royalty");
 
@@ -67,7 +68,7 @@ exports.getDashboard = async (req, res) => {
     const purchases = await Purchase.find(dateQuery).sort({ createdAt: -1 });
     const salesReturns = await SalesReturn.find(dateQuery).sort({ createdAt: -1 });
 
-    const allProducts = await Product.find();
+    const allProducts = await Product.find().lean();
     const customers = await Customer.find(customerBranchFilter()).select("_id").lean();
     const vendors = await Vendor.find();
 
@@ -107,9 +108,23 @@ exports.getDashboard = async (req, res) => {
 
     const today = new Date();
 
+    // Alert thresholds come from this branch's Settings; an item's own
+    // lowStockLimit still wins when one is set on the item itself.
+    const settings = await Setting.findOne().lean();
+    const lowStockFallback = Number(settings?.lowStockAlertQty ?? 5);
+    const expiryAlertDays = Number(settings?.expiryAlertDays ?? 30);
+    const expiryCutoff = new Date(today.getTime() + expiryAlertDays * 24 * 60 * 60 * 1000);
+
     const expiredItems = allProducts.filter((p) => {
       if (!p.expiryDate) return false;
       return new Date(p.expiryDate) < today;
+    });
+
+    // Not expired yet, but due within the alert window set in Settings.
+    const expiringSoonItems = allProducts.filter((p) => {
+      if (!p.expiryDate) return false;
+      const expiry = new Date(p.expiryDate);
+      return expiry >= today && expiry <= expiryCutoff;
     });
 
     const outOfStockItems = allProducts.filter((p) => Number(p.stock || 0) <= 0);
@@ -117,7 +132,7 @@ exports.getDashboard = async (req, res) => {
     const lowStockItems = allProducts.filter(
       (p) =>
         Number(p.stock || 0) > 0 &&
-        Number(p.stock || 0) <= Number(p.lowStockLimit || 5)
+        Number(p.stock || 0) <= Number(p.lowStockLimit || lowStockFallback)
     );
 
     const vendorPendingPayments = vendors.reduce(
@@ -204,6 +219,7 @@ exports.getDashboard = async (req, res) => {
         averageBillValue,
         availableStockValue,
         totalExpiredItems: expiredItems.length,
+        totalExpiringSoonItems: expiringSoonItems.length,
         totalCustomers: customers.length,
         totalVendors: vendors.length,
       },
@@ -223,6 +239,7 @@ exports.getDashboard = async (req, res) => {
       notices: {
         lastLogin: new Date(),
         expiredItems: expiredItems.slice(0, 5),
+        expiringSoonItems: expiringSoonItems.slice(0, 5),
         outOfStockItems: outOfStockItems.slice(0, 5),
         lowStockItems: lowStockItems.slice(0, 5),
         vendorPendingPayments,

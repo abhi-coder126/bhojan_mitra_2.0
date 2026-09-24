@@ -64,11 +64,13 @@ export function TaxInvoiceReceipt({ data, settings }) {
   const showGst = settings?.showGSTDetails ?? true;
   const showCustomer = settings?.showCustomerDetails ?? true;
   const showThanks = settings?.showThankYou ?? true;
+  const terms = (settings?.showTerms ?? true) ? settings?.termsAndConditions?.trim() : "";
+  const returnPolicy = (settings?.showReturnPolicy ?? true) ? settings?.returnPolicy?.trim() : "";
 
   return (
     <ReceiptFrame settings={settings}>
       <div className="receipt-center">
-        <div className="receipt-store">{settings?.storeName || "BhojanMitra"}</div>
+        <div className="receipt-store">{settings?.storeName || "RestroSethu"}</div>
         {showStore && settings?.storeAddress && <div className="receipt-small">{settings.storeAddress}</div>}
         {showStore && settings?.storeContact && <div className="receipt-small">Phone: {settings.storeContact}</div>}
         {showGst && settings?.gstNumber && <div className="receipt-small">GSTIN: {settings.gstNumber}</div>}
@@ -122,10 +124,25 @@ export function TaxInvoiceReceipt({ data, settings }) {
       <Row left="Payment" right={data.paymentLabel} />
       <div className="receipt-line solid" />
 
+      {(terms || returnPolicy) && (
+        <div className="receipt-policies">
+          {terms && (
+            <p>
+              <b>Terms:</b> {terms}
+            </p>
+          )}
+          {returnPolicy && (
+            <p>
+              <b>Returns:</b> {returnPolicy}
+            </p>
+          )}
+        </div>
+      )}
+
       <div className="receipt-center receipt-thanks">
         {showThanks && <div>{settings?.thankYouMessage || "Thank you for dining with us!"}</div>}
         {showThanks && <div>Visit again.</div>}
-        <div className="receipt-powered">Powered by BhojanMitra</div>
+        <div className="receipt-powered">Powered by RestroSethu</div>
       </div>
       <div className="receipt-line dashed" />
     </ReceiptFrame>
@@ -142,7 +159,7 @@ export function KotReceipt({ order, settings }) {
     <ReceiptFrame settings={settings}>
       <div className="receipt-center">
         <div className="receipt-title kot">KOT</div>
-        <div className="receipt-store small">{settings?.storeName || "BhojanMitra"}</div>
+        <div className="receipt-store small">{settings?.storeName || "RestroSethu"}</div>
       </div>
 
       <div className="receipt-line solid" />
@@ -182,7 +199,7 @@ export function KotReceipt({ order, settings }) {
       <div className="receipt-kot-total">
         Total: <b>{totalQty}</b> {totalQty === 1 ? "item" : "items"}
       </div>
-      <div className="receipt-center receipt-powered">Powered by BhojanMitra</div>
+      <div className="receipt-center receipt-powered">Powered by RestroSethu</div>
       <div className="receipt-line dashed" />
     </ReceiptFrame>
   );

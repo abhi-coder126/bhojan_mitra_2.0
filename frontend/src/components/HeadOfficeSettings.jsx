@@ -70,7 +70,7 @@ export function ManageBranchesPanel({ showToast }) {
 }
 
 const SUPPORT_FIELDS = [
-  { key: "supportName", label: "Support team name", placeholder: "BhojanMitra Support" },
+  { key: "supportName", label: "Support team name", placeholder: "RestroSethu Support" },
   { key: "supportWhatsapp", label: "WhatsApp number", placeholder: "98XXXXXXXX", inputMode: "tel" },
   { key: "supportPhone", label: "Call number", placeholder: "+91 98XXXXXXXX", inputMode: "tel" },
   { key: "supportEmail", label: "Support email", placeholder: "support@yourcompany.com", type: "email" },

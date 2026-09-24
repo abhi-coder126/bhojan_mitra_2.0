@@ -2,6 +2,7 @@ import AsyncButton from "../components/AsyncButton";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Banknote, Bell, ChefHat, CheckCircle2, ClipboardList, CreditCard, Minus, Plus, Printer, QrCode, RefreshCcw, Search, Smartphone, Utensils, X } from "lucide-react";
 import API from "../api/axios";
+import { hasProductImage, productImageSrc } from "../api/productImage";
 import { notifyOrdersUpdated } from "../api/orderAlarm";
 import { ToastViewport, useToast } from "../components/Toast";
 import DeleteConfirmModal from "../components/DeleteConfirmModal";
@@ -25,8 +26,8 @@ const defaultOrderSettings = {
   restaurantOrderPopupEnabled: true,
   restaurantOrderRefreshSeconds: 5,
   restaurantTableCount: 28,
-  storeName: "BhojanMitra",
-  storeShortName: "BhojanMitra",
+  storeName: "RestroSethu",
+  storeShortName: "RestroSethu",
   storeAddress: "Restaurant & Billing Management",
   gstNumber: "",
   storeContact: "",
@@ -1150,7 +1151,11 @@ export default function RestaurantOrders() {
                     return (
                       <div className={`captain-order-item-row ${inCart ? "in-cart" : ""}`} key={product._id}>
                         <div className="captain-order-item-media">
-                          {product.image ? <img src={product.image} alt={product.name} /> : <span>{product.name?.slice(0, 1) || "M"}</span>}
+                          {hasProductImage(product) ? (
+                            <img src={productImageSrc(product)} alt={product.name} loading="lazy" />
+                          ) : (
+                            <span>{product.name?.slice(0, 1) || "M"}</span>
+                          )}
                         </div>
                         <div className="captain-order-item-name">
                           <b>{product.name}</b>

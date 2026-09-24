@@ -135,7 +135,7 @@ function BranchFormModal({ branch, onClose, onSaved }) {
         <h3>Branch details</h3>
         <div className="bm-grid">
           <Field label="Branch name *">
-            <input value={form.name} onChange={(e) => set("name", e.target.value)} placeholder="BhojanMitra Sector 17" />
+            <input value={form.name} onChange={(e) => set("name", e.target.value)} placeholder="RestroSethu Sector 17" />
           </Field>
           <Field label="Branch code *" hint="2-10 letters/numbers. Appears in QR links, e.g. /menu/CHD17/5">
             <input
@@ -334,6 +334,9 @@ export default function BranchManagement() {
   const [loadError, setLoadError] = useState("");
   const [modal, setModal] = useState(null); // { type, branch }
   const [toast, setToast] = useState("");
+  // Today's sales cards at the top always show "today", independent of the period
+  // tabs below (which the admin may switch to "this month" etc. for the table).
+  const [todayData, setTodayData] = useState(null);
 
   const load = useCallback(async () => {
     if (period === "custom" && (!custom.startDate || !custom.endDate)) return;
@@ -348,9 +351,22 @@ export default function BranchManagement() {
     }
   }, [period, custom, showArchived]);
 
+  const loadToday = useCallback(async () => {
+    try {
+      const res = await API.get("/branches", { params: { period: "today", includeArchived: showArchived } });
+      setTodayData(res.data);
+    } catch {
+      // The period-tab table above already surfaces a load error; the cards can stay empty.
+    }
+  }, [showArchived]);
+
   useEffect(() => {
     load();
   }, [load]);
+
+  useEffect(() => {
+    loadToday();
+  }, [loadToday]);
 
   useEffect(() => {
     if (!toast) return undefined;
@@ -362,6 +378,7 @@ export default function BranchManagement() {
     setModal(null);
     setToast(message);
     load();
+    loadToday();
   };
 
   const openBranch = (branch) => {
@@ -373,6 +390,7 @@ export default function BranchManagement() {
     await API.patch(`/branches/${branch._id}/status`, { status: "active" });
     setToast(branch.status === "archived" ? `${branch.name} restored` : `${branch.name} is active again`);
     load();
+    loadToday();
   };
 
   const archive = async (password) => {
@@ -382,14 +400,19 @@ export default function BranchManagement() {
     saved(`${branch.name} removed. Its history is kept.`);
   };
 
-  const rows = useMemo(() => {
-    const term = search.trim().toLowerCase();
-    const branches = data?.branches || [];
-    if (!term) return branches;
-    return branches.filter((b) =>
-      [b.name, b.code, b.city, b.admin?.email].some((value) => String(value || "").toLowerCase().includes(term))
-    );
-  }, [data, search]);
+  const filterByTerm = useCallback(
+    (branches) => {
+      const term = search.trim().toLowerCase();
+      if (!term) return branches;
+      return branches.filter((b) =>
+        [b.name, b.code, b.city, b.admin?.email].some((value) => String(value || "").toLowerCase().includes(term))
+      );
+    },
+    [search]
+  );
+
+  const rows = useMemo(() => filterByTerm(data?.branches || []), [data, filterByTerm]);
+  const todayRows = useMemo(() => filterByTerm(todayData?.branches || []), [todayData, filterByTerm]);
 
   const totals = data?.totals;
   const canAdd = Boolean(platform?.multiBranchEnabled);
@@ -421,6 +444,41 @@ export default function BranchManagement() {
       {toast && (
         <div className="bm-notice" role="status" style={{ borderColor: "#bbf7d0", background: "#f0fdf4", color: "#166534" }}>
           {toast}
+        </div>
+      )}
+
+      {todayRows.length > 0 && (
+        <div>
+          <h2 className="bm-section-title">Today's sales by branch</h2>
+          <div className="bm-branch-cards">
+            {todayRows.map((b) => {
+              const openable = b.status !== "archived";
+              return (
+                <button
+                  key={b._id}
+                  type="button"
+                  className={`bm-branch-card${openable ? "" : " is-disabled"}`}
+                  onClick={() => openable && openBranch(b)}
+                  disabled={!openable}
+                  title={openable ? `Open ${b.name}'s dashboard` : `${b.name} is removed`}
+                >
+                  <div className="bm-branch-card-head">
+                    <span className="bm-branch-card-name">{b.name}</span>
+                    <StatusBadge status={b.status} />
+                  </div>
+                  <span className="bm-branch-card-code">
+                    {b.code}
+                    {b.city ? ` · ${b.city}` : ""}
+                  </span>
+                  <div className="bm-branch-card-sales">
+                    <span>Today's sales</span>
+                    <strong>{money(b.sales.grossIncGst)}</strong>
+                    <small>{b.sales.bills} bills</small>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
         </div>
       )}
 
@@ -545,9 +603,8 @@ export default function BranchManagement() {
                     <td className="num">{b.sales.bills}</td>
                     <td className="num">{money(b.sales.grossIncGst)}</td>
                     <td className="num">{money(b.sales.netExGst)}</td>
-                    <td>
-                      <b>{b.royalty.percent}%</b>
-                      <div className="bm-muted">of {b.royalty.baseLabel.toLowerCase()}</div>
+                    <td className="bm-royalty-terms">
+                      <b>{b.royalty.percent}%</b> <span className="bm-muted">of {b.royalty.baseLabel.toLowerCase()}</span>
                     </td>
                     <td className="num">
                       <b>{money(b.royalty.amount)}</b>

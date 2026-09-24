@@ -1,6 +1,7 @@
 import AsyncForm from "../components/AsyncForm";
 import { useEffect, useState } from "react";
 import API from "../api/axios";
+import { SkeletonTable } from "../components/Skeleton";
 import DeleteConfirmModal from "../components/DeleteConfirmModal";
 
 const emptyCoupon = {
@@ -16,6 +17,7 @@ const emptyCoupon = {
 
 export default function Coupons() {
   const [coupons, setCoupons] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [form, setForm] = useState(emptyCoupon);
   const [deleteTarget, setDeleteTarget] = useState(null);
 
@@ -25,7 +27,7 @@ export default function Coupons() {
   };
 
   useEffect(() => {
-    fetchCoupons();
+    fetchCoupons().finally(() => setLoading(false));
   }, []);
 
   const submit = async (e) => {
@@ -141,7 +143,13 @@ export default function Coupons() {
           </thead>
 
           <tbody>
-            {coupons.length === 0 ? (
+            {loading ? (
+              <tr>
+                <td colSpan="7" className="table-loading-cell">
+                  <SkeletonTable rows={5} columns={7} />
+                </td>
+              </tr>
+            ) : coupons.length === 0 ? (
               <tr>
                 <td colSpan="7">No coupon found</td>
               </tr>

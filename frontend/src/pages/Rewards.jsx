@@ -2,6 +2,7 @@ import AsyncForm from "../components/AsyncForm";
 import AsyncButton from "../components/AsyncButton";
 import { useEffect, useState } from "react";
 import API from "../api/axios";
+import { SkeletonTable } from "../components/Skeleton";
 
 const emptyTier = {
   title: "",
@@ -15,6 +16,7 @@ const emptyTier = {
 
 export default function Rewards() {
   const [tiers, setTiers] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [issued, setIssued] = useState([]);
   const [form, setForm] = useState(emptyTier);
 
@@ -29,8 +31,7 @@ export default function Rewards() {
   };
 
   useEffect(() => {
-    fetchTiers();
-    fetchIssued();
+    Promise.all([fetchTiers(), fetchIssued()]).finally(() => setLoading(false));
   }, []);
 
   const submit = async (e) => {
@@ -131,7 +132,13 @@ export default function Rewards() {
             </tr>
           </thead>
           <tbody>
-            {tiers.length === 0 ? (
+            {loading ? (
+              <tr>
+                <td colSpan="6" className="table-loading-cell">
+                  <SkeletonTable rows={4} columns={6} />
+                </td>
+              </tr>
+            ) : tiers.length === 0 ? (
               <tr>
                 <td colSpan="6">No reward tiers yet</td>
               </tr>
@@ -167,7 +174,13 @@ export default function Rewards() {
             </tr>
           </thead>
           <tbody>
-            {issued.length === 0 ? (
+            {loading ? (
+              <tr>
+                <td colSpan="5" className="table-loading-cell">
+                  <SkeletonTable rows={4} columns={5} />
+                </td>
+              </tr>
+            ) : issued.length === 0 ? (
               <tr>
                 <td colSpan="5">No rewards issued yet</td>
               </tr>

@@ -8,10 +8,10 @@ const {
   deleteSale,
   clearSales,
 } = require("../controllers/saleController");
-const { protect, requireRole, requireBranch } = require("../middleware/authMiddleware");
+const { protect, requireRole, requireBranch, denyMasterBilling } = require("../middleware/authMiddleware");
 router.use(protect, requireBranch);
 
-router.post("/", createSale);
+router.post("/", denyMasterBilling, createSale);
 router.get("/", getSales);
 router.get("/latest", getLatestSale);
 // Wipes the entire sales history -- restrict to the most trusted roles.

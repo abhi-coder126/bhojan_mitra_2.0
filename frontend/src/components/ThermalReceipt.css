@@ -127,6 +127,18 @@
   overflow-wrap: anywhere;
 }
 
+.receipt-policies {
+  margin-top: 6px;
+  font-size: 11px;
+  line-height: 1.35;
+  color: #222222;
+}
+
+.receipt-policies p {
+  margin: 0 0 3px;
+  overflow-wrap: anywhere;
+}
+
 .receipt-thanks {
   margin: 8px 0 4px;
   font-size: 14px;

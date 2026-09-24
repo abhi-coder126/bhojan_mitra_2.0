@@ -7,13 +7,27 @@ const {
   setBranchStatus,
   archiveBranch,
   upsertBranchAdmin,
+  getMyBranchProfile,
+  createBranchChangeRequest,
+  listBranchChangeRequests,
+  reviewBranchChangeRequest,
 } = require("../controllers/branchController");
-const { protect, requireMaster } = require("../middleware/authMiddleware");
+const { protect, requireMaster, requireBranch, requireRole } = require("../middleware/authMiddleware");
 
 const router = express.Router();
+router.use(protect);
 
-// Branch management is head-office only.
-router.use(protect, requireMaster);
+// A branch admin may view their own outlet's profile and ask head office to change
+// it. Nothing here writes to the Branch record -- approval does that.
+const branchManagers = requireRole("admin", "owner", "manager");
+router.get("/profile", requireBranch, branchManagers, getMyBranchProfile);
+router.post("/profile/request", requireBranch, branchManagers, createBranchChangeRequest);
+
+// Everything below is head-office only.
+router.use(requireMaster);
+
+router.get("/change-requests", listBranchChangeRequests);
+router.patch("/change-requests/:id", reviewBranchChangeRequest);
 
 router.get("/", getBranches);
 router.get("/options", getBranchOptions);

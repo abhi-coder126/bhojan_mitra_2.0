@@ -325,25 +325,6 @@ export default function Settings() {
                 />
               </div>
 
-              <h2 className="settings-subhead">Business Hours</h2>
-              <div className="settings-form-grid">
-                <label className="settings-inline-field">
-                  <span>Opens at</span>
-                  <input
-                    type="time"
-                    value={settings.businessOpenTime}
-                    onChange={(e) => change("businessOpenTime", e.target.value)}
-                  />
-                </label>
-                <label className="settings-inline-field">
-                  <span>Closes at</span>
-                  <input
-                    type="time"
-                    value={settings.businessCloseTime}
-                    onChange={(e) => change("businessCloseTime", e.target.value)}
-                  />
-                </label>
-              </div>
             </div>
           )}
 
@@ -365,25 +346,6 @@ export default function Settings() {
                   <option value="58MM">58MM</option>
                   <option value="80MM">80MM</option>
                   <option value="A4">A4</option>
-                </select>
-
-                <select
-                  value={settings.currencySymbol}
-                  onChange={(e) => change("currencySymbol", e.target.value)}
-                >
-                  <option value="₹">₹ (Rupee)</option>
-                  <option value="$">$ (Dollar)</option>
-                  <option value="€">{"€"} (Euro)</option>
-                  <option value="£">{"£"} (Pound)</option>
-                </select>
-
-                <select
-                  value={settings.dateFormat}
-                  onChange={(e) => change("dateFormat", e.target.value)}
-                >
-                  <option value="DD-MM-YYYY">DD-MM-YYYY</option>
-                  <option value="MM-DD-YYYY">MM-DD-YYYY</option>
-                  <option value="YYYY-MM-DD">YYYY-MM-DD</option>
                 </select>
 
                 <textarea
@@ -413,7 +375,6 @@ export default function Settings() {
                 <Toggle title="Terms" value={settings.showTerms} onClick={() => change("showTerms", !settings.showTerms)} />
                 <Toggle title="Return Policy" value={settings.showReturnPolicy} onClick={() => change("showReturnPolicy", !settings.showReturnPolicy)} />
                 <Toggle title="Thank You Message" value={settings.showThankYou} onClick={() => change("showThankYou", !settings.showThankYou)} />
-                <Toggle title="QR Code" value={settings.qrCodeEnabled} onClick={() => change("qrCodeEnabled", !settings.qrCodeEnabled)} />
               </div>
             </div>
           )}
@@ -427,7 +388,6 @@ export default function Settings() {
                 <Toggle title="UPI" value={settings.upiEnabled} onClick={() => change("upiEnabled", !settings.upiEnabled)} />
                 <Toggle title="Card" value={settings.cardEnabled} onClick={() => change("cardEnabled", !settings.cardEnabled)} />
                 <Toggle title="Partial Payment" value={settings.partialPaymentEnabled} onClick={() => change("partialPaymentEnabled", !settings.partialPaymentEnabled)} />
-                <Toggle title="Bank Transfer" value={settings.bankTransferEnabled} onClick={() => change("bankTransferEnabled", !settings.bankTransferEnabled)} />
               </div>
             </div>
           )}
@@ -510,23 +470,6 @@ export default function Settings() {
                   onChange={(e) => change("expiryAlertDays", e.target.value)}
                 />
 
-                <select
-                  value={settings.themeMode}
-                  onChange={(e) => change("themeMode", e.target.value)}
-                >
-                  <option value="light">Light Mode</option>
-                  <option value="dark">Dark Mode</option>
-                </select>
-
-                <select
-                  value={settings.timezone}
-                  onChange={(e) => change("timezone", e.target.value)}
-                >
-                  <option value="Asia/Kolkata">Asia/Kolkata (IST)</option>
-                  <option value="Asia/Dubai">Asia/Dubai (GST)</option>
-                  <option value="Asia/Kathmandu">Asia/Kathmandu (NPT)</option>
-                  <option value="UTC">UTC</option>
-                </select>
               </div>
             </div>
           )}

@@ -2267,36 +2267,9 @@
   }
 }
 
+/* Printing is handled per print surface: the thermal receipt in
+   components/ThermalReceipt.css, and the table QR sheet below. */
 @media print {
-  @page {
-    size: A4;
-    margin: 12mm;
-  }
-
-  body * {
-    visibility: hidden !important;
-  }
-
-  .invoice-print-area,
-  .invoice-print-area * {
-    visibility: visible !important;
-  }
-
-  .invoice-print-area {
-    position: fixed !important;
-    inset: 0 !important;
-    width: 100% !important;
-    max-height: none !important;
-    overflow: visible !important;
-    border: none !important;
-    box-shadow: none !important;
-    padding: 0 !important;
-  }
-
-  .invoice-table tr {
-    page-break-inside: avoid;
-  }
-
   .no-print {
     display: none !important;
   }
@@ -3990,7 +3963,44 @@
   }
 
   .restaurant-dashboard-filters {
-    @apply sticky top-3 z-20 grid grid-cols-[220px_auto_auto_auto] items-end gap-3;
+    @apply sticky top-3 z-20 flex flex-wrap items-end justify-between gap-3;
+  }
+
+  .dashboard-filter-left {
+    @apply flex flex-wrap items-end gap-3;
+  }
+
+  /* Financial year sits in the right-hand corner of the filter bar. */
+  .dashboard-filter-fy {
+    @apply ml-auto min-w-[170px] text-right;
+  }
+
+  .dashboard-filter-range {
+    @apply inline-flex h-10 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-sm font-bold text-slate-800 shadow-none hover:border-[#84091e] hover:bg-[#84091e]/5 hover:text-[#84091e];
+  }
+
+  .dashboard-range-modal {
+    @apply w-full max-w-[420px] gap-4;
+  }
+
+  .dashboard-range-fields {
+    @apply grid grid-cols-2 gap-3;
+  }
+
+  .dashboard-range-fields label {
+    @apply grid gap-1.5;
+  }
+
+  .dashboard-range-fields label span {
+    @apply text-xs font-black uppercase tracking-[0.06em] text-slate-500;
+  }
+
+  .dashboard-range-fields input {
+    @apply h-10 rounded-lg border-slate-200 bg-white py-2;
+  }
+
+  .dashboard-range-actions {
+    @apply flex justify-end gap-2;
   }
 
   .restaurant-dashboard-filters label {
@@ -4995,7 +5005,7 @@
   }
 }
 
-/* BhojanMitra red/white theme overrides */
+/* RestroSethu red/white theme overrides */
 @layer components {
   body {
     @apply bg-red-50;
@@ -5551,214 +5561,6 @@
   }
 }
 
-@media print {
-  @page {
-    size: A4;
-    margin: 7mm;
-  }
-
-  html,
-  body {
-    width: 210mm !important;
-    min-height: 297mm !important;
-    overflow: visible !important;
-    background: #ffffff !important;
-  }
-
-  body * {
-    visibility: hidden !important;
-  }
-
-  .pos-modal-overlay,
-  .last-invoice-modal,
-  .invoice-print-area,
-  .invoice-print-area * {
-    visibility: visible !important;
-  }
-
-  .pos-modal-overlay,
-  .last-invoice-modal {
-    position: static !important;
-    display: block !important;
-    width: auto !important;
-    height: auto !important;
-    max-height: none !important;
-    overflow: visible !important;
-    background: #ffffff !important;
-    box-shadow: none !important;
-    padding: 0 !important;
-  }
-
-  .app-layout,
-  .main-content,
-  .pos-fullscreen {
-    display: block !important;
-    width: auto !important;
-    height: auto !important;
-    min-height: 0 !important;
-    max-height: none !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    overflow: visible !important;
-    background: #ffffff !important;
-  }
-
-  .pos-fullscreen > :not(.pos-modal-overlay),
-  .last-invoice-modal > :not(.invoice-print-area) {
-    display: none !important;
-  }
-
-  .invoice-print-area {
-    position: static !important;
-    inset: auto !important;
-    display: block !important;
-    width: 100% !important;
-    max-height: none !important;
-    overflow: visible !important;
-    border: none !important;
-    border-radius: 0 !important;
-    box-shadow: none !important;
-    padding: 0 !important;
-    color: #020617 !important;
-    font-size: 10px !important;
-    page-break-after: avoid !important;
-  }
-
-  .invoice-title-strip {
-    margin-bottom: 8px !important;
-    border-radius: 8px !important;
-    padding: 5px 10px !important;
-  }
-
-  .invoice-title-strip h2 {
-    font-size: 17px !important;
-    line-height: 1.1 !important;
-  }
-
-  .invoice-title-strip span,
-  .invoice-store-block p,
-  .invoice-barcode-card p,
-  .invoice-meta-grid span,
-  .invoice-policy-box p,
-  .invoice-footer small {
-    font-size: 8px !important;
-    line-height: 1.35 !important;
-  }
-
-  .invoice-header {
-    margin-bottom: 8px !important;
-    gap: 10px !important;
-    padding: 10px !important;
-    border-radius: 10px !important;
-  }
-
-  .invoice-store-block h1 {
-    font-size: 19px !important;
-    line-height: 1.05 !important;
-  }
-
-  .invoice-barcode-card {
-    padding: 7px !important;
-    border-radius: 10px !important;
-  }
-
-  .invoice-barcode {
-    padding: 4px 8px !important;
-  }
-
-  .invoice-barcode svg {
-    height: 48px !important;
-  }
-
-  .invoice-barcode strong {
-    margin-top: 2px !important;
-    font-size: 11px !important;
-  }
-
-  .invoice-meta-grid {
-    margin-bottom: 8px !important;
-    gap: 6px !important;
-  }
-
-  .invoice-meta-grid div,
-  .invoice-info div,
-  .invoice-policy-box,
-  .invoice-total {
-    border-radius: 9px !important;
-    padding: 8px !important;
-  }
-
-  .invoice-meta-grid b,
-  .invoice-info p,
-  .invoice-total p,
-  .invoice-policy-box h3,
-  .invoice-footer p,
-  .invoice-footer b {
-    font-size: 9px !important;
-    line-height: 1.35 !important;
-  }
-
-  .invoice-info {
-    margin-bottom: 8px !important;
-    gap: 8px !important;
-  }
-
-  .invoice-info h3 {
-    margin-bottom: 4px !important;
-    font-size: 10px !important;
-  }
-
-  .invoice-table th,
-  .invoice-table td {
-    padding: 5px 7px !important;
-    font-size: 8.5px !important;
-    line-height: 1.25 !important;
-  }
-
-  .invoice-summary-row {
-    margin-top: 8px !important;
-    grid-template-columns: 1fr 260px !important;
-    gap: 8px !important;
-  }
-
-  .invoice-policy-box {
-    gap: 6px !important;
-  }
-
-  .invoice-total p {
-    padding: 5px 0 !important;
-  }
-
-  .invoice-total h2 {
-    margin-top: 6px !important;
-    padding: 8px !important;
-    font-size: 12px !important;
-  }
-
-  .invoice-footer {
-    margin-top: 10px !important;
-    padding-top: 8px !important;
-    gap: 8px !important;
-  }
-
-  .invoice-footer div {
-    min-width: 150px !important;
-    gap: 18px !important;
-  }
-
-  .invoice-table tr,
-  .invoice-header,
-  .invoice-info,
-  .invoice-summary-row,
-  .invoice-footer {
-    break-inside: avoid !important;
-    page-break-inside: avoid !important;
-  }
-
-  .no-print {
-    display: none !important;
-  }
-}
 
 @layer components {
   .scratch-overlay {

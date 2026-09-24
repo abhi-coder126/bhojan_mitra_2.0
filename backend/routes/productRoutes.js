@@ -7,10 +7,15 @@ const {
   deleteProduct,
   clearProducts,
   bulkImportProducts,
+  getProductImage,
 } = require("../controllers/productController");
 const { protect, requireRole, requireBranch } = require("../middleware/authMiddleware");
 
 const router = express.Router();
+
+// Public: the customer QR menu shows item pictures without a staff login.
+router.get("/:id/image", getProductImage);
+
 router.use(protect, requireBranch);
 
 router.post("/", createProduct);

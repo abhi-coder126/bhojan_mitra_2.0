@@ -1,7 +1,7 @@
 import axios from "axios";
 import { clearSession, getActiveBranch, isMasterAdmin, setActiveBranch } from "./session";
 
-const API_BASE_URL =
+export const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL || "https://bhojan-mitra.onrender.com/api";
 
 const API = axios.create({

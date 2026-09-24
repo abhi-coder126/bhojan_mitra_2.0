@@ -105,4 +105,14 @@ const requireBranch = (req, res, next) => {
   next();
 };
 
-module.exports = { protect, requireRole, requireMaster, requireBranch, inactiveBranchMessage };
+// The master admin can open a branch to view its data (dashboard, reports, etc.)
+// but must never punch a bill or take a payment there -- billing stays with branch
+// staff. Only blocks the master admin; branch staff and public QR orders pass through.
+const denyMasterBilling = (req, res, next) => {
+  if (req.user?.isMaster) {
+    return res.status(403).json({ message: "Master admin cannot perform billing. Please use branch staff login." });
+  }
+  next();
+};
+
+module.exports = { protect, requireRole, requireMaster, requireBranch, denyMasterBilling, inactiveBranchMessage };

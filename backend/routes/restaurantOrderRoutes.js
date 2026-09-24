@@ -18,7 +18,7 @@ const {
   applyRestaurantOrderDiscount,
   rateOrderItems,
 } = require("../controllers/restaurantOrderController");
-const { protect, requireRole, requireBranch } = require("../middleware/authMiddleware");
+const { protect, requireRole, requireBranch, denyMasterBilling } = require("../middleware/authMiddleware");
 const { attachCustomerIfPresent } = require("../utils/customerAuth");
 const { publicBranch, staffOrPublicBranch, unscopedContext } = require("../middleware/branchContext");
 
@@ -32,7 +32,7 @@ const router = express.Router();
 // they sent a customer token, but never blocks a guest checkout.
 router.get("/menu", publicBranch, getMenuProducts);
 // Shared with the staff POS: a staff token places the order in the staff member's branch.
-router.post("/", staffOrPublicBranch, attachCustomerIfPresent, createRestaurantOrder);
+router.post("/", staffOrPublicBranch, denyMasterBilling, attachCustomerIfPresent, createRestaurantOrder);
 router.get("/:id", unscopedContext, getRestaurantOrderById);
 router.post("/:id/rate", unscopedContext, rateOrderItems);
 
@@ -47,7 +47,7 @@ router.post("/merge", protect, requireBranch, mergeRestaurantOrders);
 // Wipes the entire order history -- restrict to the most trusted roles.
 router.delete("/clear/all", protect, requireBranch, requireRole("admin", "owner"), clearRestaurantOrders);
 router.patch("/:id/status", protect, requireBranch, counterRoles, updateRestaurantOrderStatus);
-router.patch("/:id/payment", protect, requireBranch, counterRoles, markRestaurantOrderPaid);
+router.patch("/:id/payment", protect, requireBranch, denyMasterBilling, counterRoles, markRestaurantOrderPaid);
 router.patch("/:id/kot", protect, requireBranch, counterRoles, sendKOT);
 router.patch("/:id/item-status", protect, requireBranch, kitchenRoles, updateOrderItemStatus);
 router.patch("/:id/hold", protect, requireBranch, holdRestaurantOrder);

@@ -11,6 +11,7 @@ import {
   X,
 } from "lucide-react";
 import API from "../api/axios";
+import { SkeletonTable } from "../components/Skeleton";
 import AsyncButton from "../components/AsyncButton";
 import { ToastViewport, useToast } from "../components/Toast";
 
@@ -357,6 +358,7 @@ function RecipeEditor({ products, materials, recipes, initialProductId, onSaved,
 export default function SmartInventory() {
   const [tab, setTab] = useState("stock");
   const [materials, setMaterials] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [products, setProducts] = useState([]);
   const [recipes, setRecipes] = useState([]);
   const [foodCosts, setFoodCosts] = useState([]);
@@ -383,6 +385,8 @@ export default function SmartInventory() {
       setSummary(summaryRes.data.summary);
     } catch (error) {
       showToast(errorText(error, "Could not load inventory"), "warning");
+    } finally {
+      setLoading(false);
     }
   }, [showToast]);
 
@@ -504,7 +508,9 @@ export default function SmartInventory() {
 
       {tab === "stock" && (
         <div className="bm-card">
-          {materials.length === 0 ? (
+          {loading ? (
+            <SkeletonTable rows={6} columns={6} />
+          ) : materials.length === 0 ? (
             <div className="bm-empty">Add your raw materials (paneer, oil, flour...) to start tracking stock.</div>
           ) : (
             <div className="bm-table-wrap">

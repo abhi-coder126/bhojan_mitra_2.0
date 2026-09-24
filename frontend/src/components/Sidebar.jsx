@@ -16,10 +16,16 @@ import {
   ClipboardList,
   Gift,
   Building2,
+  Landmark,
   LifeBuoy,
   Store,
+  Bell,
 } from "lucide-react";
 import API from "../api/axios";
+import BranchProfileModal from "./BranchProfileModal";
+import BranchApprovals from "./BranchApprovals";
+import { useBranchApprovals } from "../api/branchApprovals";
+import { useToast, ToastViewport } from "./Toast";
 import { usePlatform } from "../api/platform";
 import {
   BRANCH_CHANGED_EVENT,
@@ -33,10 +39,10 @@ import {
 // Frontend-only nav gating by role, to keep the sidebar tidy per role. The backend
 // enforces branch isolation and head-office-only actions on its own.
 const roleHiddenLinks = {
-  waiter: ["/smart-inventory", "/audit-logs", "/settings"],
-  kitchen: ["/smart-inventory", "/audit-logs", "/settings", "/customers", "/coupons", "/rewards"],
-  inventory: ["/restaurant-orders", "/tables", "/kds", "/table-barcodes"],
-  cashier: ["/smart-inventory", "/audit-logs"],
+  waiter: ["/smart-inventory", "/audit-logs", "/settings", "/royalty"],
+  kitchen: ["/smart-inventory", "/audit-logs", "/settings", "/customers", "/coupons", "/rewards", "/royalty"],
+  inventory: ["/restaurant-orders", "/tables", "/kds", "/table-barcodes", "/royalty"],
+  cashier: ["/smart-inventory", "/audit-logs", "/royalty"],
 };
 
 const branchLinks = [
@@ -52,6 +58,7 @@ const branchLinks = [
   { to: "/coupons", label: "Coupons", icon: BadgePercent },
   { to: "/rewards", label: "Rewards", icon: Gift },
   { to: "/audit-logs", label: "Audit Log", icon: ClipboardList },
+  { to: "/royalty", label: "Royalty Management", icon: Landmark },
 ];
 
 const linkClass = ({ isActive }) => (isActive ? "sidebar-link active" : "sidebar-link");
@@ -62,6 +69,11 @@ export default function Sidebar({ onClose }) {
   const isMaster = isMasterAdmin();
   const [activeBranch, setActiveBranchState] = useState(getActiveBranch);
   const [branches, setBranches] = useState([]);
+  const [showProfile, setShowProfile] = useState(false);
+  const [showApprovals, setShowApprovals] = useState(false);
+  const { toast, showToast } = useToast();
+  // Head office watches for branch profile changes waiting on approval.
+  const { pendingCount, refresh: refreshApprovals } = useBranchApprovals(isMaster);
 
   useEffect(() => {
     const sync = () => setActiveBranchState(getActiveBranch());
@@ -99,14 +111,17 @@ export default function Sidebar({ onClose }) {
   };
 
   const hidden = roleHiddenLinks[getUser().role] || [];
-  // A master admin with no branch open has no branch pages to show.
-  const links = activeBranch || !isMaster ? branchLinks.filter((link) => !hidden.includes(link.to)) : [];
+  // The master admin's sidebar only ever has Branch Management, Support and Logout --
+  // no Dashboard nav item and no operational/billing pages, even once a branch is
+  // open. A branch's Dashboard is reached by clicking its card in Branch Management
+  // (which opens "/" directly); it doesn't need its own persistent sidebar link.
+  const links = isMaster ? [] : branchLinks.filter((link) => !hidden.includes(link.to));
 
   return (
     <aside className="sidebar">
       <div className="sidebar-header">
         <div className="sidebar-brand">
-          <img src="/BhojanMitra_Logo.png" alt="BhojanMitra" className="sidebar-logo" />
+          <img src="/Restrosethu_logo.png" alt="RestroSethu" className="sidebar-logo" />
         </div>
 
         <button className="sidebar-toggle-btn" onClick={onClose} title="Hide Menu">
@@ -133,14 +148,30 @@ export default function Sidebar({ onClose }) {
       ) : (
         activeBranch &&
         !isMaster && (
-          <div className="sidebar-branch-context sidebar-branch-badge">
+          <button
+            type="button"
+            className="sidebar-branch-context sidebar-branch-badge"
+            onClick={() => setShowProfile(true)}
+            title="View and edit your branch details"
+          >
             <Store size={15} />
             <span>{activeBranch.name}</span>
-          </div>
+          </button>
         )
       )}
 
       <nav className="sidebar-nav">
+        {isMaster && (
+          <button type="button" className="sidebar-link sidebar-bell" onClick={() => setShowApprovals(true)}>
+            <span className="sidebar-bell-icon">
+              <Bell size={18} />
+              {pendingCount > 0 && <i className="sidebar-bell-dot">{pendingCount > 9 ? "9+" : pendingCount}</i>}
+            </span>
+            <span>Approvals</span>
+            {pendingCount > 0 && <b className="sidebar-bell-count">{pendingCount}</b>}
+          </button>
+        )}
+
         {showBranchTools && (
           <NavLink to="/branches" end className={linkClass}>
             <Building2 size={18} />
@@ -158,7 +189,9 @@ export default function Sidebar({ onClose }) {
           );
         })}
 
-        {!hidden.includes("/settings") && (
+        {/* Settings is a branch-config page -- the master admin's sidebar stays to
+            just Branch Management, Support and Logout. */}
+        {!isMaster && !hidden.includes("/settings") && (
           <NavLink to="/settings" className={linkClass}>
             <Settings size={18} />
             <span>Settings</span>
@@ -175,6 +208,20 @@ export default function Sidebar({ onClose }) {
           <span>Logout</span>
         </button>
       </nav>
+
+      {showProfile && (
+        <BranchProfileModal onClose={() => setShowProfile(false)} showToast={showToast} />
+      )}
+
+      {showApprovals && (
+        <BranchApprovals
+          onClose={() => setShowApprovals(false)}
+          onReviewed={refreshApprovals}
+          showToast={showToast}
+        />
+      )}
+
+      <ToastViewport toast={toast} />
     </aside>
   );
 }

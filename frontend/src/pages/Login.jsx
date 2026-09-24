@@ -66,9 +66,9 @@ export default function Login() {
 
   return (
     <div className="login-page">
-      <section className="login-showcase" aria-label="BhojanMitra">
+      <section className="login-showcase" aria-label="RestroSethu">
         <div className="login-brand-lockup">
-          <img src="/BhojanMitra_Logo.png" alt="BhojanMitra" />
+          <img src="/Restrosethu_logo.png" alt="RestroSethu" />
           <span>Restaurant POS Suite</span>
         </div>
         <div className="login-showcase-copy">
@@ -93,9 +93,9 @@ export default function Login() {
 
       <AsyncForm className="login-card" onSubmit={login}>
         <div className="login-card-head">
-          <img src="/BhojanMitra_Logo.png" alt="BhojanMitra" />
+          <img src="/Restrosethu_logo.png" alt="RestroSethu" />
           <span>Welcome back</span>
-          <h2>Sign in to BhojanMitra</h2>
+          <h2>Sign in to RestroSethu</h2>
           <p>Use your admin account to continue.</p>
         </div>
 

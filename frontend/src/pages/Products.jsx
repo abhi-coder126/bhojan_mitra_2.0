@@ -2,12 +2,18 @@ import AsyncForm from "../components/AsyncForm";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Eye, Flame, ImagePlus, Leaf, Pencil, Sparkles, Trash2, Upload, Utensils, X } from "lucide-react";
 import API from "../api/axios";
+import { hasProductImage, productImageSrc } from "../api/productImage";
+import { SkeletonTiles } from "../components/Skeleton";
 import { ToastViewport, useToast } from "../components/Toast";
 import DeleteConfirmModal from "../components/DeleteConfirmModal";
 
 const emptyForm = {
   name: "",
   image: "",
+  // Set when editing an item that already has a picture: the list response no longer
+  // carries the base64 image, so the form previews it from the image endpoint and
+  // leaves `image` empty, which means "keep the picture that is already saved".
+  existingImage: "",
   category: "",
   itemType: "food",
   foodType: "veg",
@@ -53,6 +59,7 @@ const parseCsv = (text) => {
 
 export default function Products() {
   const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [form, setForm] = useState(emptyForm);
   const [showAdd, setShowAdd] = useState(false);
@@ -65,8 +72,12 @@ export default function Products() {
   const { toast, showToast } = useToast();
 
   const fetchItems = async () => {
-    const res = await API.get("/products");
-    setItems(res.data.products || []);
+    try {
+      const res = await API.get("/products");
+      setItems(res.data.products || []);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -98,7 +109,9 @@ export default function Products() {
 
   const normalizePayload = () => ({
     name: form.name.trim(),
-    image: form.image.trim(),
+    // Only send an image when one was picked or typed in; leaving it out keeps the
+    // saved picture instead of wiping it.
+    ...(form.image.trim() ? { image: form.image.trim() } : {}),
     category: form.category.trim(),
     itemType: form.itemType || "food",
     foodType: form.foodType || "veg",
@@ -137,7 +150,8 @@ export default function Products() {
     setSelectedItem(item);
     setForm({
       name: item.name || "",
-      image: item.image || "",
+      image: "",
+      existingImage: hasProductImage(item) ? productImageSrc(item) : "",
       category: item.category || "",
       itemType: item.itemType || "food",
       foodType: item.foodType || "veg",
@@ -280,7 +294,9 @@ export default function Products() {
       </div>
 
       <div className="menu-admin-sections">
-        {Object.keys(groupedItems).length === 0 ? (
+        {loading ? (
+          <SkeletonTiles count={8} />
+        ) : Object.keys(groupedItems).length === 0 ? (
           <div className="restaurant-empty">
             <ImagePlus size={34} />
             <p>No menu item found.</p>
@@ -297,8 +313,8 @@ export default function Products() {
                 {categoryItems.map((item) => (
                   <article className="menu-admin-card" key={item._id}>
                     <div className="menu-admin-image">
-                      {item.image ? (
-                        <img src={item.image} alt={item.name} />
+                      {hasProductImage(item) ? (
+                        <img src={productImageSrc(item)} alt={item.name} loading="lazy" />
                       ) : (
                         <ImagePlus size={30} />
                       )}
@@ -375,7 +391,11 @@ export default function Products() {
         <MenuItemModal title="Menu Item Details" close={() => setShowView(false)}>
           <div className="menu-item-detail">
             <div className="menu-item-detail-image">
-              {selectedItem.image ? <img src={selectedItem.image} alt={selectedItem.name} /> : <ImagePlus size={40} />}
+              {hasProductImage(selectedItem) ? (
+                <img src={productImageSrc(selectedItem)} alt={selectedItem.name} />
+              ) : (
+                <ImagePlus size={40} />
+              )}
             </div>
             <div className="menu-item-detail-content">
               <div className="menu-item-detail-title">
@@ -476,7 +496,11 @@ function MenuItemForm({ form, setForm, categories, submit, buttonText }) {
           accept="image/*"
           onChange={(e) => handleImageFile(e.target.files?.[0])}
         />
-        {form.image ? <img src={form.image} alt="Menu item preview" /> : <ImagePlus size={36} />}
+        {form.image || form.existingImage ? (
+          <img src={form.image || form.existingImage} alt="Menu item preview" />
+        ) : (
+          <ImagePlus size={36} />
+        )}
         <span>Upload item image</span>
       </label>
 

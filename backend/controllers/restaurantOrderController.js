@@ -68,8 +68,9 @@ const restoreOrderInventory = async (order, note = "Order cancelled") => {
 exports.getMenuProducts = async (req, res) => {
   try {
     const products = await Product.find({ stock: { $gt: 0 } })
-      .select("name barcode category itemType foodType description spiceLevel isRecommended image unit sellingPrice mrp gst stock offerPercent ratingAvg ratingCount")
-      .sort({ category: 1, name: 1 });
+      .select("name barcode category itemType foodType description spiceLevel isRecommended hasImage unit sellingPrice mrp gst stock offerPercent ratingAvg ratingCount")
+      .sort({ category: 1, name: 1 })
+      .lean();
 
     res.json({
       success: true,
@@ -500,7 +501,23 @@ exports.clearRestaurantOrders = async (req, res) => {
 
 exports.getRestaurantOrders = async (req, res) => {
   try {
-    const orders = await RestaurantOrder.find().sort({ createdAt: -1 });
+    // Optional filters so each screen can ask for just what it shows, and .lean()
+    // because hydrating hundreds of Mongoose documents is the slow part here.
+    const { status, paymentStatus, from, to, limit } = req.query;
+    const filter = {};
+    if (status) filter.status = { $in: String(status).split(",") };
+    if (paymentStatus) filter.paymentStatus = paymentStatus;
+    if (from || to) {
+      filter.createdAt = {};
+      if (from) filter.createdAt.$gte = new Date(from);
+      if (to) filter.createdAt.$lte = new Date(to);
+    }
+
+    const query = RestaurantOrder.find(filter).sort({ createdAt: -1 }).lean();
+    const cap = Number(limit);
+    if (Number.isFinite(cap) && cap > 0) query.limit(cap);
+
+    const orders = await query;
     res.json({ success: true, orders });
   } catch (error) {
     res.status(500).json({ message: error.message });

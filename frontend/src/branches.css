@@ -183,6 +183,92 @@
   line-height: 1.5;
 }
 
+/* ---------- Today's sales cards (head office branch list) ---------- */
+.bm-section-title {
+  margin: 0 0 10px;
+  font-size: 15px;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.bm-branch-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 14px;
+}
+
+.bm-branch-card {
+  display: grid;
+  gap: 8px;
+  padding: 16px;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  background: #fff;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.bm-branch-card:hover:not(:disabled) {
+  border-color: #84091e55;
+  box-shadow: 0 8px 22px rgba(132, 9, 30, 0.12);
+  transform: translateY(-1px);
+}
+
+.bm-branch-card:disabled,
+.bm-branch-card.is-disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.bm-branch-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.bm-branch-card-name {
+  font-size: 15px;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.bm-branch-card-code {
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.bm-branch-card-sales {
+  margin-top: 4px;
+  padding-top: 10px;
+  border-top: 1px dashed #e2e8f0;
+}
+
+.bm-branch-card-sales span {
+  display: block;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.bm-branch-card-sales strong {
+  display: block;
+  margin-top: 2px;
+  font-size: 22px;
+  font-weight: 900;
+  color: #84091e;
+  font-variant-numeric: tabular-nums;
+}
+
+.bm-branch-card-sales small {
+  color: #64748b;
+  font-size: 12px;
+}
+
 /* ---------- KPI tiles ---------- */
 .bm-kpis {
   display: grid;
@@ -311,6 +397,10 @@
 .bm-table th.num {
   text-align: right;
   font-variant-numeric: tabular-nums;
+}
+
+.bm-table td.bm-royalty-terms {
+  white-space: nowrap;
 }
 
 .bm-table tr.is-archived td {
@@ -928,4 +1018,222 @@
   .inv-row-cost {
     display: none;
   }
+}
+
+/* ---------- branch profile + head-office approvals ---------- */
+.sidebar-branch-badge {
+  width: 100%;
+  border: 1px solid rgba(248, 113, 113, 0.25);
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.sidebar-branch-badge:hover {
+  border-color: rgba(248, 113, 113, 0.55);
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.sidebar-bell {
+  position: relative;
+  width: 100%;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: #17253b;
+  text-align: left;
+}
+
+.sidebar-bell-icon {
+  position: relative;
+  display: inline-flex;
+}
+
+.sidebar-bell-dot {
+  position: absolute;
+  top: -6px;
+  right: -8px;
+  min-width: 16px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: #ef4444;
+  color: #ffffff;
+  font-size: 9px;
+  font-style: normal;
+  font-weight: 800;
+  line-height: 16px;
+  text-align: center;
+}
+
+.sidebar-bell-count {
+  margin-left: auto;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: #ef4444;
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.bm-profile-modal,
+.bm-approvals-modal {
+  width: 100%;
+  max-width: 620px;
+  display: grid;
+  gap: 14px;
+  max-height: 86vh;
+  overflow-y: auto;
+}
+
+.bm-profile-note {
+  margin: 0;
+  color: #64748b;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.bm-profile-pending {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 12px 14px;
+  border: 1px solid #fde68a;
+  border-radius: 12px;
+  background: #fffbeb;
+  color: #92400e;
+  font-size: 13px;
+}
+
+.bm-profile-pending div {
+  display: grid;
+  gap: 3px;
+}
+
+.bm-profile-reviewed {
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-size: 13px;
+}
+
+.bm-profile-reviewed.is-approved {
+  border: 1px solid #bbf7d0;
+  background: #f0fdf4;
+  color: #166534;
+}
+
+.bm-profile-reviewed.is-rejected {
+  border: 1px solid #fecaca;
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+.bm-profile-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.bm-profile-field {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.bm-profile-field.is-full {
+  grid-column: 1 / -1;
+}
+
+.bm-profile-field label {
+  font-size: 12px;
+  font-weight: 700;
+  color: #475569;
+}
+
+.bm-profile-field input {
+  height: 40px;
+  padding: 0 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #ffffff;
+  font-size: 14px;
+  color: #0f172a;
+}
+
+.bm-profile-field input:disabled {
+  background: #f8fafc;
+  color: #94a3b8;
+}
+
+.bm-profile-actions,
+.bm-approval-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.bm-approval-list {
+  display: grid;
+  gap: 12px;
+}
+
+.bm-approval-card {
+  display: grid;
+  gap: 8px;
+  padding: 14px 16px;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  background: #ffffff;
+}
+
+.bm-approval-card header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.bm-approval-card header div {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.bm-approval-by {
+  margin: 0;
+  font-size: 12px;
+}
+
+.bm-approval-changes {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 10px 0 0;
+  border-top: 1px dashed #e2e8f0;
+  list-style: none;
+}
+
+.bm-approval-changes li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.bm-approval-changes li span {
+  min-width: 108px;
+  color: #64748b;
+  font-weight: 700;
+}
+
+.bm-approval-changes li s {
+  color: #94a3b8;
+}
+
+.bm-approval-changes li b {
+  color: #0f172a;
+}
+
+.bm-approval-note {
+  margin: 0;
+  font-size: 13px;
+  color: #475569;
 }

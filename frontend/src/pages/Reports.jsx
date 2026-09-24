@@ -2,26 +2,32 @@ import AsyncButton from "../components/AsyncButton";
 import { useEffect, useMemo, useState } from "react";
 import { Info, Search, Trash2, X } from "lucide-react";
 import API from "../api/axios";
+import { SkeletonTable } from "../components/Skeleton";
 import DeleteConfirmModal from "../components/DeleteConfirmModal";
+
+const REPORT_LIMIT = 500;
 
 export default function Reports() {
   const [sales, setSales] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [restaurantOrders, setRestaurantOrders] = useState([]);
   const [search, setSearch] = useState("");
   const [selectedReport, setSelectedReport] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
 
+  // The newest bills are what this screen is for; older ones stay a query away
+  // instead of being shipped to the browser on every visit.
   const fetchReports = async () => {
     const [saleRes, orderRes] = await Promise.all([
       API.get("/sales"),
-      API.get("/restaurant-orders"),
+      API.get("/restaurant-orders", { params: { limit: REPORT_LIMIT } }),
     ]);
     setSales(saleRes.data.sales || []);
     setRestaurantOrders(orderRes.data.orders || []);
   };
 
   useEffect(() => {
-    fetchReports();
+    fetchReports().finally(() => setLoading(false));
   }, []);
 
   const deleteReport = async (row) => {
@@ -130,7 +136,13 @@ export default function Reports() {
             </tr>
           </thead>
           <tbody>
-            {rows.length === 0 ? (
+            {loading ? (
+              <tr>
+                <td colSpan="8" className="report-loading-cell">
+                  <SkeletonTable rows={8} columns={8} />
+                </td>
+              </tr>
+            ) : rows.length === 0 ? (
               <tr>
                 <td colSpan="8">No report found</td>
               </tr>

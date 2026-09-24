@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { BadgePercent, CheckCircle2, ChefHat, Clock, Flame, Gift, Heart, History, Leaf, LogOut, Mail, MapPin, Minus, PackageCheck, PartyPopper, Plus, Search, ShieldCheck, ShoppingBag, Sparkles, Star, UserCircle2, Utensils, X } from "lucide-react";
 import { useParams } from "react-router-dom";
 import API from "../api/axios";
+import { hasProductImage, productImageSrc } from "../api/productImage";
 import PhoneInput from "../components/PhoneInput";
 import PublicLottie from "../components/PublicLottie";
 import { ToastViewport, useToast } from "../components/Toast";
@@ -306,7 +307,7 @@ export default function CustomerMenu() {
           {
             productId: product._id,
             name: product.name,
-            image: product.image,
+            hasImage: Boolean(product.hasImage || product.image),
             category: product.category || "Recommended",
             qty: 1,
             rate,
@@ -646,9 +647,9 @@ export default function CustomerMenu() {
 
     return (
       <article className="foodora-card group" key={product._id}>
-        <div className="foodora-card-media" style={{ backgroundColor: product.image ? "#ffffff" : hue }}>
-          {product.image ? (
-            <img src={product.image} alt={product.name} />
+        <div className="foodora-card-media" style={{ backgroundColor: hasProductImage(product) ? "#ffffff" : hue }}>
+          {hasProductImage(product) ? (
+            <img src={productImageSrc(product)} alt={product.name} loading="lazy" />
           ) : (
             <span>{product.name?.slice(0, 1) || "M"}</span>
           )}
@@ -773,7 +774,7 @@ export default function CustomerMenu() {
             <div className="foodora-brand">
               <Utensils size={20} />
               <div className="foodora-brand-text">
-                <span>{branchName || "BhojanMitra"}</span>
+                <span>{branchName || "RestroSethu"}</span>
                 <small>{isDelivery ? "Delivery order" : `Table ${tableNo}`}</small>
               </div>
             </div>
@@ -844,7 +845,11 @@ export default function CustomerMenu() {
                 }}
               >
                 <div className="foodora-offer-card-media">
-                  {product.image ? <img src={product.image} alt={product.name} /> : <span>{product.name?.slice(0, 1) || "M"}</span>}
+                  {hasProductImage(product) ? (
+                    <img src={productImageSrc(product)} alt={product.name} loading="lazy" />
+                  ) : (
+                    <span>{product.name?.slice(0, 1) || "M"}</span>
+                  )}
                   <b>{product.offerPercent}% OFF</b>
                 </div>
                 <span>{product.name}</span>

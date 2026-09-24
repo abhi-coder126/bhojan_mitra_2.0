@@ -28,6 +28,7 @@ import KDS from "./pages/KDS";
 import SmartInventory from "./pages/SmartInventory";
 import AuditLogs from "./pages/AuditLogs";
 import BranchManagement from "./pages/BranchManagement";
+import RoyaltyManagement from "./pages/RoyaltyManagement";
 import Support from "./pages/Support";
 import API from "./api/axios";
 import { loadPlatform } from "./api/platform";
@@ -35,100 +36,104 @@ import { BRANCH_CHANGED_EVENT, getActiveBranch, isMasterAdmin, setActiveBranch }
 
 const pageMeta = {
   "/": {
-    title: "Dashboard | BhojanMitra Billing Software",
+    title: "Dashboard | RestroSethu Billing Software",
     description: "Complete overview of sales, payments, returns, stock alerts and business performance.",
   },
   "/products": {
-    title: "Menu Items | BhojanMitra Restaurant POS",
+    title: "Menu Items | RestroSethu Restaurant POS",
     description: "Create and manage restaurant menu items with category, pricing, GST and availability.",
   },
   "/menu-items": {
-    title: "Menu Items | BhojanMitra Restaurant POS",
+    title: "Menu Items | RestroSethu Restaurant POS",
     description: "Create and manage restaurant menu items with category, pricing, GST and availability.",
   },
   "/all-products": {
-    title: "Inventory | BhojanMitra Billing Software",
+    title: "Inventory | RestroSethu Billing Software",
     description: "Track live stock, low stock items, purchase cost, selling price, category and vendor details.",
   },
   "/purchase": {
-    title: "Purchase / GRN | BhojanMitra Billing Software",
+    title: "Purchase / GRN | RestroSethu Billing Software",
     description: "Receive vendor stock, create purchase bills, update product cost and manage GRN payments.",
   },
   "/grn-management": {
-    title: "GRN Management | BhojanMitra Billing Software",
+    title: "GRN Management | RestroSethu Billing Software",
     description: "Review, search and update goods received notes, purchase quantities, pricing and payment records.",
   },
   "/supplier-bills": {
-    title: "Supplier Bills | BhojanMitra Billing Software",
+    title: "Supplier Bills | RestroSethu Billing Software",
     description: "View supplier invoices, GRN totals, paid amounts, pending balances and payment status.",
   },
   "/sales-return": {
-    title: "Sales Return / Refund | BhojanMitra Billing Software",
+    title: "Sales Return / Refund | RestroSethu Billing Software",
     description: "Manage invoice returns, returned products, refund amounts and stock reversal records.",
   },
   "/reports": {
-    title: "Sales Reports | BhojanMitra Billing Software",
+    title: "Sales Reports | RestroSethu Billing Software",
     description: "Search and review invoices, customers, payment modes, sale totals and billing history.",
   },
   "/customers": {
-    title: "Customers | BhojanMitra Billing Software",
+    title: "Customers | RestroSethu Billing Software",
     description: "Manage customer profiles, CRN records, contact details, address and purchase history.",
   },
   "/vendors": {
-    title: "Vendors | BhojanMitra Billing Software",
+    title: "Vendors | RestroSethu Billing Software",
     description: "Manage supplier profiles, GST details, opening balance, purchases and outstanding payments.",
   },
   "/accounts": {
-    title: "Accounts | BhojanMitra Billing Software",
+    title: "Accounts | RestroSethu Billing Software",
     description: "Track vendor pending payments, payment history and supplier account balances.",
   },
   "/coupons": {
-    title: "Coupons | BhojanMitra Billing Software",
+    title: "Coupons | RestroSethu Billing Software",
     description: "Create, control and manage billing discount coupons for customer invoices.",
   },
   "/rewards": {
-    title: "Rewards | BhojanMitra Billing Software",
+    title: "Rewards | RestroSethu Billing Software",
     description: "Set delivery order milestones and the scratch-card offers customers win for reaching them.",
   },
   "/settings": {
-    title: "Settings | BhojanMitra Billing Software",
+    title: "Settings | RestroSethu Billing Software",
     description: "Configure store details, invoice printing, payment modes, policies and system preferences.",
   },
   "/restaurant-orders": {
-    title: "Restaurant Orders | BhojanMitra Billing Software",
+    title: "Restaurant Orders | RestroSethu Billing Software",
     description: "Manage table QR orders, live restaurant order status and customer menu ordering.",
   },
   "/table-barcodes": {
-    title: "Table QR Setup | BhojanMitra Restaurant POS",
+    title: "Table QR Setup | RestroSethu Restaurant POS",
     description: "Generate and print table QR codes for customer self ordering.",
   },
   "/tables": {
-    title: "Table Management | BhojanMitra Restaurant POS",
+    title: "Table Management | RestroSethu Restaurant POS",
     description: "Visual floor plan with live table status: available, occupied, reserved, cleaning and billing.",
   },
   "/audit-logs": {
-    title: "Audit Log | BhojanMitra Billing Software",
+    title: "Audit Log | RestroSethu Billing Software",
     description: "Track sensitive changes such as discounts, price overrides, refunds and stock adjustments.",
   },
   "/kds": {
-    title: "Kitchen Display | BhojanMitra Restaurant POS",
+    title: "Kitchen Display | RestroSethu Restaurant POS",
     description: "Live kitchen screen showing order items by status with prep timers.",
   },
   "/smart-inventory": {
-    title: "Smart Inventory | BhojanMitra Restaurant POS",
+    title: "Smart Inventory | RestroSethu Restaurant POS",
     description: "Raw materials, recipes, food cost % and low stock alerts.",
   },
+  "/royalty": {
+    title: "Royalty Management | RestroSethu",
+    description: "Royalty payable to head office, the rate it is charged at and the sales it is calculated from.",
+  },
   "/branches": {
-    title: "Branch Management | BhojanMitra Head Office",
+    title: "Branch Management | RestroSethu Head Office",
     description: "Add, hold and remove branches, set royalty and review every branch's sales.",
   },
   "/support": {
-    title: "Support | BhojanMitra",
-    description: "Contact BhojanMitra support to resolve issues quickly.",
+    title: "Support | RestroSethu",
+    description: "Contact RestroSethu support to resolve issues quickly.",
   },
   "/login": {
-    title: "Login | BhojanMitra Billing Software",
-    description: "Secure login for BhojanMitra billing, inventory, purchase and POS management.",
+    title: "Login | RestroSethu Billing Software",
+    description: "Secure login for RestroSethu billing, inventory, purchase and POS management.",
   },
 };
 
@@ -204,7 +209,12 @@ function useBranchGate(token) {
       .then(([platform, res]) => {
         const branches = res.data.branches || [];
         if (!alive) return;
-        if (branches.length === 1 || (!platform?.multiBranchEnabled && branches.length > 0)) {
+        // Only force a branch open for single-outlet installs (multi-branch switching
+        // turned off), where there is no real "head office" choice to make. Once
+        // multi-branch is on, the master admin must pick explicitly -- including
+        // picking "Head office (all branches)", which must stick and not get
+        // silently overridden back to a branch on the next render.
+        if (!platform?.multiBranchEnabled && branches.length > 0) {
           setActiveBranch(branches.find((b) => b.isDefault) || branches[0]);
         }
       })
@@ -220,11 +230,16 @@ function useBranchGate(token) {
   return { activeBranch, resolving, needsBranch };
 }
 
+// Once the master admin has a branch open, they can only view that branch's
+// Dashboard -- billing and every other operational page stays with branch staff.
+const MASTER_BRANCH_ALLOWED_PATHS = ["/", "/branches", "/support"];
+
 function ProtectedLayout() {
   const token = localStorage.getItem("token");
   const { activeBranch, resolving, needsBranch } = useBranchGate(token);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [showWelcome, setShowWelcome] = useState(() => sessionStorage.getItem("showWelcome") === "1");
+  const location = useLocation();
 
   useEffect(() => {
     if (!showWelcome) return undefined;
@@ -241,6 +256,13 @@ function ProtectedLayout() {
   if (showWelcome) return <WelcomeScreen />;
   if (resolving) return null;
   if (needsBranch) return <Navigate to="/branches" replace />;
+  if (
+    isMasterAdmin() &&
+    activeBranch &&
+    !MASTER_BRANCH_ALLOWED_PATHS.includes(location.pathname)
+  ) {
+    return <Navigate to="/" replace />;
+  }
 
   return (
     <div className={`app-layout ${!sidebarOpen ? "sidebar-closed" : ""}`}>
@@ -288,6 +310,7 @@ function ProtectedLayout() {
           <Route path="/kds" element={<KDS />} />
           <Route path="/smart-inventory" element={<SmartInventory />} />
           <Route path="/audit-logs" element={<AuditLogs />} />
+          <Route path="/royalty" element={<RoyaltyManagement />} />
           <Route path="/branches" element={isMasterAdmin() ? <BranchManagement /> : <Navigate to="/" replace />} />
           <Route path="/support" element={<Support />} />
         </Routes>
@@ -299,7 +322,7 @@ function ProtectedLayout() {
 function WelcomeScreen() {
   return (
     <div className="welcome-screen">
-      <img src="/Welcome.svg" alt="Welcome to BhojanMitra" />
+      <img src="/Welcome.svg" alt="Welcome to RestroSethu" />
     </div>
   );
 }

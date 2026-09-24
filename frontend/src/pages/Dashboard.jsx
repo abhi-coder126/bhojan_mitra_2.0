@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import RoyaltyCard from "../components/RoyaltyCard";
 import {
   Area,
   Bar,
@@ -19,6 +18,7 @@ import {
 } from "recharts";
 import {
   Award,
+  CalendarRange,
   Clock,
   Crown,
   Download,
@@ -32,6 +32,7 @@ import {
 } from "lucide-react";
 import API from "../api/axios";
 import { ToastViewport, useToast } from "../components/Toast";
+import { SkeletonCards } from "../components/Skeleton";
 
 const chartColors = ["#e11d48", "#f59e0b", "#2563eb", "#7c3aed", "#0d9488"];
 const categoryColors = ["#e11d48", "#f59e0b", "#2563eb", "#7c3aed", "#0d9488", "#db2777"];
@@ -103,6 +104,9 @@ const getLastDays = (count) => {
   return days;
 };
 
+const rangeLabel = (value) =>
+  value ? new Date(value).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }) : "";
+
 export default function Dashboard() {
   const navigate = useNavigate();
   const [orders, setOrders] = useState([]);
@@ -116,6 +120,12 @@ export default function Dashboard() {
   const [selectedMonth, setSelectedMonth] = useState(formatDateInput(new Date()).slice(0, 7));
   const [selectedYear, setSelectedYear] = useState(String(new Date().getFullYear()));
   const [customRange, setCustomRange] = useState({
+    start: formatDateInput(new Date()),
+    end: formatDateInput(new Date()),
+  });
+  const [loading, setLoading] = useState(true);
+  const [customPickerOpen, setCustomPickerOpen] = useState(false);
+  const [customDraft, setCustomDraft] = useState({
     start: formatDateInput(new Date()),
     end: formatDateInput(new Date()),
   });
@@ -159,6 +169,8 @@ export default function Dashboard() {
         setCustomers(customerRes.data.customers || customerRes.data || []);
       } catch (error) {
         showToast(error.response?.data?.message || "Dashboard load failed");
+      } finally {
+        if (mounted) setLoading(false);
       }
 
       try {
@@ -179,6 +191,25 @@ export default function Dashboard() {
     };
   }, [showToast]);
 
+  const openCustomPicker = () => {
+    setCustomDraft(customRange);
+    setCustomPickerOpen(true);
+  };
+
+  // Choosing "Custom range" opens the date popup straight away.
+  const changeFilterMode = (mode) => {
+    setFilterMode(mode);
+    if (mode === "custom") openCustomPicker();
+  };
+
+  const applyCustomRange = () => {
+    if (!customDraft.start || !customDraft.end) return showToast("Pick both dates", "warning");
+    if (customDraft.start > customDraft.end) return showToast("From date must be before the To date", "warning");
+    setCustomRange(customDraft);
+    setCustomPickerOpen(false);
+    return undefined;
+  };
+
   const financialYears = useMemo(() => {
     const years = new Set([getFinancialYear()]);
     orders.forEach((order) => years.add(getFinancialYear(new Date(order.createdAt))));
@@ -187,6 +218,14 @@ export default function Dashboard() {
 
   const dateRange = useMemo(() => {
     const fyRange = getFinancialYearRange(financialYear);
+
+    if (filterMode === "today") {
+      const start = new Date();
+      start.setHours(0, 0, 0, 0);
+      const end = new Date();
+      end.setHours(23, 59, 59, 999);
+      return { start, end };
+    }
 
     if (filterMode === "day") {
       const start = new Date(selectedDate);
@@ -526,10 +565,55 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <RoyaltyCard />
-
       <div className="dashboard-filter-card restaurant-dashboard-filters">
-        <label>
+        <div className="dashboard-filter-left">
+          <label>
+            <span>Show</span>
+            <select value={filterMode} onChange={(e) => changeFilterMode(e.target.value)}>
+              <option value="today">Today</option>
+              <option value="fy">Full financial year</option>
+              <option value="day">Day wise</option>
+              <option value="month">Month wise</option>
+              <option value="year">Year wise</option>
+              <option value="custom">Custom range</option>
+            </select>
+          </label>
+
+          {filterMode === "day" && (
+            <input
+              type="date"
+              aria-label="Pick a day"
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
+            />
+          )}
+          {filterMode === "month" && (
+            <input
+              type="month"
+              aria-label="Pick a month"
+              value={selectedMonth}
+              onChange={(e) => setSelectedMonth(e.target.value)}
+            />
+          )}
+          {filterMode === "year" && (
+            <input
+              type="number"
+              aria-label="Pick a year"
+              value={selectedYear}
+              onChange={(e) => setSelectedYear(e.target.value)}
+            />
+          )}
+          {filterMode === "custom" && (
+            <button type="button" className="dashboard-filter-range" onClick={openCustomPicker}>
+              <CalendarRange size={15} />
+              {customRange.start && customRange.end
+                ? `${rangeLabel(customRange.start)} - ${rangeLabel(customRange.end)}`
+                : "Pick dates"}
+            </button>
+          )}
+        </div>
+
+        <label className="dashboard-filter-fy">
           <span>Financial Year</span>
           <select value={financialYear} onChange={(e) => setFinancialYear(e.target.value)}>
             {financialYears.map((year) => (
@@ -539,51 +623,56 @@ export default function Dashboard() {
             ))}
           </select>
         </label>
-
-        <div className="dashboard-filter-tabs">
-          {[
-            ["fy", "Full FY"],
-            ["day", "Day"],
-            ["month", "Month"],
-            ["year", "Year"],
-            ["custom", "Custom"],
-          ].map(([value, label]) => (
-            <button
-              key={value}
-              type="button"
-              className={filterMode === value ? "active" : ""}
-              onClick={() => setFilterMode(value)}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-
-        {filterMode === "day" && (
-          <input type="date" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} />
-        )}
-        {filterMode === "month" && (
-          <input type="month" value={selectedMonth} onChange={(e) => setSelectedMonth(e.target.value)} />
-        )}
-        {filterMode === "year" && (
-          <input type="number" value={selectedYear} onChange={(e) => setSelectedYear(e.target.value)} />
-        )}
-        {filterMode === "custom" && (
-          <>
-            <input
-              type="date"
-              value={customRange.start}
-              onChange={(e) => setCustomRange((current) => ({ ...current, start: e.target.value }))}
-            />
-            <input
-              type="date"
-              value={customRange.end}
-              onChange={(e) => setCustomRange((current) => ({ ...current, end: e.target.value }))}
-            />
-          </>
-        )}
       </div>
 
+
+      {customPickerOpen && (
+        <div className="modal-overlay" role="presentation">
+          <div className="modal-card dashboard-range-modal" role="dialog" aria-modal="true" aria-label="Custom date range">
+            <div className="modal-head">
+              <h2>Custom date range</h2>
+              <button type="button" onClick={() => setCustomPickerOpen(false)} aria-label="Close">
+                x
+              </button>
+            </div>
+
+            <div className="dashboard-range-fields">
+              <label>
+                <span>From</span>
+                <input
+                  type="date"
+                  value={customDraft.start}
+                  max={customDraft.end || undefined}
+                  onChange={(e) => setCustomDraft((current) => ({ ...current, start: e.target.value }))}
+                />
+              </label>
+              <label>
+                <span>To</span>
+                <input
+                  type="date"
+                  value={customDraft.end}
+                  min={customDraft.start || undefined}
+                  onChange={(e) => setCustomDraft((current) => ({ ...current, end: e.target.value }))}
+                />
+              </label>
+            </div>
+
+            <div className="dashboard-range-actions">
+              <button type="button" className="dashboard-btn-ghost" onClick={() => setCustomPickerOpen(false)}>
+                Cancel
+              </button>
+              <button type="button" className="dashboard-btn-solid" onClick={applyCustomRange}>
+                Apply range
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {loading ? (
+        <SkeletonCards count={4} className="dashboard-skeleton-cards" />
+      ) : (
+        <>
       <div className="dashboard-stats-grid restaurant-kpi-grid four-col">
         <Kpi
           title="Total Revenue"
@@ -627,6 +716,8 @@ export default function Dashboard() {
         <Kpi title="Monthly Sale" value={money(stats.monthlySale)} quiet />
         <Kpi title="Yearly Sale" value={money(stats.yearlySale)} quiet />
       </div>
+        </>
+      )}
 
       <div className="dashboard-stats-grid restaurant-metric-grid">
         <Kpi title="Total Customer" value={stats.totalCustomers} quiet />

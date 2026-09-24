@@ -93,7 +93,7 @@ exports.deleteRecipe = async (req, res) => {
 exports.getFoodCost = async (req, res) => {
   try {
     const recipes = await Recipe.find();
-    const products = await Product.find({ _id: { $in: recipes.map((r) => r.productId) } });
+    const products = await Product.find({ _id: { $in: recipes.map((r) => r.productId) } }).lean();
     const productMap = new Map(products.map((p) => [String(p._id), p]));
 
     const rawMaterialIds = [...new Set(recipes.flatMap((r) => r.items.map((i) => String(i.rawMaterialId))))];

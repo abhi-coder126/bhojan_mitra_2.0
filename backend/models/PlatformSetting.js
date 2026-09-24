@@ -8,7 +8,7 @@ const platformSettingSchema = new mongoose.Schema(
     multiBranchEnabled: { type: Boolean, default: false },
 
     // Shown on every user's Support page.
-    supportName: { type: String, default: "BhojanMitra Support", trim: true },
+    supportName: { type: String, default: "RestroSethu Support", trim: true },
     supportPhone: { type: String, default: "", trim: true },
     supportWhatsapp: { type: String, default: "", trim: true },
     supportEmail: { type: String, default: "", lowercase: true, trim: true },

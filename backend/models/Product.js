@@ -30,7 +30,9 @@ const productSchema = new mongoose.Schema(
       default: "medium",
     },
     isRecommended: { type: Boolean, default: false },
-    image: String,
+    // The picture itself lives in the ProductImage collection; this flag keeps list
+    // queries cheap (see models/ProductImage.js).
+    hasImage: { type: Boolean, default: false },
 
     // % off the MRP shown to customers as a running offer (0 = no offer).
     offerPercent: { type: Number, default: 0, min: 0, max: 100 },

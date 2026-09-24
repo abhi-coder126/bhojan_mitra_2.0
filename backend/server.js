@@ -2,6 +2,7 @@ const dns = require("dns");
 dns.setServers(["8.8.8.8", "1.1.1.1"]);
 const express = require("express");
 const cors = require("cors");
+const compression = require("compression");
 require("dotenv").config();
 
 const connectDB = require("./config/db");
@@ -38,13 +39,16 @@ app.set("trust proxy", 1);
 
 connectDB();
 
+// gzip: list responses are mostly repeated JSON keys and compress to a fraction of
+// their size, which is the difference between a snappy screen and a slow one.
+app.use(compression());
 app.use(cors());
 app.use(express.json({ limit: "10mb" }));
 // Records the caller's IP + device for audit logs written during the request.
 app.use(requestContext);
 
 app.get("/", (req, res) => {
-  res.send("BhojanMitra API Running");
+  res.send("RestroSethu API Running");
 });
 
 app.use("/api/auth", authRoutes);

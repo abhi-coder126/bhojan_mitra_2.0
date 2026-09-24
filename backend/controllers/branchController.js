@@ -338,3 +338,169 @@ exports.upsertBranchAdmin = async (req, res) => {
     sendError(res, error);
   }
 };
+
+// ---------------------------------------------------------------------------
+// Branch profile change requests
+//
+// A branch admin can edit their own outlet's details, but nothing is saved to the
+// Branch record until head office approves it. The branch code is deliberately not
+// editable -- printed QR codes carry it.
+// ---------------------------------------------------------------------------
+const BranchChangeRequest = require("../models/BranchChangeRequest");
+
+const REQUESTABLE_FIELDS = ["name", "address", "city", "phone", "email", "gstNumber"];
+
+const publicBranchProfile = (branch) => ({
+  id: branch._id,
+  name: branch.name,
+  code: branch.code,
+  address: branch.address || "",
+  city: branch.city || "",
+  phone: branch.phone || "",
+  email: branch.email || "",
+  gstNumber: branch.gstNumber || "",
+  status: branch.status,
+});
+
+const requestSummary = (request) => ({
+  _id: request._id,
+  branchId: request.branchId,
+  branchName: request.branchName,
+  branchCode: request.branchCode,
+  requestedBy: request.requestedBy,
+  changes: Object.fromEntries(request.changes || []),
+  previous: Object.fromEntries(request.previous || []),
+  note: request.note,
+  status: request.status,
+  reviewedBy: request.reviewedBy,
+  reviewedAt: request.reviewedAt,
+  reviewNote: request.reviewNote,
+  createdAt: request.createdAt,
+});
+
+// The signed-in branch's own profile, plus any request still waiting on head office.
+exports.getMyBranchProfile = async (req, res) => {
+  try {
+    const branch = await Branch.findById(req.user.branchId).lean();
+    if (!branch) return res.status(404).json({ success: false, message: "Branch not found" });
+
+    const pending = await BranchChangeRequest.findOne({ branchId: branch._id, status: "pending" }).sort({ createdAt: -1 });
+    const history = await BranchChangeRequest.find({ branchId: branch._id }).sort({ createdAt: -1 }).limit(10);
+
+    res.json({
+      success: true,
+      branch: publicBranchProfile(branch),
+      pending: pending ? requestSummary(pending) : null,
+      history: history.map(requestSummary),
+    });
+  } catch (error) {
+    sendError(res, error);
+  }
+};
+
+exports.createBranchChangeRequest = async (req, res) => {
+  try {
+    const branch = await Branch.findById(req.user.branchId);
+    if (!branch) throw badRequest("Branch not found");
+
+    const existing = await BranchChangeRequest.findOne({ branchId: branch._id, status: "pending" });
+    if (existing) {
+      throw badRequest("A change request for this branch is already waiting for head office approval");
+    }
+
+    const changes = {};
+    const previous = {};
+
+    for (const field of REQUESTABLE_FIELDS) {
+      if (req.body[field] === undefined) continue;
+      const value = field === "email" ? clean(req.body[field]).toLowerCase() : clean(req.body[field]);
+      if (value === clean(branch[field] ?? "")) continue;
+      changes[field] = value;
+      previous[field] = clean(branch[field] ?? "");
+    }
+
+    if (!changes.name && changes.name !== undefined && !clean(changes.name)) throw badRequest("Branch name cannot be empty");
+    if (changes.name !== undefined && !changes.name) throw badRequest("Branch name cannot be empty");
+    if (changes.email && !isValidEmail(changes.email)) throw badRequest("Branch email is not valid");
+    if (Object.keys(changes).length === 0) throw badRequest("Nothing has changed");
+
+    const request = await BranchChangeRequest.create({
+      branchId: branch._id,
+      branchName: branch.name,
+      branchCode: branch.code,
+      requestedBy: { userId: req.user.id, name: req.user.name, email: req.user.email },
+      changes,
+      previous,
+      note: clean(req.body.note),
+    });
+
+    await logAudit({
+      actor: getActor(req),
+      action: "branch_profile_change_requested",
+      entity: "Branch",
+      entityId: branch._id,
+      field: Object.keys(changes).join(", "),
+      newValue: changes,
+      ip: getClientIp(req),
+    });
+
+    res.status(201).json({ success: true, request: requestSummary(request) });
+  } catch (error) {
+    sendError(res, error);
+  }
+};
+
+// Head office inbox. `status` defaults to pending, which is what the bell counts.
+exports.listBranchChangeRequests = async (req, res) => {
+  try {
+    const status = ["pending", "approved", "rejected"].includes(req.query.status) ? req.query.status : "pending";
+    const requests = await BranchChangeRequest.find({ status }).sort({ createdAt: -1 }).limit(50);
+    const pendingCount = await BranchChangeRequest.countDocuments({ status: "pending" });
+
+    res.json({ success: true, requests: requests.map(requestSummary), pendingCount });
+  } catch (error) {
+    sendError(res, error);
+  }
+};
+
+exports.reviewBranchChangeRequest = async (req, res) => {
+  try {
+    const action = req.body.action;
+    if (!["approve", "reject"].includes(action)) throw badRequest("Choose approve or reject");
+
+    const request = await BranchChangeRequest.findById(req.params.id);
+    if (!request) throw badRequest("Request not found");
+    if (request.status !== "pending") throw badRequest("This request has already been reviewed");
+
+    if (action === "approve") {
+      const branch = await Branch.findById(request.branchId);
+      if (!branch) throw badRequest("Branch not found");
+
+      const changes = Object.fromEntries(request.changes || []);
+      REQUESTABLE_FIELDS.forEach((field) => {
+        if (changes[field] !== undefined) branch[field] = changes[field];
+      });
+      await branch.save();
+    }
+
+    request.status = action === "approve" ? "approved" : "rejected";
+    request.reviewedBy = req.user.name || req.user.email;
+    request.reviewedAt = new Date();
+    request.reviewNote = clean(req.body.note);
+    await request.save();
+
+    await logAudit({
+      actor: getActor(req),
+      action: action === "approve" ? "branch_profile_change_approved" : "branch_profile_change_rejected",
+      entity: "Branch",
+      entityId: request.branchId,
+      field: [...request.changes.keys()].join(", "),
+      newValue: Object.fromEntries(request.changes || []),
+      ip: getClientIp(req),
+    });
+
+    res.json({ success: true, request: requestSummary(request) });
+  } catch (error) {
+    sendError(res, error);
+  }
+};
