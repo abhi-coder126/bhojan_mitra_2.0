@@ -92,7 +92,35 @@
 }
 
 .login-page .login-showcase {
-  align-content: space-between;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  align-content: stretch;
+  gap: clamp(16px, 2.4vh, 32px);
+  padding: clamp(20px, 2.8vh, 34px);
+}
+
+.login-page .login-brand-lockup {
+  gap: clamp(12px, 1.6vh, 16px);
+}
+
+.login-page .login-brand-lockup img {
+  height: clamp(54px, 7vh, 80px);
+}
+
+/* The headline row absorbs the slack and shrinks first, so the feature
+   tiles below are never clipped by the card overflow on short viewports. */
+.login-page .login-showcase-copy {
+  align-content: center;
+  min-height: 0;
+  gap: clamp(10px, 1.6vh, 16px);
+}
+
+.login-page .login-showcase-copy h1 {
+  font-size: clamp(28px, 1.5vw + 1.5vh, 44px);
+}
+
+.login-page .login-showcase-copy p {
+  font-size: clamp(14px, 0.4vw + 0.8vh, 18px);
+  line-height: 1.5;
 }
 
 .login-page .login-card {
@@ -199,11 +227,12 @@
 
 .login-page .login-feature-grid > div {
   position: relative;
-  grid-template-columns: 46px minmax(0, 1fr);
-  align-items: center;
-  gap: 13px;
-  min-height: 112px;
-  padding: 18px;
+  grid-template-rows: auto auto;
+  align-content: start;
+  justify-items: start;
+  gap: clamp(8px, 1.1vh, 12px);
+  min-height: 0;
+  padding: clamp(13px, 1.7vh, 18px);
   overflow: hidden;
   border-color: rgba(255, 255, 255, 0.24);
   background: linear-gradient(145deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.08));
@@ -225,9 +254,9 @@
 }
 
 .login-page .login-feature-grid svg {
-  width: 46px;
-  height: 46px;
-  padding: 12px;
+  width: clamp(38px, 4.6vh, 46px);
+  height: clamp(38px, 4.6vh, 46px);
+  padding: clamp(9px, 1.1vh, 12px);
   border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 14px;
   background: rgba(255, 255, 255, 0.13);
@@ -237,15 +266,17 @@
 
 .login-page .login-feature-grid span {
   display: grid;
+  justify-self: stretch;
   min-width: 0;
   gap: 5px;
   color: white;
 }
 
 .login-page .login-feature-grid strong {
-  font-size: 15px;
+  font-size: clamp(14px, 0.3vw + 0.6vh, 15px);
   font-weight: 800;
   line-height: 1.2;
+  white-space: nowrap;
 }
 
 .login-page .login-feature-grid small {
