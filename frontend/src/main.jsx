@@ -3,6 +3,7 @@ import { BrowserRouter } from "react-router-dom";
 import App from "./App";
 import "./style.css";
 import "./branches.css";
+import "./control-polish.css";
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <BrowserRouter>

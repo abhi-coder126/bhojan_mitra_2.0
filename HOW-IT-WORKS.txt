@@ -383,5 +383,10 @@ FOOD COST
   Customer QR menu .............. frontend/src/pages/CustomerMenu.jsx
   Styling (one big file) ........ frontend/src/style.css
                                   (branch screens: frontend/src/branches.css)
+                                  (shared control look: control-polish.css --
+                                   applies to EVERY input/select/textarea under
+                                   .app-layout and .customer-menu-page, with the
+                                   sign-in form as the reference. Check new
+                                   forms against it before adding field styles.)
 
 ===============================================================================

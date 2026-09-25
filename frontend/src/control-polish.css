@@ -1,0 +1,65 @@
+﻿/* Shared control polish: the sign-in form is the visual reference. */
+:is(.app-layout, .customer-menu-page) :is(input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="range"]):not([type="color"]), select, textarea):not(.login-field input):not(.phone-input-wrap input) {
+  min-width: 0;
+  max-width: 100%;
+  border-color: #d8dce5;
+  border-radius: 15px;
+  background-color: #f8fafc;
+  box-shadow: inset 0 1px 0 #ffffffed, 0 7px 20px #4755690d;
+  color: #182033;
+  transition: border-color .18s ease, background-color .18s ease, box-shadow .18s ease;
+}
+:is(.app-layout, .customer-menu-page) :is(input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="range"]):not([type="color"]), select, textarea):not(.login-field input):not(.phone-input-wrap input):focus {
+  border-color: #b96877;
+  background-color: #fff;
+  outline: 0;
+  box-shadow: 0 0 0 4px #ad345c16;
+}
+:is(.app-layout, .customer-menu-page) :is(input, textarea)::placeholder { color: #929bac; }
+:is(.app-layout, .customer-menu-page) :is(input, select, textarea):disabled { opacity: .68; cursor: not-allowed; }
+/* Inputs inside icon-bearing wrappers must remain transparent. */
+:is(.delete-password-field, .phone-input-wrap, .login-field) input:not([type="checkbox"]),
+.customer-menu-page .phone-input-wrap input {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+:is(.delete-password-field, .phone-input-wrap, .login-field):focus-within > div {
+  border-color: #b96877;
+  box-shadow: 0 0 0 4px #ad345c16;
+}
+/* Centre SVGs and text glyphs in every close control, regardless of button defaults. */
+:is(.app-layout, .customer-menu-page, .reward-win-dialog) :is(.modal-close-btn, .bm-modal-close, .delete-confirm-close, .confirm-action-close, .order-alert-close, .menu-detail-close, .rw-close, .customer-auth-head button[aria-label="Close"], button[aria-label="Close"], button[aria-label="Close item details"], button[aria-label="Close reward"]) {
+  display: inline-grid !important;
+  place-items: center !important;
+  flex: 0 0 auto;
+  padding: 0 !important;
+  line-height: 1 !important;
+  text-align: center;
+  aspect-ratio: 1;
+}
+:is(.app-layout, .customer-menu-page, .reward-win-dialog) :is(.modal-close-btn, .bm-modal-close, .delete-confirm-close, .confirm-action-close, .order-alert-close, .menu-detail-close, .rw-close, button[aria-label="Close"], button[aria-label="Close item details"], button[aria-label="Close reward"]) > svg {
+  display: block;
+  margin: auto;
+  flex: none;
+  pointer-events: none;
+}
+:is(.app-layout, .customer-menu-page) button:not([disabled]) { -webkit-tap-highlight-color: transparent; }
+@media (max-width: 480px) {
+  :is(.app-layout, .customer-menu-page) :is(form, fieldset, .panel, .modal-card, .product-modal, .customer-auth-card) { min-width: 0; max-width: 100%; }
+  :is(.app-layout, .customer-menu-page) :is(.modal-head, .product-modal-head, .customer-modal-head, .sales-return-modal-head, .report-modal-head, .customer-auth-head) { min-width: 0; gap: 12px; }
+  :is(.app-layout, .customer-menu-page) :is(.modal-head, .product-modal-head, .customer-modal-head, .sales-return-modal-head, .report-modal-head, .customer-auth-head) > :not(button) { min-width: 0; overflow-wrap: anywhere; }
+}
+.menu-option-edit-row > button[aria-label^="Remove"] {
+  display: inline-grid !important;
+  place-items: center;
+  flex: 0 0 34px;
+  width: 34px !important;
+  height: 34px;
+  min-width: 34px;
+  padding: 0 !important;
+  margin: 0;
+  border-radius: 9px !important;
+  line-height: 1;
+}
+.menu-option-edit-row > button[aria-label^="Remove"] svg { display: block; margin: auto; }

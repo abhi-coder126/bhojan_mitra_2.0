@@ -7177,3 +7177,4 @@
 /* Modal widths must account for the overlay's 16px padding on both sides. */
 .product-modal-overlay>.menu-item-modal,.product-modal-overlay>.captain-order-modal{width:min(960px,calc(100vw - 32px));max-width:100%;min-width:0;box-sizing:border-box}
 .product-modal-overlay>.menu-item-modal{width:min(760px,calc(100vw - 32px))}
+.product-modal-overlay>.modal-card.large.captain-order-modal{width:min(960px,calc(100vw - 32px))!important;max-width:calc(100vw - 32px)!important;min-width:0}
