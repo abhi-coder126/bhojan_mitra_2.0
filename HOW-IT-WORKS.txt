@@ -252,6 +252,27 @@ re-apply, so the discount always matches what is actually in the cart.
 
 All the rules live in one file: backend/utils/couponPolicy.js
 
+ITEM OFFERS ARE A SEPARATE THING
+  A Coupon discounts the bill. A MenuOffer is attached to one menu item and
+  comes in two shapes: "bogo" (another of the same item free) and "combo" (a
+  different item free). variantIds narrows it to particular sizes -- empty
+  means every size, which is also right for an item with no sizes.
+
+  The free item is not modelled as a discount. On order creation,
+  utils/menuOfferApply.js appends real order lines priced at zero and flagged
+  isOfferFree, because the kitchen has to know it is making two pizzas rather
+  than one cheap one. offerRunsToday() is shared between the guest menu and
+  order creation, so what the customer is promised and what the kitchen is
+  told to give away cannot drift apart.
+
+NEW-ORDER ALARM
+  frontend/src/api/orderAlarm.js owns a single shared <audio> for
+  public/ordertune.mp3, so the global alarm, the Restaurant Orders page and
+  the Settings test button never ring over each other. startOrderAlarm()
+  resolves false when the browser blocks autoplay (no interaction on the page
+  yet) so the caller can prompt for a tap. Sound, repeat, popup and the
+  refresh interval are branch settings.
+
 
 -------------------------------------------------------------------------------
 8. INVENTORY - THE PART THAT RUNS ITSELF
@@ -341,6 +362,9 @@ FOOD COST
   Login / route guards .......... backend/middleware/authMiddleware.js
   Customer-menu branch context .. backend/middleware/branchContext.js
   Coupon rules .................. backend/utils/couponPolicy.js
+  Item offers ................... backend/controllers/menuOfferController.js
+                                  backend/utils/menuOfferApply.js
+  New-order alarm ............... frontend/src/api/orderAlarm.js
   Staff logins + performance .... backend/controllers/staffController.js
                                   frontend/src/components/StaffSettings.jsx
   Order lifecycle ............... backend/controllers/restaurantOrderController.js

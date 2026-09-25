@@ -1,8 +1,9 @@
 import MenuOptionsEditor from "../components/MenuOptionsEditor";
 import CategoryManager from "../components/CategoryManager";
+import MenuOfferManager from "../components/MenuOfferManager";
 import AsyncForm from "../components/AsyncForm";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Eye, Flame, FolderPlus, ImagePlus, Leaf, Pencil, Sparkles, Trash2, Upload, Utensils, X } from "lucide-react";
+import { BadgePercent, Eye, Flame, FolderPlus, ImagePlus, Leaf, Pencil, Sparkles, Trash2, Upload, Utensils, X } from "lucide-react";
 import API from "../api/axios";
 import { hasProductImage, productImageSrc } from "../api/productImage";
 import { SkeletonTiles } from "../components/Skeleton";
@@ -64,6 +65,7 @@ const parseCsv = (text) => {
 export default function Products() {
   const [items, setItems] = useState([]);
   const [showCategories, setShowCategories] = useState(false);
+  const [showOffers, setShowOffers] = useState(false);
   // Categories can now exist before any item uses them, so they come from the
   // server rather than being derived only from the item list.
   const [savedCategories, setSavedCategories] = useState([]);
@@ -292,6 +294,9 @@ export default function Products() {
           <button className="add-category-btn" onClick={() => setShowCategories(true)}>
             <FolderPlus size={16} /> Add Category
           </button>
+          <button className="add-category-btn" onClick={() => setShowOffers(true)}>
+            <BadgePercent size={16} /> Add Offer
+          </button>
           <button
             className="add-product-main-btn"
             onClick={() => {
@@ -389,6 +394,10 @@ export default function Products() {
           ))
         )}
       </div>
+
+      {showOffers && (
+        <MenuOfferManager products={items} onClose={() => setShowOffers(false)} showToast={showToast} />
+      )}
 
       {showCategories && (
         <CategoryManager

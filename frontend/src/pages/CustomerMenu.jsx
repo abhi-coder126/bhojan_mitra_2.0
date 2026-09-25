@@ -45,6 +45,9 @@ export default function CustomerMenu() {
   const cartKey = `${branchCode || "main"}_${tableNo}`;
   const isDelivery = tableNo === "delivery";
   const [products, setProducts] = useState([]);
+  // Item offers (buy-one-get-one, free combo item) -- separate from the
+  // bill-level coupons held in `offers`.
+  const [menuOffers, setMenuOffers] = useState([]);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [categoryImages, setCategoryImages] = useState([]);
   const [menuLoading, setMenuLoading] = useState(true);
@@ -151,6 +154,7 @@ export default function CustomerMenu() {
         setProducts(res.data.products || []);
         setCategoryImages(res.data.categoryImages || []);
         setOffers(res.data.offers || []);
+        setMenuOffers(res.data.menuOffers || []);
         setBranchName(res.data.branch?.name || "");
       } catch (error) {
         if ([404, 423].includes(error.response?.status)) {
@@ -892,13 +896,37 @@ export default function CustomerMenu() {
         </section>
       )}
 
-      {offerProducts.length > 0 && (
+      {(offerProducts.length > 0 || menuOffers.length > 0) && (
         <section className="foodora-offers-strip">
           <div className="foodora-offers-head">
             <BadgePercent size={16} />
             <h2>Offers for you</h2>
           </div>
           <div className="foodora-offers-row">
+            {menuOffers.map((offer) => {
+              const product = products.find((row) => String(row._id) === String(offer.productId));
+              return (
+                <button
+                  key={offer._id}
+                  type="button"
+                  className="menu-offer-card"
+                  onClick={() => product && setSelectedProduct(product)}
+                >
+                  <span className="menu-offer-card-tag">
+                    {offer.type === "bogo" ? "BUY 1 GET 1" : "FREE ITEM"}
+                  </span>
+                  <b>{offer.title}</b>
+                  <small>
+                    {offer.type === "bogo"
+                      ? offer.productName
+                      : `Free ${offer.freeSizeLabel ? `${offer.freeProductName} (${offer.freeSizeLabel})` : offer.freeProductName} with ${offer.productName}`}
+                  </small>
+                  {offer.sizeLabels.length > 0 && (
+                    <span className="menu-offer-card-sizes">{offer.sizeLabels.join(" · ")}</span>
+                  )}
+                </button>
+              );
+            })}
             {offerProducts.map((product) => (
               <button
                 key={product._id}

@@ -1,5 +1,7 @@
 const { resolveMenuSelection } = require("../utils/menuOptions");
 const { couponUnavailable, couponDiscount } = require("../utils/couponPolicy");
+const { menuOffersForGuests } = require("./menuOfferController");
+const { applyMenuOffers } = require("../utils/menuOfferApply");
 const CategoryImage = require("../models/CategoryImage");
 const mongoose = require("mongoose");
 const Product = require("../models/Product");
@@ -86,6 +88,7 @@ exports.getMenuProducts = async (req, res) => {
       branch: req.branch ? { name: req.branch.name, code: req.branch.code } : null,
       products,
       categoryImages: await CategoryImage.find().select("name updatedAt").lean(),
+      menuOffers: await menuOffersForGuests(),
       offers: (await Coupon.find({ showOnMenu: true, status: "Active" }).lean())
         .filter((coupon) => !couponUnavailable(coupon))
         .map(({ code, title, description, discountType, discountValue, minimumBillAmount }) =>
@@ -263,6 +266,10 @@ exports.createRestaurantOrder = async (req, res) => {
     if (orderItems.length === 0) {
       return res.status(400).json({ message: "Valid menu item required" });
     }
+
+    // Buy-one-get-one and combo items are added here, priced at zero, so the
+    // kitchen ticket shows what actually has to be made.
+    orderItems.push(...(await applyMenuOffers(orderItems)));
 
     const billAmount = subTotal + gstAmount;
     let appliedCouponCode = "";

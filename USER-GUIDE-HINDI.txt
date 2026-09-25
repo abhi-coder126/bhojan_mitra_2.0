@@ -388,6 +388,50 @@ EDIT / DISABLE / REMOVE:
 
 
 ===============================================================================
+PART 11C - ITEM OFFERS (Menu Items > "Add Offer")
+===============================================================================
+
+Coupon poore bill par chhoot deta hai. ITEM OFFER ek khaas item par hota hai -
+jaise "Buy 1 Get 1 Free" ya "pizza ke saath cold drink free".
+
+KAHAN SE BANTA HAI:
+  Menu Items kholo -> upar "Add Offer" button (Add Category ke bagal me).
+
+DO TARAH KE OFFER HAIN:
+
+  1. BUY 1 GET 1 FREE
+     Ek hi item ka doosra free. Jaise "Farmhouse Pizza - Buy 1 Get 1".
+
+  2. FREE ITEM WITH THIS
+     Ek item khareedne par DOOSRA item free. Jaise "pizza ke saath
+     Cold Drink (250 ml) free".
+
+BHARNA KYA HAI:
+  Offer title     - jo customer ko dikhega, jaise "Buy 1 Get 1 Free"
+  Type            - upar wale do me se ek
+  Buy this item   - kis item par offer hai
+  Which sizes?    - AGAR us item me sizes hain to yahan tick karo ki offer
+                    kin sizes par chalega. Jaise BOGO sirf Medium aur Large
+                    par - Regular par nahi. Kuch bhi tick na karo to SAARE
+                    sizes par chalega.
+  Free item       - (sirf combo me) kya free milega, aur uska size
+  Runs on         - hafte ke kin dino chalega (Indian time)
+  Active          - chalu hai ya paused
+
+CUSTOMER KO KAHAN DIKHTA HAI:
+  Menu me "Offers for you" strip me, sabse aage. Card par "BUY 1 GET 1" ya
+  "FREE ITEM" ka tag, offer ka naam, aur kin sizes par hai wo likha aata hai.
+  Card par click karo to seedha us item ka popup khul jata hai.
+
+ORDER ME APNE AAP LAGTA HAI:
+  Customer jab qualifying item order karta hai, free item apne aap order me
+  jud jata hai - daam ZERO par. Matlab:
+      - Kitchen ko ticket par dikh jata hai ki DO pizza banane hain
+      - Customer se sirf ek ka paisa liya jata hai
+  Ye counter par yaad rakhne ki cheez nahi hai, system khud karta hai.
+
+
+===============================================================================
 PART 12 - COUPONS (offer aur coupon)
 ===============================================================================
 
@@ -510,7 +554,8 @@ Isme nau hisse hain:
   Invoice & Billing       - bill kaisa bane, bill number ki setting
   Payments                - kaun-kaunse payment tarike chalu hain
   Restaurant Operations   - restaurant chalane se judi setting
-  Notifications & Display - alert aur screen ki setting
+  Notifications & Display - naya order aane par bajne wali TUNE, popup aur
+                            auto-refresh ki setting. Neeche PART 19 dekho.
   Security                - password badalna etc.
   Data Management         - data ka backup / safai
   Manage Branches         - branch se judi setting
@@ -534,6 +579,41 @@ PART 17 - CUSTOMER KI TARAF SE PURA FLOW (shuru se aakhir tak)
      kam ho jata hai.
  11. Bill banta hai, invoice number milta hai, aur wo Invoices screen me aa
      jata hai.
+
+
+===============================================================================
+PART 19 - NAYA ORDER AANE PAR ALARM (tune) KAISE KAAM KARTA HAI
+===============================================================================
+
+Jab customer QR se order karta hai, counter ko turant pata chalna chahiye.
+Iske liye teen cheezein ek saath hoti hain:
+
+  1. TUNE BAJTI HAI
+     public/ordertune.mp3 loop me bajti rehti hai jab tak order dekh na lo.
+     Poore system me ek hi audio chalti hai, isliye do jagah se ek saath
+     bajkar aawaz nahi tootegi.
+
+  2. POPUP AATA HAI
+     Screen par naye order ka popup, aur Table View me wo table chamakti hai.
+
+  3. LIST APNE AAP REFRESH HOTI HAI
+     Har kuch second me nayi list aa jati hai - F5 dabane ki zaroorat nahi.
+
+SETTINGS SE CONTROL:  Settings -> Notifications & Display
+     Sound on/off        - tune bajegi ya nahi
+     Repeat sound        - ek baar bajegi ya bar-bar (jab tak dekh na lo)
+     Popup on/off        - popup dikhega ya nahi
+     Refresh seconds     - kitne second me list refresh ho (kam se kam 3)
+     Test Sound ka button bhi hai - ek baar bajakar dekh lo.
+
+*** ZAROORI: TUNE NAHI BAJ RAHI? ***
+  Browser ka niyam hai ki page par ek baar click/tap kiye bina aawaz nahi
+  baja sakte. Agar page khol kar chhod diya aur kuch chhua nahi, to pehli
+  tune block ho sakti hai. System aapse ek tap maangega - ek baar tap kar
+  do, uske baad sab apne aap bajega.
+
+  Aur ye bhi dekho: laptop ka volume, browser tab mute to nahi, aur
+  Settings me sound band to nahi.
 
 
 ===============================================================================

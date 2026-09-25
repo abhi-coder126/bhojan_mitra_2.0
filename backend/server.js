@@ -30,6 +30,7 @@ const customerAuthRoutes = require("./routes/customerAuthRoutes");
 const rewardRoutes = require("./routes/rewardRoutes");
 const platformRoutes = require("./routes/platformRoutes");
 const staffRoutes = require("./routes/staffRoutes");
+const menuOfferRoutes = require("./routes/menuOfferRoutes");
 
 const app = express();
 
@@ -74,6 +75,7 @@ app.use("/api/customer-auth", customerAuthRoutes);
 app.use("/api/rewards", rewardRoutes);
 app.use("/api/platform", platformRoutes);
 app.use("/api/staff", staffRoutes);
+app.use("/api/menu-offers", menuOfferRoutes);
 
 const PORT = process.env.PORT || 5000;
 

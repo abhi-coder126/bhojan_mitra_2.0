@@ -10,6 +10,9 @@ const restaurantOrderItemSchema = new mongoose.Schema(
     variantId: String,
     variantLabel: String,
     addons: [new mongoose.Schema({ id: String, name: String, groupName: String, price: Number, foodType: String }, { _id: false })],
+    // Set on lines the kitchen must make but the customer does not pay for.
+    isOfferFree: { type: Boolean, default: false },
+    offerTitle: { type: String, default: "" },
     qty: { type: Number, required: true, min: 1 },
     rate: { type: Number, required: true, min: 0 },
     gst: { type: Number, default: 0 },
