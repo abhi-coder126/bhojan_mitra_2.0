@@ -560,6 +560,16 @@ PART 18 - AAM DIKKATEIN AUR UNKA HAL
    -> Usage limit khatam to nahi ho gaya?
    -> Start/End date ke beech me hai?
 
+"Customer ko size (Regular/Medium/Large) ya add-on ka option nahi dikh raha"
+   -> Ye har item ke liye ALAG SE bharna padta hai, apne aap nahi aata.
+      Menu Items -> us item par Edit -> MRP ke theek neeche "Sizes & prices"
+      section hai. Category "Pizza" likhoge to seedha + Regular / + Medium /
+      + Large ke button mil jayenge - bas daba kar daam bhar do.
+      Usi ke neeche "Add-ons & extras" hai (extra cheese, dip waqaira).
+   -> Jis item me sizes nahi bhare, uska popup sirf seedha daam dikhayega.
+      Ye galti nahi hai - har item me size hona zaroori nahi (jaise ek
+      coffee me shayad ho, ek dessert me nahi).
+
 "Stock apne aap kam nahi ho raha"
    -> Us dish ki Recipe bani hai ya nahi, ye check karo. Recipe ke bina system
       ko pata hi nahi chalega ki kaunsa maal kitna ghatana hai.

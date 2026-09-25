@@ -5052,7 +5052,7 @@
   }
 
   .menu-image-uploader {
-    @apply grid min-h-[220px] cursor-pointer place-items-center gap-2 overflow-hidden rounded-2xl border-2 border-dashed border-slate-300 bg-slate-50 p-4 text-center text-slate-500 hover:border-emerald-400 hover:bg-emerald-50;
+    @apply grid min-h-[132px] cursor-pointer place-items-center gap-2 overflow-hidden rounded-2xl border-2 border-dashed border-slate-300 bg-slate-50 p-3 text-center text-slate-500 hover:border-[#84091e]/50 hover:bg-[#84091e]/[0.04];
   }
 
   .menu-image-uploader input {

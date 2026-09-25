@@ -656,6 +656,8 @@ function MenuItemForm({ form, setForm, categories, submit, buttonText }) {
         />
       </div>
 
+      <MenuOptionsEditor form={form} setForm={setForm} />
+
       <div className="price-tax-row">
         <input
           type="number"
@@ -673,7 +675,6 @@ function MenuItemForm({ form, setForm, categories, submit, buttonText }) {
         )}
       </div>
 
-      <MenuOptionsEditor form={form} setForm={setForm} />
       <button disabled={form.categoryImageLoading}>{buttonText}</button>
     </AsyncForm>
   );
