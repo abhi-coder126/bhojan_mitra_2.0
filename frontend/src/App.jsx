@@ -247,7 +247,7 @@ function ProtectedLayout() {
     const timer = window.setTimeout(() => {
       sessionStorage.removeItem("showWelcome");
       setShowWelcome(false);
-    }, 8600);
+    }, 7000);
 
     return () => window.clearTimeout(timer);
   }, [showWelcome]);

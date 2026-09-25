@@ -78,22 +78,30 @@ export default function Login() {
         <div className="login-feature-grid">
           <div>
             <Store size={20} />
-            <span>Live POS</span>
+            <span>
+              <strong>Live POS</strong>
+              <small>Fast counter billing</small>
+            </span>
           </div>
           <div>
             <Utensils size={20} />
-            <span>Table Orders</span>
+            <span>
+              <strong>Table Orders</strong>
+              <small>Real-time order flow</small>
+            </span>
           </div>
           <div>
             <ShieldCheck size={20} />
-            <span>Secure Access</span>
+            <span>
+              <strong>Secure Access</strong>
+              <small>Protected business data</small>
+            </span>
           </div>
         </div>
       </section>
 
       <AsyncForm className="login-card" onSubmit={login}>
         <div className="login-card-head">
-          <img src="/Restrosethu_logo.png" alt="RestroSethu" />
           <span>Welcome back</span>
           <h2>Sign in to RestroSethu</h2>
           <p>Use your admin account to continue.</p>

@@ -68,6 +68,336 @@
   }
 }
 
+/* Balanced, viewport-centred login composition. */
+.login-page {
+  grid-template-columns: repeat(2, minmax(0, 720px));
+  align-content: center;
+  align-items: stretch;
+  justify-content: center;
+  height: 100dvh;
+  min-height: 0;
+  gap: clamp(24px, 3vw, 48px);
+  padding: clamp(18px, 2.5vh, 28px) clamp(24px, 4vw, 72px);
+  overflow: hidden;
+}
+
+.login-page .login-showcase,
+.login-page .login-card {
+  width: 100%;
+  max-width: none;
+  height: 100%;
+  min-height: 0;
+  max-height: calc(100dvh - clamp(36px, 5vh, 56px));
+  margin: 0;
+}
+
+.login-page .login-showcase {
+  align-content: space-between;
+}
+
+.login-page .login-card {
+  align-content: center;
+}
+
+/* Login uses the same maroon + crystal design language as the dashboard. */
+.login-page {
+  position: relative;
+  isolation: isolate;
+  background:
+    radial-gradient(circle at 8% 4%, rgba(255, 255, 255, 0.98) 0 6%, transparent 27%),
+    radial-gradient(circle at 92% 12%, rgba(248, 113, 113, 0.18), transparent 28%),
+    radial-gradient(circle at 52% 100%, rgba(255, 255, 255, 0.78), transparent 35%),
+    linear-gradient(145deg, #fff7f8 0%, #f7faff 48%, #fff1f2 100%);
+}
+
+.login-page::before,
+.login-page::after {
+  position: absolute;
+  z-index: -1;
+  border-radius: 999px;
+  content: "";
+  pointer-events: none;
+}
+
+.login-page::before {
+  top: -160px;
+  right: -100px;
+  width: 440px;
+  height: 440px;
+  background: rgba(220, 38, 38, 0.1);
+}
+
+.login-page::after {
+  bottom: -190px;
+  left: -120px;
+  width: 480px;
+  height: 480px;
+  background: rgba(127, 6, 21, 0.08);
+}
+
+.login-page .login-showcase,
+.login-page .login-card {
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.78);
+  border-radius: 28px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.28),
+    0 24px 64px rgba(127, 6, 21, 0.14);
+  -webkit-backdrop-filter: blur(20px) saturate(145%);
+  backdrop-filter: blur(20px) saturate(145%);
+}
+
+.login-page .login-showcase {
+  color: white;
+  background:
+    linear-gradient(135deg, rgba(127, 6, 21, 0.98), rgba(185, 28, 28, 0.94) 58%, rgba(220, 38, 38, 0.88)),
+    #991b1b;
+}
+
+.login-page .login-showcase::before {
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  background:
+    radial-gradient(circle at 85% 10%, rgba(255, 255, 255, 0.15), transparent 31%),
+    linear-gradient(110deg, transparent 22%, rgba(255, 255, 255, 0.06) 48%, transparent 74%);
+  pointer-events: none;
+}
+
+.login-page .login-brand-lockup,
+.login-page .login-showcase-copy,
+.login-page .login-feature-grid {
+  position: relative;
+  z-index: 1;
+}
+
+.login-page .login-brand-lockup img,
+.login-page .login-card-head img {
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(48, 4, 11, 0.9);
+  box-shadow: 0 16px 36px rgba(48, 4, 11, 0.28);
+}
+
+.login-page .login-brand-lockup span {
+  border-color: rgba(255, 255, 255, 0.28);
+  background: rgba(255, 255, 255, 0.12);
+  color: white;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+}
+
+.login-page .login-showcase-copy h1,
+.login-page .login-showcase-copy p {
+  color: white;
+}
+
+.login-page .login-showcase-copy p {
+  opacity: 0.82;
+}
+
+.login-page .login-feature-grid > div {
+  position: relative;
+  grid-template-columns: 46px minmax(0, 1fr);
+  align-items: center;
+  gap: 13px;
+  min-height: 112px;
+  padding: 18px;
+  overflow: hidden;
+  border-color: rgba(255, 255, 255, 0.24);
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.08));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 16px 32px rgba(71, 4, 15, 0.18);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  transition: transform 180ms ease, border-color 180ms ease, background 180ms ease;
+}
+
+.login-page .login-feature-grid > div::after {
+  display: none;
+  content: none;
+}
+
+.login-page .login-feature-grid > div:hover {
+  transform: translateY(-3px);
+  border-color: rgba(255, 255, 255, 0.42);
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.21), rgba(255, 255, 255, 0.11));
+}
+
+.login-page .login-feature-grid svg {
+  width: 46px;
+  height: 46px;
+  padding: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.13);
+  color: white;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18);
+}
+
+.login-page .login-feature-grid span {
+  display: grid;
+  min-width: 0;
+  gap: 5px;
+  color: white;
+}
+
+.login-page .login-feature-grid strong {
+  font-size: 15px;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.login-page .login-feature-grid small {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.login-page .login-card {
+  align-content: center;
+  gap: 16px;
+  padding: clamp(28px, 3.2vw, 46px);
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.94), rgba(255, 250, 250, 0.86));
+}
+
+.login-page .login-card-head {
+  gap: 7px;
+  margin-bottom: 8px;
+}
+
+.login-page .login-card-head img {
+  width: auto;
+  height: 56px;
+  margin-bottom: 7px;
+}
+
+.login-page .login-card-head h2 {
+  font-size: clamp(25px, 2vw, 31px);
+}
+
+.login-page .login-card-head p {
+  font-size: 14px;
+}
+
+.login-page .login-card-head > span {
+  border: 1px solid rgba(220, 38, 38, 0.12);
+  background: rgba(220, 38, 38, 0.08);
+  color: #991b1b;
+}
+
+.login-page .login-field > div,
+.login-page .login-secure-note {
+  border: 1px solid rgba(203, 213, 225, 0.72);
+  background: rgba(248, 250, 252, 0.8);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.98), 0 7px 20px rgba(71, 85, 105, 0.05);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+}
+
+.login-page .login-field {
+  gap: 8px;
+}
+
+.login-page .login-field > div {
+  height: 56px;
+  border-radius: 15px;
+}
+
+.login-page .login-field input {
+  min-width: 0;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.login-page .login-field input:-webkit-autofill,
+.login-page .login-field input:-webkit-autofill:hover,
+.login-page .login-field input:-webkit-autofill:focus {
+  -webkit-text-fill-color: #0f172a;
+  caret-color: #0f172a;
+  box-shadow: 0 0 0 1000px transparent inset !important;
+  transition: background-color 9999s ease-out 0s;
+}
+
+.login-page .login-field > div:focus-within {
+  border-color: rgba(185, 28, 28, 0.45);
+  background: rgba(255, 255, 255, 0.82);
+  box-shadow: 0 0 0 4px rgba(185, 28, 28, 0.08);
+}
+
+.login-page .login-submit {
+  height: 56px;
+  margin-top: 4px;
+  border-radius: 15px;
+  background: linear-gradient(135deg, #7f0615, #dc2626);
+  box-shadow: 0 15px 34px rgba(185, 28, 28, 0.28);
+}
+
+.login-page .login-submit:hover {
+  background: linear-gradient(135deg, #6b0718, #b91c1c);
+  transform: translateY(-1px);
+}
+
+.login-page .login-secure-note {
+  min-height: 48px;
+  border-radius: 15px;
+}
+
+.login-page .login-card::after {
+  position: absolute;
+  top: -40%;
+  bottom: -40%;
+  left: -48%;
+  width: 25%;
+  background: linear-gradient(105deg, transparent, rgba(255, 255, 255, 0.7), transparent);
+  content: "";
+  pointer-events: none;
+  transform: skewX(-18deg);
+  animation: login-crystal-sweep 8s ease-in-out infinite;
+}
+
+@keyframes login-crystal-sweep {
+  0%, 62% { left: -48%; }
+  86%, 100% { left: 132%; }
+}
+
+@media (min-width: 1101px) {
+  body:has(.login-page) {
+    height: 100dvh;
+    overflow: hidden;
+  }
+}
+
+@media (max-width: 1100px) {
+  .login-page {
+    grid-template-columns: minmax(0, 720px);
+    height: auto;
+    min-height: 100dvh;
+    align-content: start;
+    overflow-y: auto;
+  }
+
+  .login-page .login-showcase,
+  .login-page .login-card {
+    min-height: auto;
+  }
+}
+
+@media (max-width: 640px) {
+  .login-page {
+    gap: 20px;
+    padding: 20px 16px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .login-page .login-card::after {
+    display: none;
+    animation: none;
+  }
+}
+
 @layer components {
   .async-form-fields {
     display: contents;
@@ -236,7 +566,7 @@
 
   .welcome-screen img {
     @apply h-[min(420px,72vh)] w-[min(560px,86vw)] object-contain;
-    animation: welcomePop 8.6s ease both;
+    animation: welcomePop 7s ease both;
   }
 
   .hidden-scrollbar,
@@ -5264,6 +5594,278 @@
 
   .payment-total-strip {
     @apply col-span-1;
+  }
+}
+
+/* Dashboard crystal surface -------------------------------------------------
+   Kept dashboard-scoped so the POS and data-entry screens retain their
+   denser, solid surfaces. */
+.dashboard-page.restaurant-dashboard {
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  gap: 26px;
+  min-height: 100%;
+  padding: 20px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  border-radius: 28px;
+  background:
+    radial-gradient(circle at 8% 2%, rgba(255, 255, 255, 0.98) 0 7%, transparent 28%),
+    radial-gradient(circle at 94% 8%, rgba(248, 113, 113, 0.16), transparent 27%),
+    radial-gradient(circle at 68% 62%, rgba(255, 255, 255, 0.86), transparent 32%),
+    linear-gradient(145deg, #fff7f8 0%, #f7faff 48%, #fff1f2 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.95), 0 24px 70px rgba(127, 6, 21, 0.1);
+}
+
+.dashboard-page.restaurant-dashboard::before,
+.dashboard-page.restaurant-dashboard::after {
+  position: absolute;
+  z-index: -1;
+  border-radius: 999px;
+  content: "";
+  pointer-events: none;
+  filter: blur(2px);
+}
+
+.dashboard-page.restaurant-dashboard::before {
+  top: 11%;
+  right: -130px;
+  width: 360px;
+  height: 360px;
+  background: linear-gradient(135deg, rgba(220, 38, 38, 0.18), rgba(255, 255, 255, 0.06));
+}
+
+.dashboard-page.restaurant-dashboard::after {
+  bottom: 18%;
+  left: -160px;
+  width: 420px;
+  height: 420px;
+  background: linear-gradient(145deg, rgba(251, 113, 133, 0.13), rgba(59, 130, 246, 0.07));
+}
+
+.restaurant-dashboard > * {
+  position: relative;
+  min-width: 0;
+  margin-bottom: 0 !important;
+}
+
+.restaurant-dashboard :is(
+  .dashboard-filter-card,
+  .dashboard-stat-card,
+  .dashboard-chart-box,
+  .dashboard-breakdown-card,
+  .dashboard-insights-card,
+  .important-notices,
+  .skeleton-card
+) {
+  border: 1px solid rgba(255, 255, 255, 0.82);
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.78), rgba(255, 255, 255, 0.48));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.96),
+    0 12px 32px rgba(71, 85, 105, 0.09),
+    0 2px 8px rgba(127, 6, 21, 0.04);
+  -webkit-backdrop-filter: blur(18px) saturate(145%);
+  backdrop-filter: blur(18px) saturate(145%);
+}
+
+/* A slow light refraction across every dashboard surface. */
+.restaurant-dashboard :is(
+  .dashboard-filter-card,
+  .dashboard-stat-card,
+  .dashboard-chart-box,
+  .dashboard-breakdown-card,
+  .dashboard-insights-card,
+  .important-notices,
+  .skeleton-card
+) {
+  position: relative;
+  overflow: hidden;
+}
+
+.restaurant-dashboard :is(
+  .dashboard-filter-card,
+  .dashboard-stat-card,
+  .dashboard-chart-box,
+  .dashboard-breakdown-card,
+  .dashboard-insights-card,
+  .important-notices,
+  .skeleton-card
+)::after {
+  position: absolute;
+  top: -45%;
+  bottom: -45%;
+  left: -55%;
+  z-index: 4;
+  width: 34%;
+  background: linear-gradient(
+    105deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.08) 25%,
+    rgba(255, 255, 255, 0.72) 50%,
+    rgba(255, 255, 255, 0.1) 75%,
+    transparent 100%
+  );
+  content: "";
+  pointer-events: none;
+  transform: skewX(-18deg);
+  animation: dashboard-crystal-sweep 7s cubic-bezier(0.45, 0, 0.2, 1) infinite;
+}
+
+.restaurant-dashboard .dashboard-stats-grid:nth-of-type(odd) .dashboard-stat-card::after,
+.restaurant-dashboard .dashboard-main-grid:nth-of-type(odd) .dashboard-chart-box::after {
+  animation-delay: 1.1s;
+}
+
+@keyframes dashboard-crystal-sweep {
+  0%, 55% {
+    left: -55%;
+  }
+  82%, 100% {
+    left: 135%;
+  }
+}
+
+.restaurant-dashboard .dashboard-greeting-header {
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  background:
+    linear-gradient(115deg, rgba(127, 6, 21, 0.96), rgba(185, 28, 28, 0.9) 58%, rgba(239, 68, 68, 0.75)),
+    rgba(153, 27, 27, 0.86);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 18px 38px rgba(127, 6, 21, 0.2);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  backdrop-filter: blur(18px) saturate(140%);
+}
+
+.restaurant-dashboard .dashboard-greeting-header::after {
+  display: none;
+}
+
+.restaurant-dashboard .dashboard-filter-card {
+  top: 12px;
+  padding: 16px 18px;
+  border-color: rgba(255, 255, 255, 0.9);
+}
+
+.restaurant-dashboard .dashboard-filter-card + :is(.dashboard-skeleton-cards, .dashboard-stats-grid) {
+  margin-top: 8px !important;
+}
+
+.restaurant-dashboard .dashboard-filter-card select,
+.restaurant-dashboard .dashboard-filter-card input,
+.restaurant-dashboard .dashboard-filter-range {
+  border-color: rgba(203, 213, 225, 0.72);
+  background: rgba(255, 255, 255, 0.62);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+}
+
+.restaurant-dashboard .dashboard-stats-grid,
+.restaurant-dashboard .dashboard-skeleton-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 18px;
+}
+
+.restaurant-dashboard .dashboard-skeleton-cards {
+  margin-block: 6px 2px;
+}
+
+.restaurant-dashboard .restaurant-metric-grid {
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+}
+
+.restaurant-dashboard .dashboard-stat-card {
+  min-height: 132px;
+  height: 100%;
+  padding: 20px;
+  border-radius: 18px;
+  transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
+}
+
+.restaurant-dashboard .restaurant-metric-grid .dashboard-stat-card {
+  min-height: 126px;
+}
+
+.restaurant-dashboard .dashboard-stat-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(248, 113, 113, 0.3);
+  box-shadow: inset 0 1px 0 #fff, 0 18px 38px rgba(127, 6, 21, 0.12);
+}
+
+.restaurant-dashboard .dashboard-main-grid {
+  align-items: stretch;
+  gap: 18px;
+}
+
+.restaurant-dashboard .dashboard-charts-grid,
+.restaurant-dashboard .dashboard-breakdown-grid,
+.restaurant-dashboard .dashboard-insights-grid {
+  gap: 18px;
+}
+
+.restaurant-dashboard .dashboard-main-grid > *,
+.restaurant-dashboard .dashboard-charts-grid > *,
+.restaurant-dashboard .dashboard-breakdown-grid > * {
+  height: 100%;
+}
+
+.restaurant-dashboard .dashboard-chart-box,
+.restaurant-dashboard .dashboard-breakdown-card,
+.restaurant-dashboard .dashboard-insights-card,
+.restaurant-dashboard .important-notices {
+  border-radius: 20px;
+}
+
+.restaurant-dashboard .dashboard-trend-strip > div,
+.restaurant-dashboard .dashboard-status-chip,
+.restaurant-dashboard .delete-notice-list > div {
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  background: rgba(255, 255, 255, 0.46);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+@media (max-width: 760px) {
+  .dashboard-page.restaurant-dashboard {
+    gap: 20px;
+    padding: 12px;
+    border-radius: 20px;
+  }
+
+  .restaurant-dashboard .dashboard-stats-grid,
+  .restaurant-dashboard .restaurant-metric-grid,
+  .restaurant-dashboard .dashboard-skeleton-cards {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .restaurant-dashboard .dashboard-stat-card,
+  .restaurant-dashboard .restaurant-metric-grid .dashboard-stat-card {
+    min-height: 112px;
+    padding: 16px;
+  }
+
+  .restaurant-dashboard .dashboard-filter-fy {
+    width: 100%;
+    min-width: 0;
+    margin-left: 0;
+    text-align: left;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .restaurant-dashboard :is(
+    .dashboard-filter-card,
+    .dashboard-stat-card,
+    .dashboard-chart-box,
+    .dashboard-breakdown-card,
+    .dashboard-insights-card,
+    .important-notices,
+    .skeleton-card
+  )::after {
+    animation: none;
+    display: none;
   }
 }
 

@@ -62,8 +62,8 @@ export default function BranchProfileModal({ onClose, onSubmitted, showToast }) 
           <h2>
             <Store size={18} /> Branch profile
           </h2>
-          <button type="button" onClick={onClose} aria-label="Close">
-            <X size={18} />
+          <button type="button" className="modal-close-btn" onClick={onClose} aria-label="Close" title="Close">
+            <X size={20} strokeWidth={2.5} />
           </button>
         </div>
 

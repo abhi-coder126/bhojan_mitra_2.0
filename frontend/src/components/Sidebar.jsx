@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { NavLink, useNavigate } from "react-router-dom";
 import {
   Menu,
@@ -209,17 +210,23 @@ export default function Sidebar({ onClose }) {
         </button>
       </nav>
 
-      {showProfile && (
-        <BranchProfileModal onClose={() => setShowProfile(false)} showToast={showToast} />
-      )}
+      {/* Modals are portalled to <body> so the sidebar's stacking context can't
+          trap them beneath sticky page content like the dashboard filter bar. */}
+      {showProfile &&
+        createPortal(
+          <BranchProfileModal onClose={() => setShowProfile(false)} showToast={showToast} />,
+          document.body
+        )}
 
-      {showApprovals && (
-        <BranchApprovals
-          onClose={() => setShowApprovals(false)}
-          onReviewed={refreshApprovals}
-          showToast={showToast}
-        />
-      )}
+      {showApprovals &&
+        createPortal(
+          <BranchApprovals
+            onClose={() => setShowApprovals(false)}
+            onReviewed={refreshApprovals}
+            showToast={showToast}
+          />,
+          document.body
+        )}
 
       <ToastViewport toast={toast} />
     </aside>
