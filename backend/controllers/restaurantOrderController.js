@@ -1,3 +1,6 @@
+const { resolveMenuSelection } = require("../utils/menuOptions");
+const { couponUnavailable, couponDiscount } = require("../utils/couponPolicy");
+const CategoryImage = require("../models/CategoryImage");
 const mongoose = require("mongoose");
 const Product = require("../models/Product");
 const RestaurantOrder = require("../models/RestaurantOrder");
@@ -51,6 +54,12 @@ const grantRewardIfEarned = async (order) => {
 // placed and come back if it is cancelled or deleted before being served. The
 // inventoryDeducted flag is claimed atomically, so a double cancel/delete can't
 // return them twice.
+// Dine-in shows its table; takeaway and delivery have no table to show.
+const orderTypeLabel = (order) =>
+  order.orderType === "delivery" ? "Delivery"
+    : order.orderType === "takeaway" ? "Takeaway"
+    : `Table ${order.tableNo}`;
+
 const deductOrderInventory = async (order, actor) => {
   const deducted = await consumeIngredients(order.items, { reference: order.orderNo, actor });
   if (deducted) await RestaurantOrder.updateOne({ _id: order._id }, { inventoryDeducted: true });
@@ -68,7 +77,7 @@ const restoreOrderInventory = async (order, note = "Order cancelled") => {
 exports.getMenuProducts = async (req, res) => {
   try {
     const products = await Product.find({ stock: { $gt: 0 } })
-      .select("name barcode category itemType foodType description spiceLevel isRecommended hasImage unit sellingPrice mrp gst stock offerPercent ratingAvg ratingCount")
+      .select("name barcode category itemType foodType description spiceLevel isRecommended hasImage unit sellingPrice mrp gst stock offerPercent ratingAvg ratingCount variants optionGroups")
       .sort({ category: 1, name: 1 })
       .lean();
 
@@ -76,6 +85,11 @@ exports.getMenuProducts = async (req, res) => {
       success: true,
       branch: req.branch ? { name: req.branch.name, code: req.branch.code } : null,
       products,
+      categoryImages: await CategoryImage.find().select("name updatedAt").lean(),
+      offers: (await Coupon.find({ showOnMenu: true, status: "Active" }).lean())
+        .filter((coupon) => !couponUnavailable(coupon))
+        .map(({ code, title, description, discountType, discountValue, minimumBillAmount }) =>
+          ({ code, title, description, discountType, discountValue, minimumBillAmount })),
     });
   } catch (error) {
     res.status(error.statusCode || 500).json({ message: error.message });
@@ -133,6 +147,8 @@ exports.rateOrderItems = async (req, res) => {
 };
 
 exports.createRestaurantOrder = async (req, res) => {
+  let claimedCouponId = null;
+  let orderCreated = false;
   try {
     const {
       orderType = "dine-in",
@@ -150,7 +166,7 @@ exports.createRestaurantOrder = async (req, res) => {
     // claim a POS/waiter source -- those skip the customer email-OTP check below.
     const orderSource = req.user ? req.body.orderSource || "pos" : "qr";
 
-    if (orderType !== "delivery" && !tableNo) {
+    if (orderType === "dine-in" && !tableNo) {
       return res.status(400).json({ message: "Table number required" });
     }
 
@@ -202,7 +218,8 @@ exports.createRestaurantOrder = async (req, res) => {
 
     for (const item of items) {
       const product = productMap.get(String(item.productId));
-      const qty = Math.max(Number(item.qty || 0), 0);
+      const qty = Number(item.qty);
+      if (!Number.isInteger(qty) || qty < 1) return res.status(400).json({ message: "Choose a valid item quantity" });
 
       if (!product || qty <= 0) continue;
 
@@ -217,7 +234,8 @@ exports.createRestaurantOrder = async (req, res) => {
       // different from the POS sale flow (see saleController.createSale), where `rate`
       // is tax-exclusive and GST is added. Don't "unify" these without also changing
       // whichever channel's price display customers actually see.
-      const rate = Number(product.mrp || product.sellingPrice || 0);
+      const selection = resolveMenuSelection(product, item, Boolean(req.user));
+      const rate = selection.rate;
       const gst = Number(product.gst || 0);
       const lineTotal = rate * qty;
       const line = gst > 0 ? lineTotal / (1 + gst / 100) : lineTotal;
@@ -228,7 +246,10 @@ exports.createRestaurantOrder = async (req, res) => {
 
       orderItems.push({
         productId: product._id,
-        name: product.name,
+        name: selection.name,
+        variantId: selection.variantId,
+        variantLabel: selection.variantLabel,
+        addons: selection.addons,
         category: product.category,
         qty,
         rate,
@@ -257,35 +278,16 @@ exports.createRestaurantOrder = async (req, res) => {
         return res.status(404).json({ message: "Coupon not found or inactive" });
       }
 
-      const now = new Date();
-      if (coupon.startDate && now < coupon.startDate) {
-        return res.status(400).json({ message: "Coupon not started yet" });
-      }
-
-      if (coupon.endDate && now > coupon.endDate) {
-        return res.status(400).json({ message: "Coupon expired" });
-      }
-
-      if (billAmount < Number(coupon.minimumBillAmount || 0)) {
-        return res.status(400).json({
-          message: `Minimum bill amount ₹${coupon.minimumBillAmount} required`,
-        });
-      }
-
-      if (
-        Number(coupon.usageLimit || 0) > 0 &&
-        Number(coupon.usedCount || 0) >= Number(coupon.usageLimit)
-      ) {
-        return res.status(400).json({ message: "Coupon usage limit reached" });
-      }
-
-      discountAmount =
-        coupon.discountType === "Percent"
-          ? (billAmount * Number(coupon.discountValue || 0)) / 100
-          : Number(coupon.discountValue || 0);
-      discountAmount = Math.min(discountAmount, billAmount);
+      discountAmount = couponDiscount(coupon, billAmount);
+      // Claim usage atomically, so two simultaneous orders cannot take the last use.
+      const claimed = await Coupon.findOneAndUpdate(
+        { _id: coupon._id, status: "Active", updatedAt: coupon.updatedAt,
+          ...(coupon.usageLimit > 0 ? { usedCount: { $lt: coupon.usageLimit } } : {}) },
+        { $inc: { usedCount: 1 } }, { new: true }
+      );
+      if (!claimed) return res.status(409).json({ message: "Offer changed or its usage limit was reached. Please apply it again." });
+      claimedCouponId = coupon._id;
       appliedCouponCode = coupon.code;
-      await Coupon.findByIdAndUpdate(coupon._id, { $inc: { usedCount: 1 } });
     }
 
     // Atomically reserve stock before creating the order: each update only applies
@@ -322,6 +324,10 @@ exports.createRestaurantOrder = async (req, res) => {
           }))
         );
       }
+      if (claimedCouponId) {
+        await Coupon.findByIdAndUpdate(claimedCouponId, { $inc: { usedCount: -1 } });
+        claimedCouponId = null;
+      }
       return res.status(409).json({ message: `${stockConflict} just went out of stock. Please review your order.` });
     }
 
@@ -333,7 +339,11 @@ exports.createRestaurantOrder = async (req, res) => {
     const order = await RestaurantOrder.create({
       invoiceNo: await nextInvoiceNo(),
       orderType,
-      tableNo: orderType === "delivery" ? "DELIVERY" : tableNo,
+      tableNo: orderType === "delivery" ? "DELIVERY" : orderType === "takeaway" ? "TAKEAWAY" : tableNo,
+      // Staff-punched orders are credited to whoever is signed in. A QR order
+      // placed by the guest has no staff behind it, so this stays empty.
+      takenById: req.user?._id || null,
+      takenByName: req.user?.name || "",
       customerId: req.customer?._id || orderCustomer?._id || null,
       customerName,
       customerPhone,
@@ -349,6 +359,7 @@ exports.createRestaurantOrder = async (req, res) => {
       orderSource: ["pos", "waiter", "qr"].includes(orderSource) ? orderSource : "pos",
     });
 
+    orderCreated = true;
     await syncTableForOrder(order).catch(() => {});
     await deductOrderInventory(order, req.user?.name || "QR order").catch((error) =>
       console.error("Ingredient deduction failed:", error.message)
@@ -362,6 +373,9 @@ exports.createRestaurantOrder = async (req, res) => {
 
     res.status(201).json({ success: true, order });
   } catch (error) {
+    if (claimedCouponId && !orderCreated) {
+      await Coupon.findByIdAndUpdate(claimedCouponId, { $inc: { usedCount: -1 } }).catch(() => {});
+    }
     res.status(error.statusCode || 500).json({ message: error.message });
   }
 };
@@ -460,7 +474,7 @@ exports.deleteRestaurantOrder = async (req, res) => {
       recordNo: order.invoiceNo || order.orderNo,
       title: order.customerName || "Restaurant order",
       deletedBy: user.name,
-      details: `${order.orderType === "delivery" ? "Delivery" : `Table ${order.tableNo}`} | ₹${Number(order.grandTotal || 0).toFixed(2)}`,
+      details: `${orderTypeLabel(order)} | ₹${Number(order.grandTotal || 0).toFixed(2)}`,
     });
 
     res.json({

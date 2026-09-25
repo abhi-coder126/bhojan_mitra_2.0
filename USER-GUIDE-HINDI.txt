@@ -60,6 +60,7 @@ System me ye roles hain:
 
   master_admin  - head office. Sirf yahi kisi bhi branch me jaa sakta hai aur
                   branch badal sakta hai.
+  captain       - captain (order leta hai, apni performance dekh sakta hai)
   owner         - branch ka malik
   admin         - branch admin
   manager       - manager
@@ -139,18 +140,29 @@ Upar dayi taraf:
 PART 5 - RESTAURANT ORDERS (roz ka sabse zyada use hone wala page)
 ===============================================================================
 
-Yahi asli kaam ki screen hai. Upar teen view hain:
+Yahi asli kaam ki screen hai. Upar CHAAR view hain, har ek par icon hai:
 
-  Table View      - table ka naksha. Jis table par order hai wo highlight hogi.
-                    Jab QR se naya order aata hai to table chamakti hai aur
-                    counter par alarm bajta hai.
-  Current Orders  - abhi chal rahe saare orders ki list
-  Invoices        - ban chuke bill
+  Table View            - table ka naksha. Jis table par order hai wo highlight
+                          hogi. Jab QR se naya order aata hai to table chamakti
+                          hai aur counter par alarm bajta hai.
+  Running Orders        - abhi chal rahe saare orders ki list
+  Takeaway & Delivery   - NAYA. Takeaway aur delivery ke orders yahan dikhte
+                          hain. Ye orders kisi table par nahi baithte, isliye
+                          table view me nahi dikhte the. Tab par ek number bhi
+                          dikhta hai - kitne aise order abhi chal rahe hain.
+                          Andar do button hain (dono par icon):
+                            Takeaway (bag icon)  - counter se le jaane wale
+                            Delivery (bike icon) - ghar bhejne wale
+                          Kisi ek par click karke uske orders dekho. Har card par
+                          status, customer, items, kisne order liya, total, aur
+                          agli stage ka button + Bill milta hai.
+  Invoices              - ban chuke bill
 
 --- NAYA ORDER BANANA ---
   "New Order" button dabao. Usme:
-      Order Type       - Dine-in (table par) ya Delivery (delivery)
-      Table            - kaunsi table (dine-in ke liye)
+      Order Type       - Dine-in (table par) / Takeaway (le jaane wala) /
+                         Delivery (ghar bhejna). Teeno par icon hai.
+      Table            - kaunsi table (sirf dine-in ke liye)
       Delivery Address - pata (delivery ke liye zaroori hai)
       Customer         - customer ka naam
   Phir items jodo aur order save kar do.
@@ -167,8 +179,9 @@ Yahi asli kaam ki screen hai. Upar teen view hain:
       served     - de diya gaya
       cancelled  - cancel
 
-  Dhyan do: delivery order me "served" ki jagah "Delivered" likha dikhega -
-  andar se dono ek hi cheez hain, bas shabd alag hai.
+  Dhyan do: ek hi status alag-alag naam se dikhta hai - dine-in me "served",
+  delivery me "Delivered", takeaway me "picked up". Andar se teeno ek hi
+  cheez hain, bas shabd alag hai.
 
 --- AUR KYA-KYA OPTION HAIN ---
   Bill            - bill banana / print karna
@@ -307,6 +320,48 @@ itihaas. Yahan se naya customer jod sakte ho aur purane ki detail badal sakte ho
 
 
 ===============================================================================
+PART 11B - CAPTAIN / WAITER SYSTEM (Settings > Captains & Waiters)
+===============================================================================
+
+Yahan se aap har captain aur waiter ka apna login bana sakte ho.
+
+ID-PASSWORD KAISE BANAYEIN:
+  Settings kholo -> left me "Captains & Waiters" tab par click karo.
+  Form bharo:
+      Full name    - staff ka pura naam
+      Login email  - isi se wo login karega
+      Role         - Captain / Waiter / Cashier / Kitchen / Inventory / Staff
+      Password     - kam se kam 6 character
+  "Add staff member" dabao. Bas, uska login taiyar.
+
+WO LOGIN KAISE KAREGA:
+  Usi login page se jahan se aap karte ho - koi alag page nahi. Uska role tay
+  karta hai ki use kya dikhega.
+
+PERFORMANCE - KISNE KITNA KAAM KIYA:
+  Usi tab me neeche "Team & performance" table hai. Har captain/waiter ke
+  saamne dikhta hai:
+      Orders           - usne kitne order liye (cancel hue alag se laal me)
+      Business brought - usne kitne ka kaam laaya (sirf paid orders)
+      Avg bill         - uska average bill
+      Customers        - kitne alag customer handle kiye
+
+  Ye apne aap banta hai: jab bhi koi captain/waiter login karke order punch
+  karta hai, wo order uske naam par chad jata hai. Order card par bhi
+  "Taken by <naam>" likha dikhta hai.
+
+  Note: QR se customer khud order kare to uske peeche koi staff nahi hota,
+  isliye wo kisi ke naam par nahi chadta.
+
+EDIT / DISABLE / REMOVE:
+  Edit    - naam, email, role badlo. Password wala box khali chhodo to purana
+            password waisa hi rahega.
+  Disable - login band, lekin uske purane order aur naam safe rehte hain.
+            Chhutti par gaye staff ke liye yahi sahi hai.
+  Remove  - poora hata do. Uske purane orders par naam phir bhi dikhta rahega.
+
+
+===============================================================================
 PART 12 - COUPONS (offer aur coupon)
 ===============================================================================
 
@@ -424,6 +479,8 @@ PART 16 - SETTINGS
 Isme nau hisse hain:
 
   Store & Business        - dukan ka naam, pata, GST, logo etc.
+  Captains & Waiters      - NAYA. Yahan se captain/waiter ki ID-password
+                            banate ho. Neeche uski performance bhi dikhti hai.
   Invoice & Billing       - bill kaisa bane, bill number ki setting
   Payments                - kaun-kaunse payment tarike chalu hain
   Restaurant Operations   - restaurant chalane se judi setting

@@ -7,6 +7,9 @@ const restaurantOrderItemSchema = new mongoose.Schema(
     productId: { type: mongoose.Schema.Types.ObjectId, ref: "Product" },
     name: { type: String, required: true },
     category: String,
+    variantId: String,
+    variantLabel: String,
+    addons: [new mongoose.Schema({ id: String, name: String, groupName: String, price: Number, foodType: String }, { _id: false })],
     qty: { type: Number, required: true, min: 1 },
     rate: { type: Number, required: true, min: 0 },
     gst: { type: Number, default: 0 },
@@ -29,10 +32,14 @@ const restaurantOrderSchema = new mongoose.Schema(
     branchId: { type: mongoose.Schema.Types.ObjectId, ref: "Branch", default: null },
     orderType: {
       type: String,
-      enum: ["dine-in", "delivery"],
+      enum: ["dine-in", "takeaway", "delivery"],
       default: "dine-in",
     },
     tableNo: { type: String, default: "", trim: true },
+    // Which captain/waiter took this order. takenByName is copied in so the
+    // order still reads correctly after that staff member is removed.
+    takenById: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null },
+    takenByName: { type: String, default: "", trim: true },
     // Set only when the customer was logged in (via email OTP) while placing the
     // order -- lets us show their order history without matching on phone/email text.
     customerId: { type: mongoose.Schema.Types.ObjectId, ref: "Customer", default: null },

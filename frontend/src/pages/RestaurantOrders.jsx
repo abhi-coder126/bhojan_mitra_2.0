@@ -1,6 +1,6 @@
 import AsyncButton from "../components/AsyncButton";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Banknote, Bell, ChefHat, CheckCircle2, ClipboardList, CreditCard, Minus, Plus, Printer, QrCode, RefreshCcw, Search, Smartphone, Utensils, X } from "lucide-react";
+import { Banknote, Bell, Bike, ChefHat, CheckCircle2, ClipboardList, CreditCard, LayoutGrid, Minus, Plus, Printer, QrCode, ReceiptText, RefreshCcw, Search, ShoppingBag, Smartphone, Utensils, X } from "lucide-react";
 import API from "../api/axios";
 import { hasProductImage, productImageSrc } from "../api/productImage";
 import { notifyOrdersUpdated } from "../api/orderAlarm";
@@ -18,7 +18,16 @@ const workflowStatuses = ["new", "accepted", "preparing", "ready", "served"];
 // reads wrong to staff. Only the label changes here; the underlying status string
 // stored in the DB and used for workflow logic stays "served" for both order types.
 const statusLabel = (status, orderType) =>
-  status === "served" && orderType === "delivery" ? "delivered" : status;
+  status !== "served" ? status
+    : orderType === "delivery" ? "delivered"
+    : orderType === "takeaway" ? "picked up"
+    : status;
+
+// One place that decides how an order is titled, now that there are three types.
+export const orderTypeLabel = (order) =>
+  order.orderType === "delivery" ? "Delivery"
+    : order.orderType === "takeaway" ? "Takeaway"
+    : `Table ${order.tableNo}`;
 
 const defaultOrderSettings = {
   restaurantOrderSoundEnabled: true,
@@ -56,6 +65,8 @@ export default function RestaurantOrders() {
   // Tables set up in Table Management, with their live status (reserved, cleaning...).
   const [tableDocs, setTableDocs] = useState([]);
   const [activeSection, setActiveSection] = useState("tables");
+  // Which of the two non-table channels the pickup board is showing.
+  const [pickupType, setPickupType] = useState("takeaway");
   const [selectedTable, setSelectedTable] = useState(null);
   const [orderSettings, setOrderSettings] = useState(defaultOrderSettings);
   const [activePopupOrderId, setActivePopupOrderId] = useState(null);
@@ -75,7 +86,8 @@ export default function RestaurantOrders() {
   const [products, setProducts] = useState([]);
   const [newOrderOpen, setNewOrderOpen] = useState(false);
   const [newOrderTable, setNewOrderTable] = useState("1");
-  const [newOrderIsDelivery, setNewOrderIsDelivery] = useState(false);
+  // "dine-in" | "takeaway" | "delivery"
+  const [newOrderType, setNewOrderType] = useState("dine-in");
   const [newOrderCustomerName, setNewOrderCustomerName] = useState("");
   const [newOrderSearch, setNewOrderSearch] = useState("");
   const [newOrderCart, setNewOrderCart] = useState([]);
@@ -144,6 +156,24 @@ export default function RestaurantOrders() {
   const activeOrders = useMemo(
     () => orders.filter((order) => order.status !== "cancelled" && order.paymentStatus !== "paid"),
     [orders]
+  );
+
+  // Takeaway and delivery never occupy a table, so they are invisible on the
+  // table board. This is where the counter watches them.
+  const pickupCounts = useMemo(() => {
+    const live = activeOrders.filter((order) => order.orderType !== "dine-in");
+    return {
+      takeaway: live.filter((order) => order.orderType === "takeaway").length,
+      delivery: live.filter((order) => order.orderType === "delivery").length,
+      total: live.length,
+    };
+  }, [activeOrders]);
+
+  const pickupOrders = useMemo(
+    () => activeOrders
+      .filter((order) => order.orderType === pickupType)
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)),
+    [activeOrders, pickupType]
   );
 
   const updateStatus = async (orderId, status) => {
@@ -281,15 +311,15 @@ export default function RestaurantOrders() {
   const submitNewOrder = async () => {
     if (placingNewOrder) return;
     if (newOrderCart.length === 0) return showToast("Add at least one item", "warning");
-    if (newOrderIsDelivery && !newOrderCustomerName.trim()) {
+    if (newOrderType === "delivery" && !newOrderCustomerName.trim()) {
       return showToast("Customer name required for delivery orders", "warning");
     }
 
     setPlacingNewOrder(true);
     try {
       await API.post("/restaurant-orders", {
-        orderType: newOrderIsDelivery ? "delivery" : "dine-in",
-        tableNo: newOrderIsDelivery ? "" : newOrderTable,
+        orderType: newOrderType,
+        tableNo: newOrderType === "dine-in" ? newOrderTable : "",
         orderSource: "captain",
         customerName: newOrderCustomerName.trim() || "Walk-in Customer",
         customerPhone: "",
@@ -551,21 +581,29 @@ export default function RestaurantOrders() {
           className={activeSection === "tables" ? "active" : ""}
           onClick={() => setActiveSection("tables")}
         >
-          Table View
+          <LayoutGrid size={15} /> Table View
         </button>
         <button
           type="button"
           className={activeSection === "orders" ? "active" : ""}
           onClick={() => setActiveSection("orders")}
         >
-          Running Orders
+          <ClipboardList size={15} /> Running Orders
+        </button>
+        <button
+          type="button"
+          className={activeSection === "pickup" ? "active" : ""}
+          onClick={() => setActiveSection("pickup")}
+        >
+          <ShoppingBag size={15} /> Takeaway &amp; Delivery
+          {pickupCounts.total > 0 && <b className="section-tab-count">{pickupCounts.total}</b>}
         </button>
         <button
           type="button"
           className={activeSection === "invoices" ? "active" : ""}
           onClick={() => setActiveSection("invoices")}
         >
-          Invoices
+          <ReceiptText size={15} /> Invoices
         </button>
       </div>
 
@@ -719,6 +757,82 @@ export default function RestaurantOrders() {
                   <button onClick={() => openSplit(order)}>Split Bill</button>
                   <button onClick={() => openMerge(order)}>Merge Bill</button>
                 </div>
+              </article>
+            ))}
+          </div>
+        )}
+      </section>}
+
+      {activeSection === "pickup" && <section className="pickup-panel">
+        <div className="pickup-channel-tabs" role="tablist" aria-label="Order channel">
+          <button type="button" role="tab" aria-selected={pickupType === "takeaway"}
+            className={pickupType === "takeaway" ? "active" : ""}
+            onClick={() => setPickupType("takeaway")}>
+            <ShoppingBag size={18} />
+            <span>Takeaway</span>
+            <b>{pickupCounts.takeaway}</b>
+          </button>
+          <button type="button" role="tab" aria-selected={pickupType === "delivery"}
+            className={pickupType === "delivery" ? "active" : ""}
+            onClick={() => setPickupType("delivery")}>
+            <Bike size={18} />
+            <span>Delivery</span>
+            <b>{pickupCounts.delivery}</b>
+          </button>
+        </div>
+
+        {pickupOrders.length === 0 ? (
+          <div className="bm-empty">
+            No running {pickupType === "takeaway" ? "takeaway" : "delivery"} orders right now.
+          </div>
+        ) : (
+          <div className="pickup-grid">
+            {pickupOrders.map((order) => (
+              <article key={order._id} className="pickup-card">
+                <header>
+                  <div className="pickup-card-title">
+                    {order.orderType === "takeaway" ? <ShoppingBag size={16} /> : <Bike size={16} />}
+                    <h3>{order.orderNo}</h3>
+                  </div>
+                  <StatusBadge status={order.status} orderType={order.orderType} />
+                </header>
+
+                <p className="pickup-customer">
+                  <b>{order.customerName || "Guest"}</b>
+                  {order.customerPhone && <span>{order.customerPhone}</span>}
+                </p>
+
+                {order.orderType === "delivery" && order.deliveryAddress && (
+                  <p className="pickup-address">{order.deliveryAddress}</p>
+                )}
+
+                <ul className="pickup-items">
+                  {order.items?.map((item, index) => (
+                    <li key={`${item.productId || item.name}-${index}`}>
+                      <span>{item.qty} x {item.name}</span>
+                    </li>
+                  ))}
+                </ul>
+
+                {order.takenByName && <p className="pickup-taken-by">Taken by {order.takenByName}</p>}
+
+                <footer>
+                  <b>₹{Number(order.grandTotal || 0).toFixed(2)}</b>
+                  <div className="row-actions">
+                    {workflowStatuses
+                      .slice(workflowStatuses.indexOf(order.status) + 1,
+                        workflowStatuses.indexOf(order.status) + 2)
+                      .map((next) => (
+                        <AsyncButton key={next} className="bm-btn bm-btn-sm bm-btn-primary"
+                          onClick={() => updateStatus(order._id, next)}>
+                          Mark {statusLabel(next, order.orderType)}
+                        </AsyncButton>
+                      ))}
+                    <AsyncButton className="bm-btn bm-btn-sm" onClick={() => setPaymentOrder(order)}>
+                      Bill
+                    </AsyncButton>
+                  </div>
+                </footer>
               </article>
             ))}
           </div>
@@ -1094,26 +1208,25 @@ export default function RestaurantOrders() {
             <div className="captain-order-body">
               <fieldset className="captain-order-left" disabled={placingNewOrder}>
                 <div className="captain-order-toggle">
-                  <button
-                    type="button"
-                    className={!newOrderIsDelivery ? "active" : ""}
-                    aria-pressed={!newOrderIsDelivery}
-                    onClick={() => setNewOrderIsDelivery(false)}
-                  >
-                    <Utensils size={15} /> Dine-in
-                  </button>
-                  <button
-                    type="button"
-                    className={newOrderIsDelivery ? "active" : ""}
-                    aria-pressed={newOrderIsDelivery}
-                    onClick={() => setNewOrderIsDelivery(true)}
-                  >
-                    <ClipboardList size={15} /> Delivery
-                  </button>
+                  {[
+                    ["dine-in", "Dine-in", Utensils],
+                    ["takeaway", "Takeaway", ShoppingBag],
+                    ["delivery", "Delivery", Bike],
+                  ].map(([value, label, Icon]) => (
+                    <button
+                      key={value}
+                      type="button"
+                      className={newOrderType === value ? "active" : ""}
+                      aria-pressed={newOrderType === value}
+                      onClick={() => setNewOrderType(value)}
+                    >
+                      <Icon size={15} /> {label}
+                    </button>
+                  ))}
                 </div>
 
                 <div className="captain-order-details-row">
-                  {!newOrderIsDelivery && (
+                  {newOrderType === "dine-in" && (
                     <label className="captain-order-table-select">
                       <span>Table</span>
                       <select value={newOrderTable} onChange={(e) => setNewOrderTable(e.target.value)}>
@@ -1124,7 +1237,7 @@ export default function RestaurantOrders() {
                     </label>
                   )}
                   <label className="captain-order-table-select">
-                    <span>Customer name {newOrderIsDelivery ? "*" : "(optional)"}</span>
+                    <span>Customer name {newOrderType === "delivery" ? "*" : "(optional)"}</span>
                     <input
                       placeholder="Customer name"
                       value={newOrderCustomerName}

@@ -9,10 +9,12 @@ import {
   Bell,
   ShieldCheck,
   DatabaseBackup,
+  Users,
   Building2,
   LifeBuoy,
 } from "lucide-react";
 import { ManageBranchesPanel, SupportContactsPanel } from "../components/HeadOfficeSettings";
+import StaffSettings from "../components/StaffSettings";
 import { getActiveBranch, isMasterAdmin } from "../api/session";
 import API from "../api/axios";
 import { ORDER_SETTINGS_CHANGED_EVENT, playOrderTuneOnce } from "../api/orderAlarm";
@@ -76,6 +78,7 @@ const tabs = [
   { key: "invoice", label: "Invoice & Billing", icon: Receipt },
   { key: "payments", label: "Payments", icon: Wallet },
   { key: "restaurant", label: "Restaurant Operations", icon: Utensils },
+  { key: "staff", label: "Captains & Waiters", icon: Users },
   { key: "notifications", label: "Notifications & Display", icon: Bell },
   { key: "security", label: "Security", icon: ShieldCheck },
   { key: "data", label: "Data Management", icon: DatabaseBackup },
@@ -525,6 +528,8 @@ export default function Settings() {
               </AsyncForm>
             </div>
           )}
+
+          {activeTab === "staff" && <StaffSettings showToast={showToast} />}
 
           {activeTab === "data" && (
             <div className="settings-section danger-settings-section">

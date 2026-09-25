@@ -13,7 +13,7 @@ const userSchema = new mongoose.Schema(
     password: { type: String, required: true },
     role: {
       type: String,
-      enum: ["master_admin", "admin", "staff", "owner", "manager", "cashier", "waiter", "kitchen", "inventory"],
+      enum: ["master_admin", "admin", "staff", "owner", "manager", "cashier", "captain", "waiter", "kitchen", "inventory"],
       default: "admin",
     },
     // Every role except master_admin belongs to exactly one branch and can only ever

@@ -100,6 +100,7 @@ backend/models/User.js defines these roles:
   admin         - branch admin
   manager
   cashier
+  captain       - takes orders; their orders are credited to them
   waiter
   kitchen
   inventory
@@ -156,7 +157,16 @@ these statuses:
                 this same status as "Delivered" instead of "Served" - same
                 underlying value, friendlier wording.
 
-Order types today: "dine-in" and "delivery". (There is no "takeaway" type yet.)
+Order types: "dine-in", "takeaway" and "delivery". Only dine-in occupies a
+table, so the Restaurant Orders screen has a separate "Takeaway & Delivery"
+board for the other two -- they would otherwise be invisible on the table map.
+
+WHO TOOK THE ORDER
+  A staff-punched order stores takenById plus takenByName. The name is
+  denormalised on purpose so an order still reads correctly after that staff
+  member is removed. A QR order placed by the guest has no staff behind it, so
+  both stay empty. /api/staff/performance groups on takenById to produce the
+  per-captain figures shown in Settings.
 
 WHEN STOCK IS DEDUCTED
   When an order is placed, deductOrderInventory() runs. It looks up the RECIPE
@@ -282,7 +292,8 @@ FOOD COST
   Audit Log          Who changed what.
   Branch Management  master_admin only: create branches, put one on hold,
                      approve branch change requests.
-  Settings           Business profile, tax, printing, notifications.
+  Settings           Business profile, tax, printing, notifications, and
+                     "Captains & Waiters" -- branch-level staff logins.
 
 
 -------------------------------------------------------------------------------
@@ -319,6 +330,8 @@ FOOD COST
   Login / route guards .......... backend/middleware/authMiddleware.js
   Customer-menu branch context .. backend/middleware/branchContext.js
   Coupon rules .................. backend/utils/couponPolicy.js
+  Staff logins + performance .... backend/controllers/staffController.js
+                                  frontend/src/components/StaffSettings.jsx
   Order lifecycle ............... backend/controllers/restaurantOrderController.js
   Menu items .................... backend/controllers/productController.js
   API client + interceptors ..... frontend/src/api/axios.js

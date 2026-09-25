@@ -4010,6 +4010,114 @@
     @apply bg-slate-950 text-white;
   }
 
+  /* Tabs now carry an icon, so lay their contents out in a row. */
+  .restaurant-section-tabs button {
+    @apply inline-flex items-center justify-center gap-2;
+  }
+
+  .restaurant-section-tabs .section-tab-count {
+    @apply ml-1 rounded-full bg-slate-900/10 px-2 py-0.5 text-xs font-black;
+  }
+
+  .restaurant-section-tabs button.active .section-tab-count {
+    @apply bg-white/20 text-white;
+  }
+
+  /* Takeaway + delivery board: these orders hold no table, so they need their
+     own place to be watched. */
+  .pickup-panel {
+    @apply grid gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_12px_28px_rgba(15,23,42,0.07)];
+  }
+
+  .pickup-channel-tabs {
+    @apply flex flex-wrap gap-2;
+  }
+
+  .pickup-channel-tabs button {
+    @apply inline-flex min-h-12 flex-1 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm font-black text-slate-700 hover:bg-slate-100;
+  }
+
+  .pickup-channel-tabs button.active {
+    @apply border-[#84091e]/30 bg-[#84091e] text-white;
+  }
+
+  .pickup-channel-tabs button b {
+    @apply rounded-full bg-slate-900/10 px-2 py-0.5 text-xs;
+  }
+
+  .pickup-channel-tabs button.active b {
+    @apply bg-white/20;
+  }
+
+  .pickup-grid {
+    @apply grid gap-3 sm:grid-cols-2 xl:grid-cols-3;
+  }
+
+  .pickup-card {
+    @apply grid content-start gap-2 rounded-2xl border border-slate-200 bg-white p-3.5 shadow-[0_8px_20px_rgba(15,23,42,0.06)];
+  }
+
+  .pickup-card header {
+    @apply flex items-center justify-between gap-2;
+  }
+
+  .pickup-card-title {
+    @apply inline-flex items-center gap-2 text-[#84091e];
+  }
+
+  .pickup-card-title h3 {
+    @apply m-0 text-base font-black text-slate-950;
+  }
+
+  .pickup-customer {
+    @apply m-0 flex flex-wrap items-baseline gap-2 text-sm text-slate-700;
+  }
+
+  .pickup-customer span {
+    @apply text-xs font-semibold text-slate-500;
+  }
+
+  .pickup-address {
+    @apply m-0 rounded-lg bg-slate-50 p-2 text-xs font-semibold text-slate-600;
+  }
+
+  .pickup-items {
+    @apply m-0 grid list-none gap-1 p-0 text-xs font-semibold text-slate-600;
+  }
+
+  .pickup-taken-by {
+    @apply m-0 text-xs font-bold text-slate-400;
+  }
+
+  .pickup-card footer {
+    @apply flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 pt-2.5 text-base font-black text-slate-950;
+  }
+
+  /* Staff / captains table in Settings. */
+  .staff-form-actions {
+    @apply col-span-full flex flex-wrap gap-2;
+  }
+
+  .staff-table-title {
+    @apply mb-2 mt-5 text-base font-black text-slate-900;
+  }
+
+  .staff-email {
+    @apply block text-xs font-semibold text-slate-400;
+  }
+
+  .staff-cancelled {
+    @apply block text-xs font-bold text-red-500;
+  }
+
+  .staff-row-inactive {
+    @apply opacity-60;
+  }
+
+  .settings-section-note {
+    @apply mb-4 mt-1 text-sm font-semibold text-slate-500;
+  }
+
   .table-view-panel {
     @apply rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_12px_28px_rgba(15,23,42,0.07)];
   }
