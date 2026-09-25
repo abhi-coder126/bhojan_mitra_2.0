@@ -11,6 +11,7 @@ import AllProducts from "./pages/AllProducts";
 import Purchase from "./pages/Purchase";
 import GRNManagement from "./pages/GRNManagement";
 import Reports from "./pages/Reports";
+import OrderManagement from "./pages/OrderManagement";
 import Customers from "./pages/Customers";
 import Vendors from "./pages/Vendors";
 import SalesReturn from "./pages/SalesReturn";
@@ -66,6 +67,10 @@ const pageMeta = {
   "/sales-return": {
     title: "Sales Return / Refund | RestroSethu Billing Software",
     description: "Manage invoice returns, returned products, refund amounts and stock reversal records.",
+  },
+  "/order-management": {
+    title: "Order Management | RestroSethu Billing Software",
+    description: "Track how long every order has been running and how long finished orders took.",
   },
   "/invoices": {
     title: "Invoices | RestroSethu Billing Software",
@@ -306,6 +311,7 @@ function ProtectedLayout() {
           <Route path="/rewards" element={<Rewards />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/restaurant-orders" element={<RestaurantOrders />} />
+          <Route path="/order-management" element={<OrderManagement />} />
           <Route path="/table-barcodes" element={<TableBarcodes />} />
           <Route path="/tables" element={<Tables />} />
           <Route path="/kds" element={<KDS />} />

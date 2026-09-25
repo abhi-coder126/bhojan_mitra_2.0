@@ -195,6 +195,41 @@ Yahi asli kaam ki screen hai. Upar CHAAR view hain, har ek par icon hai:
 
 
 ===============================================================================
+PART 5B - ORDER MANAGEMENT (sidebar me naya section)
+===============================================================================
+
+Ye batata hai ki kaunsa order KITNI DER se chal raha hai, aur puraane order
+banne me kitna time lagaya. Restaurant Orders kaam karne ke liye hai; ye
+nazar rakhne ke liye.
+
+UPAR CHAAR CARD:
+  Running now             - abhi kitne order chal rahe hain
+  Longest running         - sabse zyada der se kaunsa atka hai
+                            (30 minute se upar jaye to LAAL ho jata hai)
+  Average order to served - order aane se serve hone tak ka average time
+  Orders loaded           - kitne order load hue
+
+DO TAB:
+
+  Running orders - abhi chal rahe order. Har line par:
+      Running for  - ACCEPT karne ke baad se kitna time ho gaya. Ye ghadi
+                     har second chalti hai. 30 min se upar LAAL.
+                     Jo order abhi accept hi nahi hua, usme
+                     "Not accepted yet" likha aata hai.
+      Accept wait  - order aane se accept karne me kitna time laga
+
+  Order history  - ho chuke order. Har line par:
+      Order to served - order place hone se lekar serve hone tak KITNA
+                        TOTAL TIME laga. Yahi wo number hai jo customer
+                        ne asal me mehsoos kiya.
+
+Upar search box se order no, invoice, customer, phone ya table se dhoondh
+sakte ho. List har 15 second me apne aap refresh hoti hai.
+
+Restaurant Orders ke order card par bhi ab "Running for" dikhta hai.
+
+
+===============================================================================
 PART 6 - KITCHEN DISPLAY (kitchen ki screen)
 ===============================================================================
 
@@ -415,8 +450,24 @@ BHARNA KYA HAI:
                     par - Regular par nahi. Kuch bhi tick na karo to SAARE
                     sizes par chalega.
   Free item       - (sirf combo me) kya free milega, aur uska size
+  Minimum order amount - itne se kam ka bill hua to free item NAHI milega.
+                    Khali chhodo to koi minimum nahi. Jaise "499 se upar
+                    ke bill par hi cold drink free".
   Runs on         - hafte ke kin dino chalega (Indian time)
   Active          - chalu hai ya paused
+
+OFFER MANAGE BHI WAHIN SE HOTA HAI:
+  Usi "Add Offer" dialog me neeche saari offers ki list hai. Har ek par
+  Edit aur Delete ke button. List me likha aata hai ki offer kis item par
+  hai, kin sizes par, kitne ke bill par, kin dino chalta hai, aur AAJ chal
+  raha hai ya nahi.
+
+ORDER LETE WAQT RECOMMENDATION:
+  Jab captain/waiter New Order me koi aisa item daalta hai jis par offer
+  hai, to Order Summary ke upar apne aap likha aa jata hai ki uske saath
+  kya free milega. Agar bill abhi minimum se kam hai to likha aata hai
+  "add Rs XX more to unlock" - yani itna aur bech do to free item lagega.
+  Counter ko yaad rakhne ki zaroorat nahi.
 
 CUSTOMER KO KAHAN DIKHTA HAI:
   Menu me "Offers for you" strip me, sabse aage. Card par "BUY 1 GET 1" ya
@@ -605,6 +656,10 @@ SETTINGS SE CONTROL:  Settings -> Restaurant Operations
      Repeat Sound        - ON: order accept hone tak bajti rahegi.
                            OFF: har naye order par ek baar bajegi.
      Order Popup         - naya order ka popup dikhega ya nahi
+     Item Offers          - SAB item offers ek saath chalu/band. OFF karoge
+                            to koi BOGO ya free item nahi jayega, na hi
+                            customer ko dikhega. Ek-ek offer ko chhedne ki
+                            zaroorat nahi.
      Auto-Accept Orders   - ON karo to QR order bina accept kiye seedha
                            kitchen chala jayega
      Auto Refresh Seconds - kitne second me list refresh ho (kam se kam 3)

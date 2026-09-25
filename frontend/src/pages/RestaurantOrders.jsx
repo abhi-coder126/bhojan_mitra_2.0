@@ -1,6 +1,6 @@
 import AsyncButton from "../components/AsyncButton";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Banknote, Bell, Bike, ChefHat, CheckCircle2, ClipboardList, CreditCard, LayoutGrid, Minus, Plus, Printer, QrCode, ReceiptText, RefreshCcw, Search, ShoppingBag, Smartphone, Utensils, X } from "lucide-react";
+import { Banknote, Bell, Bike, ChefHat, CheckCircle2, ClipboardList, CreditCard, Gift, LayoutGrid, Minus, Plus, Printer, QrCode, ReceiptText, RefreshCcw, Search, ShoppingBag, Smartphone, Utensils, X } from "lucide-react";
 import API from "../api/axios";
 import { hasProductImage, productImageSrc } from "../api/productImage";
 import { notifyOrdersUpdated } from "../api/orderAlarm";
@@ -12,6 +12,18 @@ import { KotReceipt, TaxInvoiceReceipt } from "../components/ThermalReceipt";
 import { toInvoiceData } from "../components/receiptData";
 
 const workflowStatuses = ["new", "accepted", "preparing", "ready", "served"];
+
+// "1h 04m" / "12m 30s" / "45s" -- the shortest honest reading.
+const formatDuration = (ms) => {
+  if (!Number.isFinite(ms) || ms < 0) return "";
+  const total = Math.floor(ms / 1000);
+  const hours = Math.floor(total / 3600);
+  const minutes = Math.floor((total % 3600) / 60);
+  const seconds = total % 60;
+  if (hours > 0) return hours + "h " + String(minutes).padStart(2, "0") + "m";
+  if (minutes > 0) return minutes + "m " + String(seconds).padStart(2, "0") + "s";
+  return seconds + "s";
+};
 
 // "served" is the shared status value for both dine-in and delivery orders (same
 // workflow step -- order is complete), but showing "Served" for a delivery order
@@ -67,6 +79,8 @@ export default function RestaurantOrders() {
   const [activeSection, setActiveSection] = useState("tables");
   // Which of the two non-table channels the pickup board is showing.
   const [pickupType, setPickupType] = useState("takeaway");
+  // Ticks every second so the running clocks move without refetching orders.
+  const [clockNow, setClockNow] = useState(() => Date.now());
   const [selectedTable, setSelectedTable] = useState(null);
   const [orderSettings, setOrderSettings] = useState(defaultOrderSettings);
   const [activePopupOrderId, setActivePopupOrderId] = useState(null);
@@ -91,6 +105,8 @@ export default function RestaurantOrders() {
   const [newOrderCustomerName, setNewOrderCustomerName] = useState("");
   const [newOrderSearch, setNewOrderSearch] = useState("");
   const [newOrderCart, setNewOrderCart] = useState([]);
+  // Item offers, so the counter can tell the guest what comes free with what.
+  const [menuOffers, setMenuOffers] = useState([]);
   const [placingNewOrder, setPlacingNewOrder] = useState(false);
   const knownOrderIds = useRef(new Set());
   const initialLoadDone = useRef(false);
@@ -175,6 +191,23 @@ export default function RestaurantOrders() {
       .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)),
     [activeOrders, pickupType]
   );
+
+  useEffect(() => {
+    API.get("/menu-offers")
+      .then((res) => setMenuOffers((res.data.offers || []).filter((offer) => offer.runsToday)))
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    const tick = window.setInterval(() => setClockNow(Date.now()), 1000);
+    return () => window.clearInterval(tick);
+  }, []);
+
+  // Counts from acceptance, which is when the kitchen clock really starts.
+  const runningFor = (order) =>
+    order.acceptedAt && order.status !== "served" && order.status !== "cancelled"
+      ? formatDuration(clockNow - new Date(order.acceptedAt).getTime())
+      : "";
 
   const updateStatus = async (orderId, status) => {
     const order = orders.find((item) => item._id === orderId);
@@ -276,6 +309,24 @@ export default function RestaurantOrders() {
     );
   }, [products, newOrderSearch]);
 
+  const offerHints = useMemo(() => {
+    if (!menuOffers.length || !newOrderCart.length) return [];
+    const total = newOrderCart.reduce((sum, item) => sum + item.rate * item.qty, 0);
+    const ids = new Set(newOrderCart.map((item) => String(item.productId)));
+    return menuOffers
+      .filter((offer) => ids.has(String(offer.productId)))
+      .map((offer) => ({
+        _id: offer._id,
+        title: offer.title,
+        detail: offer.type === "bogo"
+          ? "Second " + offer.productName + " free"
+          : "Free " + (offer.freeSizeLabel ? offer.freeProductName + " (" + offer.freeSizeLabel + ")" : offer.freeProductName),
+        sizes: offer.sizeLabels || [],
+        // Below the minimum the give-away will not fire, so say how much short.
+        shortBy: Math.max(0, Number(offer.minOrderAmount || 0) - total),
+      }));
+  }, [menuOffers, newOrderCart]);
+
   const newOrderCartQty = newOrderCart.reduce((sum, item) => sum + item.qty, 0);
   const newOrderCartTotal = newOrderCart.reduce((sum, item) => sum + item.rate * item.qty, 0);
 
@@ -302,7 +353,7 @@ export default function RestaurantOrders() {
 
   const resetNewOrderForm = () => {
     setNewOrderTable("1");
-    setNewOrderIsDelivery(false);
+    setNewOrderType("dine-in");
     setNewOrderCustomerName("");
     setNewOrderSearch("");
     setNewOrderCart([]);
@@ -706,8 +757,14 @@ export default function RestaurantOrders() {
                   </div>
                   <div>
                     <span>Order Type</span>
-                    <b>{order.orderType === "delivery" ? "Delivery" : "Dine-in"}</b>
+                    <b>{orderTypeLabel(order)}</b>
                   </div>
+                  {runningFor(order) && (
+                    <div>
+                      <span>Running for</span>
+                      <b className="order-running-clock">{runningFor(order)}</b>
+                    </div>
+                  )}
                   <div>
                     <span>Bill</span>
                     <b>₹{Number(order.grandTotal || 0).toFixed(2)}</b>
@@ -1293,6 +1350,22 @@ export default function RestaurantOrders() {
 
               <div className="captain-order-right">
                 <h3>Order Summary</h3>
+
+                {offerHints.length > 0 && (
+                  <div className="order-offer-hints">
+                    {offerHints.map((hint) => (
+                      <p key={hint._id} className={hint.shortBy > 0 ? "pending" : ""}>
+                        <Gift size={14} />
+                        <span>
+                          <b>{hint.title}</b>
+                          {hint.detail}
+                          {hint.sizes.length > 0 && " · " + hint.sizes.join(", ") + " only"}
+                          {hint.shortBy > 0 && " · add ₹" + hint.shortBy.toFixed(0) + " more to unlock"}
+                        </span>
+                      </p>
+                    ))}
+                  </div>
+                )}
                 {newOrderCart.length === 0 ? (
                   <p className="empty-cart-copy">No items added yet.</p>
                 ) : (

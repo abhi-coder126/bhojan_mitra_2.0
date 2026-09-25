@@ -1,0 +1,145 @@
+{
+  "results": [
+    {
+      "width": 320,
+      "path": "/branches",
+      "actual": "/branches",
+      "overflow": false,
+      "content": 208,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 320,
+      "path": "/order-management",
+      "actual": "/order-management",
+      "overflow": false,
+      "content": 438,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 390,
+      "path": "/branches",
+      "actual": "/branches",
+      "overflow": false,
+      "content": 208,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 390,
+      "path": "/order-management",
+      "actual": "/order-management",
+      "overflow": false,
+      "content": 438,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 480,
+      "path": "/branches",
+      "actual": "/branches",
+      "overflow": false,
+      "content": 208,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 480,
+      "path": "/order-management",
+      "actual": "/order-management",
+      "overflow": false,
+      "content": 438,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 768,
+      "path": "/branches",
+      "actual": "/branches",
+      "overflow": false,
+      "content": 208,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 768,
+      "path": "/order-management",
+      "actual": "/order-management",
+      "overflow": false,
+      "content": 438,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 1024,
+      "path": "/branches",
+      "actual": "/branches",
+      "overflow": false,
+      "content": 208,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 1024,
+      "path": "/order-management",
+      "actual": "/order-management",
+      "overflow": false,
+      "content": 438,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 1440,
+      "path": "/branches",
+      "actual": "/branches",
+      "overflow": false,
+      "content": 208,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 1440,
+      "path": "/order-management",
+      "actual": "/order-management",
+      "overflow": false,
+      "content": 438,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 1920,
+      "path": "/branches",
+      "actual": "/branches",
+      "overflow": false,
+      "content": 208,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 1920,
+      "path": "/order-management",
+      "actual": "/order-management",
+      "overflow": false,
+      "content": 438,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    }
+  ],
+  "issues": []
+}

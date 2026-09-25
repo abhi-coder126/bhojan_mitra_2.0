@@ -19,6 +19,9 @@ const menuOfferSchema = new mongoose.Schema(
     productId: { type: mongoose.Schema.Types.ObjectId, ref: "Product", required: true },
     variantIds: { type: [String], default: [] },
 
+    // Nothing is given away below this bill amount. 0 means no minimum.
+    minOrderAmount: { type: Number, default: 0, min: 0 },
+
     // combo only
     freeProductId: { type: mongoose.Schema.Types.ObjectId, ref: "Product", default: null },
     freeVariantId: { type: String, default: "" },

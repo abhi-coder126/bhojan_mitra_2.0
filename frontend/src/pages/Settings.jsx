@@ -57,6 +57,7 @@ const defaultSettings = {
 
   restaurantOrderSoundEnabled: true,
   restaurantOrderRepeatSound: true,
+  menuOffersEnabled: true,
   restaurantOrderPopupEnabled: true,
   restaurantOrderRefreshSeconds: 5,
   restaurantTableCount: 28,
@@ -425,6 +426,12 @@ export default function Settings() {
                   description="Show the accept popup for new table orders."
                   value={settings.restaurantOrderPopupEnabled}
                   onClick={() => change("restaurantOrderPopupEnabled", !settings.restaurantOrderPopupEnabled)}
+                />
+                <Toggle
+                  title="Item Offers"
+                  description="Give away buy-one-get-one and free combo items. Off pauses every offer at once."
+                  value={settings.menuOffersEnabled}
+                  onClick={() => change("menuOffersEnabled", !settings.menuOffersEnabled)}
                 />
                 <Toggle
                   title="Auto-Accept Orders"

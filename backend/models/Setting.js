@@ -84,6 +84,9 @@ const settingSchema = new mongoose.Schema(
     // JWT's own 7-day expiry (see authController.login).
     sessionTimeoutMinutes: { type: Number, default: 60 },
     autoAcceptOrders: { type: Boolean, default: false },
+    // Master switch for item offers (BOGO / free combo item). Off pauses every
+    // offer at once without touching each one.
+    menuOffersEnabled: { type: Boolean, default: true },
     maintenanceMode: { type: Boolean, default: false },
   },
   { timestamps: true }

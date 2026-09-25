@@ -1,0 +1,1895 @@
+{
+  "results": [
+    {
+      "width": 320,
+      "path": "/",
+      "actual": "/",
+      "overflow": false,
+      "content": 2329,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 320,
+      "path": "/restaurant-orders",
+      "actual": "/restaurant-orders",
+      "overflow": false,
+      "content": 881,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 320,
+      "path": "/menu-items",
+      "actual": "/menu-items",
+      "overflow": false,
+      "content": 496,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 320,
+      "path": "/all-products",
+      "actual": "/all-products",
+      "overflow": false,
+      "content": 489,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 320,
+      "path": "/purchase",
+      "actual": "/purchase",
+      "overflow": false,
+      "content": 678,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 320,
+      "path": "/grn-management",
+      "actual": "/grn-management",
+      "overflow": false,
+      "content": 390,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 320,
+      "path": "/supplier-bills",
+      "actual": "/supplier-bills",
+      "overflow": false,
+      "content": 386,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 320,
+      "path": "/sales-return",
+      "actual": "/sales-return",
+      "overflow": false,
+      "content": 408,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 320,
+      "path": "/invoices",
+      "actual": "/invoices",
+      "overflow": false,
+      "content": 365,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 320,
+      "path": "/customers",
+      "actual": "/customers",
+      "overflow": false,
+      "content": 478,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 320,
+      "path": "/vendors",
+      "actual": "/vendors",
+      "overflow": false,
+      "content": 382,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 320,
+      "path": "/accounts",
+      "actual": "/accounts",
+      "overflow": false,
+      "content": 528,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 320,
+      "path": "/coupons",
+      "actual": "/coupons",
+      "overflow": false,
+      "content": 1214,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 320,
+      "path": "/rewards",
+      "actual": "/rewards",
+      "overflow": false,
+      "content": 640,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 320,
+      "path": "/settings",
+      "actual": "/settings",
+      "overflow": false,
+      "content": 308,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 320,
+      "path": "/table-barcodes",
+      "actual": "/table-barcodes",
+      "overflow": false,
+      "content": 239,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 320,
+      "path": "/tables",
+      "actual": "/tables",
+      "overflow": false,
+      "content": 409,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 320,
+      "path": "/kds",
+      "actual": "/kds",
+      "overflow": false,
+      "content": 417,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 320,
+      "path": "/smart-inventory",
+      "actual": "/smart-inventory",
+      "overflow": false,
+      "content": 605,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 320,
+      "path": "/audit-logs",
+      "actual": "/audit-logs",
+      "overflow": false,
+      "content": 503,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 320,
+      "path": "/royalty",
+      "actual": "/royalty",
+      "overflow": false,
+      "content": 716,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 320,
+      "path": "/support",
+      "actual": "/support",
+      "overflow": false,
+      "content": 539,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 320,
+      "path": "/login",
+      "actual": "/login",
+      "overflow": false,
+      "content": 409,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 320,
+      "path": "/menu/1",
+      "actual": "/menu/1",
+      "overflow": false,
+      "content": 370,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 320,
+      "path": "/menu/delivery",
+      "actual": "/menu/delivery",
+      "overflow": false,
+      "content": 372,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 320,
+      "path": "/menu/AUDIT/1",
+      "actual": "/menu/AUDIT/1",
+      "overflow": false,
+      "content": 370,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 320,
+      "path": "/branches",
+      "actual": "/",
+      "overflow": false,
+      "content": 2329,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 390,
+      "path": "/",
+      "actual": "/",
+      "overflow": false,
+      "content": 2337,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 390,
+      "path": "/restaurant-orders",
+      "actual": "/restaurant-orders",
+      "overflow": false,
+      "content": 881,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 390,
+      "path": "/menu-items",
+      "actual": "/menu-items",
+      "overflow": false,
+      "content": 496,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 390,
+      "path": "/all-products",
+      "actual": "/all-products",
+      "overflow": false,
+      "content": 489,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 390,
+      "path": "/purchase",
+      "actual": "/purchase",
+      "overflow": false,
+      "content": 678,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 390,
+      "path": "/grn-management",
+      "actual": "/grn-management",
+      "overflow": false,
+      "content": 390,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 390,
+      "path": "/supplier-bills",
+      "actual": "/supplier-bills",
+      "overflow": false,
+      "content": 386,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 390,
+      "path": "/sales-return",
+      "actual": "/sales-return",
+      "overflow": false,
+      "content": 408,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 390,
+      "path": "/invoices",
+      "actual": "/invoices",
+      "overflow": false,
+      "content": 365,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 390,
+      "path": "/customers",
+      "actual": "/customers",
+      "overflow": false,
+      "content": 478,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 390,
+      "path": "/vendors",
+      "actual": "/vendors",
+      "overflow": false,
+      "content": 382,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 390,
+      "path": "/accounts",
+      "actual": "/accounts",
+      "overflow": false,
+      "content": 528,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 390,
+      "path": "/coupons",
+      "actual": "/coupons",
+      "overflow": false,
+      "content": 1214,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 390,
+      "path": "/rewards",
+      "actual": "/rewards",
+      "overflow": false,
+      "content": 640,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 390,
+      "path": "/settings",
+      "actual": "/settings",
+      "overflow": false,
+      "content": 308,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 390,
+      "path": "/table-barcodes",
+      "actual": "/table-barcodes",
+      "overflow": false,
+      "content": 239,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 390,
+      "path": "/tables",
+      "actual": "/tables",
+      "overflow": false,
+      "content": 409,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 390,
+      "path": "/kds",
+      "actual": "/kds",
+      "overflow": false,
+      "content": 417,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 390,
+      "path": "/smart-inventory",
+      "actual": "/smart-inventory",
+      "overflow": false,
+      "content": 605,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 390,
+      "path": "/audit-logs",
+      "actual": "/audit-logs",
+      "overflow": false,
+      "content": 503,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 390,
+      "path": "/royalty",
+      "actual": "/royalty",
+      "overflow": false,
+      "content": 716,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 390,
+      "path": "/support",
+      "actual": "/support",
+      "overflow": false,
+      "content": 539,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 390,
+      "path": "/login",
+      "actual": "/login",
+      "overflow": false,
+      "content": 409,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 390,
+      "path": "/menu/1",
+      "actual": "/menu/1",
+      "overflow": false,
+      "content": 370,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 390,
+      "path": "/menu/delivery",
+      "actual": "/menu/delivery",
+      "overflow": false,
+      "content": 372,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 390,
+      "path": "/menu/AUDIT/1",
+      "actual": "/menu/AUDIT/1",
+      "overflow": false,
+      "content": 370,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 390,
+      "path": "/branches",
+      "actual": "/",
+      "overflow": false,
+      "content": 2337,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 480,
+      "path": "/",
+      "actual": "/",
+      "overflow": false,
+      "content": 2337,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 480,
+      "path": "/restaurant-orders",
+      "actual": "/restaurant-orders",
+      "overflow": false,
+      "content": 881,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 480,
+      "path": "/menu-items",
+      "actual": "/menu-items",
+      "overflow": false,
+      "content": 496,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 480,
+      "path": "/all-products",
+      "actual": "/all-products",
+      "overflow": false,
+      "content": 489,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 480,
+      "path": "/purchase",
+      "actual": "/purchase",
+      "overflow": false,
+      "content": 678,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 480,
+      "path": "/grn-management",
+      "actual": "/grn-management",
+      "overflow": false,
+      "content": 390,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 480,
+      "path": "/supplier-bills",
+      "actual": "/supplier-bills",
+      "overflow": false,
+      "content": 386,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 480,
+      "path": "/sales-return",
+      "actual": "/sales-return",
+      "overflow": false,
+      "content": 408,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 480,
+      "path": "/invoices",
+      "actual": "/invoices",
+      "overflow": false,
+      "content": 365,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 480,
+      "path": "/customers",
+      "actual": "/customers",
+      "overflow": false,
+      "content": 478,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 480,
+      "path": "/vendors",
+      "actual": "/vendors",
+      "overflow": false,
+      "content": 382,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 480,
+      "path": "/accounts",
+      "actual": "/accounts",
+      "overflow": false,
+      "content": 528,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 480,
+      "path": "/coupons",
+      "actual": "/coupons",
+      "overflow": false,
+      "content": 1214,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 480,
+      "path": "/rewards",
+      "actual": "/rewards",
+      "overflow": false,
+      "content": 640,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 480,
+      "path": "/settings",
+      "actual": "/settings",
+      "overflow": false,
+      "content": 308,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 480,
+      "path": "/table-barcodes",
+      "actual": "/table-barcodes",
+      "overflow": false,
+      "content": 239,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 480,
+      "path": "/tables",
+      "actual": "/tables",
+      "overflow": false,
+      "content": 409,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 480,
+      "path": "/kds",
+      "actual": "/kds",
+      "overflow": false,
+      "content": 417,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 480,
+      "path": "/smart-inventory",
+      "actual": "/smart-inventory",
+      "overflow": false,
+      "content": 605,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 480,
+      "path": "/audit-logs",
+      "actual": "/audit-logs",
+      "overflow": false,
+      "content": 503,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 480,
+      "path": "/royalty",
+      "actual": "/royalty",
+      "overflow": false,
+      "content": 716,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 480,
+      "path": "/support",
+      "actual": "/support",
+      "overflow": false,
+      "content": 539,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 480,
+      "path": "/login",
+      "actual": "/login",
+      "overflow": false,
+      "content": 409,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 480,
+      "path": "/menu/1",
+      "actual": "/menu/1",
+      "overflow": false,
+      "content": 370,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 480,
+      "path": "/menu/delivery",
+      "actual": "/menu/delivery",
+      "overflow": false,
+      "content": 372,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 480,
+      "path": "/menu/AUDIT/1",
+      "actual": "/menu/AUDIT/1",
+      "overflow": false,
+      "content": 370,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 480,
+      "path": "/branches",
+      "actual": "/",
+      "overflow": false,
+      "content": 2337,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 768,
+      "path": "/",
+      "actual": "/",
+      "overflow": false,
+      "content": 2361,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 768,
+      "path": "/restaurant-orders",
+      "actual": "/restaurant-orders",
+      "overflow": false,
+      "content": 881,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 768,
+      "path": "/menu-items",
+      "actual": "/menu-items",
+      "overflow": false,
+      "content": 496,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 768,
+      "path": "/all-products",
+      "actual": "/all-products",
+      "overflow": false,
+      "content": 489,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 768,
+      "path": "/purchase",
+      "actual": "/purchase",
+      "overflow": false,
+      "content": 678,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 768,
+      "path": "/grn-management",
+      "actual": "/grn-management",
+      "overflow": false,
+      "content": 390,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 768,
+      "path": "/supplier-bills",
+      "actual": "/supplier-bills",
+      "overflow": false,
+      "content": 386,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 768,
+      "path": "/sales-return",
+      "actual": "/sales-return",
+      "overflow": false,
+      "content": 408,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 768,
+      "path": "/invoices",
+      "actual": "/invoices",
+      "overflow": false,
+      "content": 365,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 768,
+      "path": "/customers",
+      "actual": "/customers",
+      "overflow": false,
+      "content": 478,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 768,
+      "path": "/vendors",
+      "actual": "/vendors",
+      "overflow": false,
+      "content": 382,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 768,
+      "path": "/accounts",
+      "actual": "/accounts",
+      "overflow": false,
+      "content": 528,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 768,
+      "path": "/coupons",
+      "actual": "/coupons",
+      "overflow": false,
+      "content": 1273,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 768,
+      "path": "/rewards",
+      "actual": "/rewards",
+      "overflow": false,
+      "content": 640,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 768,
+      "path": "/settings",
+      "actual": "/settings",
+      "overflow": false,
+      "content": 308,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 768,
+      "path": "/table-barcodes",
+      "actual": "/table-barcodes",
+      "overflow": false,
+      "content": 239,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 768,
+      "path": "/tables",
+      "actual": "/tables",
+      "overflow": false,
+      "content": 409,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 768,
+      "path": "/kds",
+      "actual": "/kds",
+      "overflow": false,
+      "content": 417,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 768,
+      "path": "/smart-inventory",
+      "actual": "/smart-inventory",
+      "overflow": false,
+      "content": 605,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 768,
+      "path": "/audit-logs",
+      "actual": "/audit-logs",
+      "overflow": false,
+      "content": 503,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 768,
+      "path": "/royalty",
+      "actual": "/royalty",
+      "overflow": false,
+      "content": 716,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 768,
+      "path": "/support",
+      "actual": "/support",
+      "overflow": false,
+      "content": 539,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 768,
+      "path": "/login",
+      "actual": "/login",
+      "overflow": false,
+      "content": 409,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 768,
+      "path": "/menu/1",
+      "actual": "/menu/1",
+      "overflow": false,
+      "content": 376,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 768,
+      "path": "/menu/delivery",
+      "actual": "/menu/delivery",
+      "overflow": false,
+      "content": 378,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 768,
+      "path": "/menu/AUDIT/1",
+      "actual": "/menu/AUDIT/1",
+      "overflow": false,
+      "content": 376,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 768,
+      "path": "/branches",
+      "actual": "/",
+      "overflow": false,
+      "content": 2361,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 1024,
+      "path": "/",
+      "actual": "/",
+      "overflow": false,
+      "content": 2361,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 1024,
+      "path": "/restaurant-orders",
+      "actual": "/restaurant-orders",
+      "overflow": false,
+      "content": 881,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 1024,
+      "path": "/menu-items",
+      "actual": "/menu-items",
+      "overflow": false,
+      "content": 496,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 1024,
+      "path": "/all-products",
+      "actual": "/all-products",
+      "overflow": false,
+      "content": 489,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 1024,
+      "path": "/purchase",
+      "actual": "/purchase",
+      "overflow": false,
+      "content": 678,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 1024,
+      "path": "/grn-management",
+      "actual": "/grn-management",
+      "overflow": false,
+      "content": 390,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 1024,
+      "path": "/supplier-bills",
+      "actual": "/supplier-bills",
+      "overflow": false,
+      "content": 386,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 1024,
+      "path": "/sales-return",
+      "actual": "/sales-return",
+      "overflow": false,
+      "content": 408,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 1024,
+      "path": "/invoices",
+      "actual": "/invoices",
+      "overflow": false,
+      "content": 365,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 1024,
+      "path": "/customers",
+      "actual": "/customers",
+      "overflow": false,
+      "content": 478,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 1024,
+      "path": "/vendors",
+      "actual": "/vendors",
+      "overflow": false,
+      "content": 382,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 1024,
+      "path": "/accounts",
+      "actual": "/accounts",
+      "overflow": false,
+      "content": 528,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 1024,
+      "path": "/coupons",
+      "actual": "/coupons",
+      "overflow": false,
+      "content": 1273,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 1024,
+      "path": "/rewards",
+      "actual": "/rewards",
+      "overflow": false,
+      "content": 640,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 1024,
+      "path": "/settings",
+      "actual": "/settings",
+      "overflow": false,
+      "content": 308,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 1024,
+      "path": "/table-barcodes",
+      "actual": "/table-barcodes",
+      "overflow": false,
+      "content": 239,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 1024,
+      "path": "/tables",
+      "actual": "/tables",
+      "overflow": false,
+      "content": 409,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 1024,
+      "path": "/kds",
+      "actual": "/kds",
+      "overflow": false,
+      "content": 417,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 1024,
+      "path": "/smart-inventory",
+      "actual": "/smart-inventory",
+      "overflow": false,
+      "content": 605,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 1024,
+      "path": "/audit-logs",
+      "actual": "/audit-logs",
+      "overflow": false,
+      "content": 503,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 1024,
+      "path": "/royalty",
+      "actual": "/royalty",
+      "overflow": false,
+      "content": 716,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 1024,
+      "path": "/support",
+      "actual": "/support",
+      "overflow": false,
+      "content": 539,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 1024,
+      "path": "/login",
+      "actual": "/login",
+      "overflow": false,
+      "content": 409,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 1024,
+      "path": "/menu/1",
+      "actual": "/menu/1",
+      "overflow": false,
+      "content": 376,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 1024,
+      "path": "/menu/delivery",
+      "actual": "/menu/delivery",
+      "overflow": false,
+      "content": 378,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 1024,
+      "path": "/menu/AUDIT/1",
+      "actual": "/menu/AUDIT/1",
+      "overflow": false,
+      "content": 376,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 1024,
+      "path": "/branches",
+      "actual": "/",
+      "overflow": false,
+      "content": 2361,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 1440,
+      "path": "/",
+      "actual": "/",
+      "overflow": false,
+      "content": 2361,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 1440,
+      "path": "/restaurant-orders",
+      "actual": "/restaurant-orders",
+      "overflow": false,
+      "content": 881,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 1440,
+      "path": "/menu-items",
+      "actual": "/menu-items",
+      "overflow": false,
+      "content": 496,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 1440,
+      "path": "/all-products",
+      "actual": "/all-products",
+      "overflow": false,
+      "content": 489,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 1440,
+      "path": "/purchase",
+      "actual": "/purchase",
+      "overflow": false,
+      "content": 678,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 1440,
+      "path": "/grn-management",
+      "actual": "/grn-management",
+      "overflow": false,
+      "content": 390,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 1440,
+      "path": "/supplier-bills",
+      "actual": "/supplier-bills",
+      "overflow": false,
+      "content": 386,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 1440,
+      "path": "/sales-return",
+      "actual": "/sales-return",
+      "overflow": false,
+      "content": 408,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 1440,
+      "path": "/invoices",
+      "actual": "/invoices",
+      "overflow": false,
+      "content": 365,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 1440,
+      "path": "/customers",
+      "actual": "/customers",
+      "overflow": false,
+      "content": 478,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 1440,
+      "path": "/vendors",
+      "actual": "/vendors",
+      "overflow": false,
+      "content": 382,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 1440,
+      "path": "/accounts",
+      "actual": "/accounts",
+      "overflow": false,
+      "content": 528,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 1440,
+      "path": "/coupons",
+      "actual": "/coupons",
+      "overflow": false,
+      "content": 1273,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 1440,
+      "path": "/rewards",
+      "actual": "/rewards",
+      "overflow": false,
+      "content": 640,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 1440,
+      "path": "/settings",
+      "actual": "/settings",
+      "overflow": false,
+      "content": 308,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 1440,
+      "path": "/table-barcodes",
+      "actual": "/table-barcodes",
+      "overflow": false,
+      "content": 239,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 1440,
+      "path": "/tables",
+      "actual": "/tables",
+      "overflow": false,
+      "content": 409,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 1440,
+      "path": "/kds",
+      "actual": "/kds",
+      "overflow": false,
+      "content": 417,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 1440,
+      "path": "/smart-inventory",
+      "actual": "/smart-inventory",
+      "overflow": false,
+      "content": 605,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 1440,
+      "path": "/audit-logs",
+      "actual": "/audit-logs",
+      "overflow": false,
+      "content": 503,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 1440,
+      "path": "/royalty",
+      "actual": "/royalty",
+      "overflow": false,
+      "content": 716,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 1440,
+      "path": "/support",
+      "actual": "/support",
+      "overflow": false,
+      "content": 539,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 1440,
+      "path": "/login",
+      "actual": "/login",
+      "overflow": false,
+      "content": 409,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 1440,
+      "path": "/menu/1",
+      "actual": "/menu/1",
+      "overflow": false,
+      "content": 376,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 1440,
+      "path": "/menu/delivery",
+      "actual": "/menu/delivery",
+      "overflow": false,
+      "content": 378,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 1440,
+      "path": "/menu/AUDIT/1",
+      "actual": "/menu/AUDIT/1",
+      "overflow": false,
+      "content": 376,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 1440,
+      "path": "/branches",
+      "actual": "/",
+      "overflow": false,
+      "content": 2361,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 1920,
+      "path": "/",
+      "actual": "/",
+      "overflow": false,
+      "content": 2361,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 1920,
+      "path": "/restaurant-orders",
+      "actual": "/restaurant-orders",
+      "overflow": false,
+      "content": 881,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 1920,
+      "path": "/menu-items",
+      "actual": "/menu-items",
+      "overflow": false,
+      "content": 496,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 1920,
+      "path": "/all-products",
+      "actual": "/all-products",
+      "overflow": false,
+      "content": 489,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 1920,
+      "path": "/purchase",
+      "actual": "/purchase",
+      "overflow": false,
+      "content": 678,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 1920,
+      "path": "/grn-management",
+      "actual": "/grn-management",
+      "overflow": false,
+      "content": 390,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 1920,
+      "path": "/supplier-bills",
+      "actual": "/supplier-bills",
+      "overflow": false,
+      "content": 386,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 1920,
+      "path": "/sales-return",
+      "actual": "/sales-return",
+      "overflow": false,
+      "content": 408,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 1920,
+      "path": "/invoices",
+      "actual": "/invoices",
+      "overflow": false,
+      "content": 365,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 1920,
+      "path": "/customers",
+      "actual": "/customers",
+      "overflow": false,
+      "content": 478,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 1920,
+      "path": "/vendors",
+      "actual": "/vendors",
+      "overflow": false,
+      "content": 382,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 1920,
+      "path": "/accounts",
+      "actual": "/accounts",
+      "overflow": false,
+      "content": 528,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 1920,
+      "path": "/coupons",
+      "actual": "/coupons",
+      "overflow": false,
+      "content": 1273,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 1920,
+      "path": "/rewards",
+      "actual": "/rewards",
+      "overflow": false,
+      "content": 640,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 1920,
+      "path": "/settings",
+      "actual": "/settings",
+      "overflow": false,
+      "content": 308,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 1920,
+      "path": "/table-barcodes",
+      "actual": "/table-barcodes",
+      "overflow": false,
+      "content": 239,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 1920,
+      "path": "/tables",
+      "actual": "/tables",
+      "overflow": false,
+      "content": 409,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 1920,
+      "path": "/kds",
+      "actual": "/kds",
+      "overflow": false,
+      "content": 417,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 1920,
+      "path": "/smart-inventory",
+      "actual": "/smart-inventory",
+      "overflow": false,
+      "content": 605,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 1920,
+      "path": "/audit-logs",
+      "actual": "/audit-logs",
+      "overflow": false,
+      "content": 503,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 1920,
+      "path": "/royalty",
+      "actual": "/royalty",
+      "overflow": false,
+      "content": 716,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 1920,
+      "path": "/support",
+      "actual": "/support",
+      "overflow": false,
+      "content": 539,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 1920,
+      "path": "/login",
+      "actual": "/login",
+      "overflow": false,
+      "content": 409,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 1920,
+      "path": "/menu/1",
+      "actual": "/menu/1",
+      "overflow": false,
+      "content": 376,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 1920,
+      "path": "/menu/delivery",
+      "actual": "/menu/delivery",
+      "overflow": false,
+      "content": 378,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 1920,
+      "path": "/menu/AUDIT/1",
+      "actual": "/menu/AUDIT/1",
+      "overflow": false,
+      "content": 376,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    },
+    {
+      "width": 1920,
+      "path": "/branches",
+      "actual": "/",
+      "overflow": false,
+      "content": 2361,
+      "clipped": [],
+      "overflowNodes": [],
+      "errors": []
+    }
+  ],
+  "issues": []
+}

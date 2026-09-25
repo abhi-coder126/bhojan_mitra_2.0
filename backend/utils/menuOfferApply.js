@@ -1,4 +1,5 @@
 const MenuOffer = require("../models/MenuOffer");
+const Setting = require("../models/Setting");
 const Product = require("../models/Product");
 const { offerRunsToday } = require("../controllers/menuOfferController");
 
@@ -7,11 +8,16 @@ const { offerRunsToday } = require("../controllers/menuOfferController");
 //
 // Free lines are priced at zero and flagged, rather than discounting the paid
 // line: the kitchen has to know it is making two pizzas, not one cheap one.
-async function applyMenuOffers(orderItems) {
+async function applyMenuOffers(orderItems, billAmount = 0) {
   if (!orderItems.length) return [];
 
+  const settings = await Setting.findOne().select("menuOffersEnabled").lean();
+  if (settings && settings.menuOffersEnabled === false) return [];
+
   const offers = await MenuOffer.find({ status: "Active" }).lean();
-  const running = offers.filter((offer) => offerRunsToday(offer));
+  const running = offers.filter(
+    (offer) => offerRunsToday(offer) && billAmount >= Number(offer.minOrderAmount || 0)
+  );
   if (!running.length) return [];
 
   const freeLines = [];

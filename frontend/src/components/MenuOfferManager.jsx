@@ -11,6 +11,7 @@ const emptyOffer = {
   type: "bogo",
   productId: "",
   variantIds: [],
+  minOrderAmount: "",
   freeProductId: "",
   freeVariantId: "",
   activeDays: ALL_DAYS,
@@ -91,6 +92,7 @@ export default function MenuOfferManager({ products, onClose, showToast }) {
       type: offer.type,
       productId: String(offer.productId),
       variantIds: offer.variantIds || [],
+      minOrderAmount: offer.minOrderAmount || "",
       freeProductId: offer.freeProductId ? String(offer.freeProductId) : "",
       freeVariantId: offer.freeVariantId || "",
       activeDays: offer.activeDays || ALL_DAYS,
@@ -198,6 +200,18 @@ export default function MenuOfferManager({ products, onClose, showToast }) {
             </>
           )}
 
+          <label className="offer-field">
+            <span>Minimum order amount <small>Leave blank for no minimum</small></span>
+            <input
+              type="number"
+              min="0"
+              step="1"
+              placeholder="e.g. 499"
+              value={form.minOrderAmount}
+              onChange={(event) => change("minOrderAmount", event.target.value)}
+            />
+          </label>
+
           <fieldset className="offer-days">
             <legend>Runs on <small>India time</small></legend>
             <div>
@@ -252,6 +266,7 @@ export default function MenuOfferManager({ products, onClose, showToast }) {
                       ? `Buy 1 get 1 free on ${offer.productName}`
                       : `Free ${offer.freeSizeLabel ? `${offer.freeProductName} (${offer.freeSizeLabel})` : offer.freeProductName} with ${offer.productName}`}
                     {offer.sizeLabels.length > 0 && ` · ${offer.sizeLabels.join(", ")} only`}
+                    {offer.minOrderAmount > 0 && ` · on bills over ₹${offer.minOrderAmount}`}
                   </small>
                   <small className="offer-list-days">
                     {offer.activeDays.length === 7 ? "Every day" : offer.activeDays.map((day) => DAYS[day]).join(", ")}

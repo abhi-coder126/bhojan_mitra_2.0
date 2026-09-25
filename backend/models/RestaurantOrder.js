@@ -84,6 +84,10 @@ const restaurantOrderSchema = new mongoose.Schema(
       default: "pos",
     },
     kotSentAt: Date,
+    // acceptedAt drives the "running for 12m" clock on the order board;
+    // servedAt closes it, giving the total time the guest waited.
+    acceptedAt: Date,
+    servedAt: Date,
     holdAt: Date,
     isHeld: { type: Boolean, default: false },
     kotSentBy: { type: String, default: "" },

@@ -258,6 +258,11 @@ ITEM OFFERS ARE A SEPARATE THING
   different item free). variantIds narrows it to particular sizes -- empty
   means every size, which is also right for an item with no sizes.
 
+  An offer can also carry minOrderAmount, checked where the offer is applied
+  rather than left to the counter, and the whole feature has a branch-level
+  master switch (Setting.menuOffersEnabled) honoured both in the guest menu
+  and at order creation.
+
   The free item is not modelled as a discount. On order creation,
   utils/menuOfferApply.js appends real order lines priced at zero and flagged
   isOfferFree, because the kitchen has to know it is making two pizzas rather
@@ -310,7 +315,10 @@ FOOD COST
                      date filter (Today / Full FY / day / month / year /
                      custom range) sit at the top and drive the whole page.
   Restaurant Orders  The live order board: accept, send KOT, mark ready/served,
-                     take payment.
+                     take payment. Cards carry a live "running for" clock.
+  Order Management   Read-only timing view. acceptedAt starts the running
+                     clock, servedAt closes it; history shows placed-to-served
+                     per order plus the branch average.
   Kitchen Display    Kitchen-facing screen driven by KOTs.
   Table Management   Tables, and Table QR generates the per-table QR codes.
   Invoices           Merged list of restaurant orders + counter sales, with an

@@ -49,6 +49,7 @@ const roleHiddenLinks = {
 const branchLinks = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard },
   { to: "/restaurant-orders", label: "Restaurant Orders", icon: Utensils },
+  { to: "/order-management", label: "Order Management", icon: ClipboardList },
   { to: "/tables", label: "Table Management", icon: LayoutGrid },
   { to: "/kds", label: "Kitchen Display", icon: ChefHat },
   { to: "/table-barcodes", label: "Table QR", icon: QrCode },

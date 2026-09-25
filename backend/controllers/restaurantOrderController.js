@@ -267,11 +267,12 @@ exports.createRestaurantOrder = async (req, res) => {
       return res.status(400).json({ message: "Valid menu item required" });
     }
 
-    // Buy-one-get-one and combo items are added here, priced at zero, so the
-    // kitchen ticket shows what actually has to be made.
-    orderItems.push(...(await applyMenuOffers(orderItems)));
-
     const billAmount = subTotal + gstAmount;
+
+    // Buy-one-get-one and combo items are added here, priced at zero, so the
+    // kitchen ticket shows what actually has to be made. Free lines cost
+    // nothing, so they do not move the totals computed above.
+    orderItems.push(...(await applyMenuOffers(orderItems, billAmount)));
     let appliedCouponCode = "";
     let discountAmount = 0;
 
@@ -600,7 +601,11 @@ exports.updateRestaurantOrderStatus = async (req, res) => {
     }
 
     const update = { status: next };
-    if (next === "served") update["items.$[].itemStatus"] = "SERVED";
+    if (next === "accepted" && !before.acceptedAt) update.acceptedAt = new Date();
+    if (next === "served") {
+      update["items.$[].itemStatus"] = "SERVED";
+      if (!before.servedAt) update.servedAt = new Date();
+    }
     const order = await RestaurantOrder.findByIdAndUpdate(req.params.id, update, { new: true });
 
     if (!order) {

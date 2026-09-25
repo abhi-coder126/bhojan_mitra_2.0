@@ -1,6 +1,7 @@
 const mongoose = require("mongoose");
 const MenuOffer = require("../models/MenuOffer");
 const Product = require("../models/Product");
+const Setting = require("../models/Setting");
 
 const ALL_DAYS = [0, 1, 2, 3, 4, 5, 6];
 const indiaDay = (now) => new Date(now.getTime() + 330 * 60000).getUTCDay();
@@ -38,11 +39,15 @@ const readPayload = async (body) => {
   const activeDays = Array.isArray(body.activeDays) && body.activeDays.length ? body.activeDays : ALL_DAYS;
   if (activeDays.some((day) => !Number.isInteger(day) || day < 0 || day > 6)) fail("Choose valid offer days");
 
+  const minOrderAmount = Number(body.minOrderAmount || 0);
+  if (!Number.isFinite(minOrderAmount) || minOrderAmount < 0) fail("Enter a valid minimum order amount");
+
   const payload = {
     title,
     type: body.type,
     productId,
     variantIds,
+    minOrderAmount,
     activeDays: [...new Set(activeDays)],
     status: body.status === "Inactive" ? "Inactive" : "Active",
     freeProductId: null,
@@ -131,6 +136,10 @@ exports.deleteMenuOffer = async (req, res) => {
 // What the customer menu shows: only offers running today, described in words the
 // guest can act on.
 exports.menuOffersForGuests = async () => {
+  // Never advertise what the branch has switched off.
+  const settings = await Setting.findOne().select("menuOffersEnabled").lean();
+  if (settings && settings.menuOffersEnabled === false) return [];
+
   const offers = await MenuOffer.find({ status: "Active" }).lean();
   const running = offers.filter((offer) => offerRunsToday(offer));
   if (!running.length) return [];
@@ -140,6 +149,7 @@ exports.menuOffersForGuests = async () => {
     _id: offer._id,
     title: offer.title,
     type: offer.type,
+    minOrderAmount: offer.minOrderAmount || 0,
     productId: offer.productId,
     productName: offer.productName,
     variantIds: offer.variantIds,
