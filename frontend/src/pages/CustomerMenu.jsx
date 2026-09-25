@@ -1,9 +1,11 @@
+import CustomerRewards from "../components/CustomerRewards";
+import MenuItemDialog from "../components/MenuItemDialog";
 import AsyncButton from "../components/AsyncButton";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { BadgePercent, CheckCircle2, ChefHat, Clock, Flame, Gift, Heart, History, Leaf, LogOut, Mail, MapPin, Minus, PackageCheck, PartyPopper, Plus, Search, ShieldCheck, ShoppingBag, Sparkles, Star, UserCircle2, Utensils, X } from "lucide-react";
 import { useParams } from "react-router-dom";
 import API from "../api/axios";
-import { hasProductImage, productImageSrc } from "../api/productImage";
+import { categoryImageSrc, hasProductImage, productImageSrc } from "../api/productImage";
 import PhoneInput from "../components/PhoneInput";
 import PublicLottie from "../components/PublicLottie";
 import { ToastViewport, useToast } from "../components/Toast";
@@ -43,6 +45,8 @@ export default function CustomerMenu() {
   const cartKey = `${branchCode || "main"}_${tableNo}`;
   const isDelivery = tableNo === "delivery";
   const [products, setProducts] = useState([]);
+  const [selectedProduct, setSelectedProduct] = useState(null);
+  const [categoryImages, setCategoryImages] = useState([]);
   const [menuLoading, setMenuLoading] = useState(true);
   const [branchName, setBranchName] = useState("");
   // Set when the outlet is on hold / removed: ordering is blocked server-side too.
@@ -53,6 +57,10 @@ export default function CustomerMenu() {
   const [checkoutStep, setCheckoutStep] = useState("cart");
   const [search, setSearch] = useState("");
   const [favoriteItems, setFavoriteItems] = useState(() => new Set());
+  const [offers, setOffers] = useState([]);
+  const couponRequest = useRef(0);
+  const couponBusy = useRef(false);
+  const orderBusy = useRef(false);
   const [couponCode, setCouponCode] = useState("");
   const [coupon, setCoupon] = useState(null);
   const [applyingCoupon, setApplyingCoupon] = useState(false);
@@ -141,6 +149,8 @@ export default function CustomerMenu() {
       try {
         const res = await API.get("/restaurant-orders/menu");
         setProducts(res.data.products || []);
+        setCategoryImages(res.data.categoryImages || []);
+        setOffers(res.data.offers || []);
         setBranchName(res.data.branch?.name || "");
       } catch (error) {
         if ([404, 423].includes(error.response?.status)) {
@@ -194,10 +204,11 @@ export default function CustomerMenu() {
         {},
         { headers: { Authorization: `Bearer ${customerAuth.token}` } }
       );
-      setPendingReward((prev) => ({ ...prev, offerText: res.data.reward.offerText, scratched: true }));
-    } catch {
-      // The card still shows locally revealed even if this sync fails silently --
-      // scratching again on next load simply re-confirms it server-side.
+      const updated = { ...pendingReward, ...res.data.reward, scratched: true };
+      setPendingReward(updated);
+      setRewardsList((current) => current?.map((reward) => reward.id === pendingReward.id ? updated : reward) ?? null);
+    } catch (error) {
+      throw error;
     }
   };
 
@@ -287,26 +298,34 @@ export default function CustomerMenu() {
     return groups;
   }, [visibleProducts]);
 
-  const updateCart = (product, change) => {
+  const updateCart = (product, change, selection) => {
+    if (change > 0 && !selection) { setSelectedProduct(product); return; }
+    const lineKey = selection ? [product._id, selection.variantId, ...selection.addonIds.slice().sort()].join("|") : product.lineKey;
+    if (orderBusy.current) return;
+    couponRequest.current += 1;
+    couponBusy.current = false;
+    setApplyingCoupon(false);
     if (coupon) {
       setCoupon(null);
-      setCouponCode("");
-      showToast("Coupon removed because the cart changed", "warning");
+      showToast("Cart changed. Apply your coupon again to update the discount.", "warning");
     }
 
     setCart((current) => {
-      const existing = current.find((item) => item.productId === product._id);
+      const existing = current.find((item) => lineKey ? item.lineKey === lineKey : item.productId === product._id);
 
       if (!existing && change > 0) {
-        const mrp = Number(product.mrp || product.sellingPrice || 0);
+        const mrp = selection?.basePrice ?? Number(product.mrp || product.sellingPrice || 0);
         const offerPercent = Number(product.offerPercent || 0);
-        const rate = offerPercent > 0 ? mrp * (1 - offerPercent / 100) : mrp;
+        const rate = selection?.rate ?? Math.round(mrp * (1 - Math.min(100, Math.max(0, offerPercent)) / 100) * 100) / 100;
 
         return [
           ...current,
           {
             productId: product._id,
-            name: product.name,
+            lineKey,
+            variantId: selection?.variantId || "",
+            addonIds: selection?.addonIds || [],
+            name: selection?.name || product.name,
             hasImage: Boolean(product.hasImage || product.image),
             category: product.category || "Recommended",
             qty: 1,
@@ -320,7 +339,7 @@ export default function CustomerMenu() {
 
       return current
         .map((item) => {
-          if (item.productId !== product._id) return item;
+          if (item !== existing) return item;
           return { ...item, qty: Math.max(Number(item.qty) + change, 0) };
         })
         .filter((item) => item.qty > 0);
@@ -545,6 +564,8 @@ export default function CustomerMenu() {
   };
 
   const placeOrder = async () => {
+    if (orderBusy.current || couponBusy.current) return;
+    if (couponCode.trim() && !coupon) return showToast("Apply or remove the coupon before placing your order", "warning");
     if (cart.length === 0) return showToast("Please add a menu item first", "warning");
     if (!customer.customerName.trim() || !customer.customerPhone.trim()) {
       return showToast("Name and contact number required", "warning");
@@ -559,6 +580,7 @@ export default function CustomerMenu() {
       return showToast("Please verify your phone OTP first", "warning");
     }
 
+    orderBusy.current = true;
     setPlacing(true);
 
     try {
@@ -570,7 +592,7 @@ export default function CustomerMenu() {
           orderSource: "qr",
           ...customer,
           couponCode: coupon?.code || "",
-          items: cart.map((item) => ({ productId: item.productId, qty: item.qty })),
+          items: cart.map((item) => ({ productId: item.productId, qty: item.qty, variantId: item.variantId || "", addonIds: item.addonIds || [] })),
         },
         customerAuth.token ? { headers: { Authorization: `Bearer ${customerAuth.token}` } } : undefined
       );
@@ -598,37 +620,52 @@ export default function CustomerMenu() {
     } catch (error) {
       showToast(error.response?.data?.message || "Order could not be placed");
     } finally {
+      orderBusy.current = false;
       setPlacing(false);
     }
   };
 
-  const applyCoupon = async () => {
-    if (!couponCode.trim()) return showToast("Enter a coupon code", "warning");
+  const applyCoupon = async (selectedCode = couponCode) => {
+    if (couponBusy.current || orderBusy.current) return;
+    const code = selectedCode.trim().toUpperCase();
+    setCouponCode(code);
+    if (!code) return showToast("Enter a coupon code", "warning");
     if (grandTotal <= 0) return showToast("Add an item before applying a coupon", "warning");
 
+    const requestId = ++couponRequest.current;
+    couponBusy.current = true;
     setApplyingCoupon(true);
 
     try {
       const res = await API.post("/coupons/apply", {
-        code: couponCode.trim(),
+        code,
         billAmount: grandTotal,
       });
+      if (requestId !== couponRequest.current) return;
       const savedAmount = Number(res.data.discountAmount || 0);
       setCoupon({
         ...res.data.coupon,
         discountAmount: savedAmount,
       });
-      setCouponSavedPopup({ code: couponCode.trim().toUpperCase(), amount: savedAmount });
+      setCouponSavedPopup({ code, amount: savedAmount });
       showToast("Coupon applied", "success");
     } catch (error) {
+      if (requestId !== couponRequest.current) return;
       setCoupon(null);
       showToast(error.response?.data?.message || "Coupon could not be applied");
     } finally {
-      setApplyingCoupon(false);
+      if (requestId === couponRequest.current) {
+        couponBusy.current = false;
+        setApplyingCoupon(false);
+      }
     }
   };
 
   const removeCoupon = () => {
+    if (orderBusy.current) return;
+    couponRequest.current += 1;
+    couponBusy.current = false;
+    setApplyingCoupon(false);
     setCoupon(null);
     setCouponCode("");
   };
@@ -642,11 +679,13 @@ export default function CustomerMenu() {
   };
 
   const renderProductCard = (product, index) => {
-    const cartItem = cart.find((item) => item.productId === product._id);
+    const matchingLines = cart.filter((item) => item.productId === product._id);
+    const cartItem = matchingLines.length ? { qty: matchingLines.reduce((sum, item) => sum + item.qty, 0) } : null;
+    const displayPrice = product.variants?.length ? Math.min(...product.variants.map((v) => Number(v.price))) : Number(product.mrp || product.sellingPrice || 0);
     const hue = ["#84091e", "#b3132c", "#7c3aed", "#0f766e", "#b45309"][index % 5];
 
     return (
-      <article className="foodora-card group" key={product._id}>
+      <article className="foodora-card group" key={product._id} onClick={(event) => { if (!event.target.closest("button")) setSelectedProduct(product); }}>
         <div className="foodora-card-media" style={{ backgroundColor: hasProductImage(product) ? "#ffffff" : hue }}>
           {hasProductImage(product) ? (
             <img src={productImageSrc(product)} alt={product.name} loading="lazy" />
@@ -680,21 +719,22 @@ export default function CustomerMenu() {
         </div>
         <div className="foodora-card-info">
           <span className="foodora-card-category">{product.category || "Recommended"}</span>
-          <h2>{product.name}</h2>
+          <h2><button className="menu-item-title" onClick={() => setSelectedProduct(product)}>{product.name}</button></h2>
           {Number(product.ratingCount || 0) > 0 && (
             <span className="foodora-card-rating">
               <Sparkles size={11} /> {Number(product.ratingAvg).toFixed(1)} ({product.ratingCount})
             </span>
           )}
           {product.description && <p>{product.description}</p>}
+          {product.variants?.length > 0 && <small>Choose size ? Starts from</small>}
           <div className="foodora-card-foot">
             {Number(product.offerPercent || 0) > 0 ? (
               <span className="foodora-card-price">
-                <strong>₹{(Number(product.mrp || product.sellingPrice || 0) * (1 - product.offerPercent / 100)).toFixed(2)}</strong>
-                <s>₹{Number(product.mrp || product.sellingPrice || 0).toFixed(2)}</s>
+                <strong>₹{(displayPrice * (1 - product.offerPercent / 100)).toFixed(2)}</strong>
+                <s>₹{displayPrice.toFixed(2)}</s>
               </span>
             ) : (
-              <strong>₹{Number(product.mrp || product.sellingPrice || 0).toFixed(2)}</strong>
+              <strong>₹{displayPrice.toFixed(2)}</strong>
             )}
             <div className="menu-add-control">
               {cartItem ? (
@@ -752,6 +792,7 @@ export default function CustomerMenu() {
 
   return (
     <div className={`customer-menu-page ${checkoutStep === "details" ? "checkout-open" : ""}`}>
+      {selectedProduct && <MenuItemDialog product={selectedProduct} onClose={() => setSelectedProduct(null)} onAdd={(selection) => { updateCart(selectedProduct, 1, selection); setSelectedProduct(null); }} />}
       <ToastViewport toast={toast} />
 
       {closedMessage && (
@@ -826,6 +867,30 @@ export default function CustomerMenu() {
           <p>{cartQty} items added</p>
         </div>
       </section>
+
+      {offers.length > 0 && (
+        <section className="menu-top-offers" aria-label="Top Offers">
+          <div className="menu-top-offers-heading"><span /><h2>Top Offers</h2><span /></div>
+          <p className="menu-top-offers-intro">Fresh deals from {branchName || "your restaurant"}, available today.</p>
+          <div className="menu-top-offers-row">
+            {offers.map((offer) => (
+              <article className="menu-top-offer" key={offer.code}>
+                <BadgePercent className="menu-top-offer-stamp" aria-hidden="true" />
+                <h3>{offer.title || (offer.discountType === "Percent" ? offer.discountValue + "% OFF" : "₹" + offer.discountValue + " OFF")}</h3>
+                {offer.description && <p>{offer.description}</p>}
+                <small>{offer.minimumBillAmount > 0 ? "On orders above ₹" + offer.minimumBillAmount : "No minimum order"}</small>
+                <button type="button" disabled={placing || applyingCoupon || coupon?.code === offer.code}
+                  onClick={() => {
+                    if (grandTotal > 0) applyCoupon(offer.code);
+                    else { setCouponCode(offer.code); showToast("Offer selected. Add items, then apply the code at checkout.", "success"); }
+                  }}>
+                  {coupon?.code === offer.code ? "Applied " : "Use Code "}<b>{offer.code}</b>
+                </button>
+              </article>
+            ))}
+          </div>
+        </section>
+      )}
 
       {offerProducts.length > 0 && (
         <section className="foodora-offers-strip">
@@ -923,7 +988,7 @@ export default function CustomerMenu() {
                   <div className="customer-rating-items">
                     {orderPlaced.items?.map((item, index) => (
                       <div className="customer-rating-row" key={`${item.productId}-${index}`}>
-                        <span>{item.name}</span>
+                        <span>{item.name}<button type="button" aria-label={`Remove one ${item.name}`} onClick={() => updateCart({ _id: item.productId, lineKey: item.lineKey }, -1)}><Minus size={14} /></button></span>
                         <div className="customer-rating-stars">
                           {[1, 2, 3, 4, 5].map((star) => (
                             <button
@@ -979,7 +1044,7 @@ export default function CustomerMenu() {
           </div>
         </div>
 
-        <nav className="foodora-categories-row">
+        <nav className={`foodora-categories-row${categoryImages.length ? " with-images" : ""}`} aria-label="Menu categories">
           {categoryStats.map((category) => (
               <button
                 key={category.name}
@@ -987,6 +1052,14 @@ export default function CustomerMenu() {
                 onClick={() => setActiveCategory(category.name)}
                 type="button"
               >
+                {categoryImages.length > 0 && (
+                  <span className="category-menu-thumbnail">
+                    {categoryImages.some((record) => record.name === category.name) ? (
+                      <img src={categoryImageSrc(categoryImages.find((record) => record.name === category.name))}
+                        alt="" loading="lazy" onError={(event) => { event.currentTarget.style.display = "none"; }} />
+                    ) : <Utensils size={32} />}
+                  </span>
+                )}
                 <b>{category.name}</b>
               </button>
           ))}
@@ -1042,30 +1115,14 @@ export default function CustomerMenu() {
             </div>
           )}
 
-          {rewardsOpen && rewardsList && (
-            <div className="order-history-list">
-              {rewardsList.length === 0 ? (
-                <p>No rewards yet -- complete a delivery order to win one.</p>
-              ) : (
-                rewardsList.map((reward) => (
-                  <div key={reward.id}>
-                    <span>{reward.title}</span>
-                    <b>{reward.scratched ? reward.offerText : "Not opened"}</b>
-                    <small className={`status-tag ${reward.expired ? "cancelled" : "served"}`}>
-                      {reward.expired ? "Expired" : `Till ${new Date(reward.expiresAt).toLocaleDateString("en-IN")}`}
-                    </small>
-                  </div>
-                ))
-              )}
-            </div>
-          )}
+          {rewardsOpen && rewardsList && <CustomerRewards rewards={rewardsList} onOpen={setPendingReward} />}
 
           {cart.length === 0 ? (
             <p className="empty-cart-copy">Add items from the menu.</p>
           ) : (
             <div className="menu-cart-items">
               {cart.map((item) => (
-                <div key={item.productId}>
+                <div key={item.lineKey || item.productId}>
                   <span>{item.name}</span>
                   <span className="cart-item-price">
                     {item.offerPercent > 0 && (
@@ -1202,16 +1259,17 @@ export default function CustomerMenu() {
                     placeholder="Coupon code"
                     value={couponCode}
                     onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
-                    disabled={Boolean(coupon)}
+                    disabled={Boolean(coupon) || applyingCoupon || placing}
                   />
                   {coupon ? (
-                    <button type="button" onClick={removeCoupon}>Remove</button>
+                    <button type="button" disabled={placing} onClick={removeCoupon}>Remove</button>
                   ) : (
-                    <AsyncButton type="button" disabled={applyingCoupon} onClick={applyCoupon}>
+                    <AsyncButton type="button" disabled={applyingCoupon || placing} onClick={() => applyCoupon()}>
                       {applyingCoupon ? "Checking" : "Apply"}
                     </AsyncButton>
                   )}
                 </div>
+                {couponCode.trim() && !coupon && <p role="status">{applyingCoupon ? "Checking your coupon..." : "Apply this code before placing your order, or clear it to continue without a coupon."}</p>}
                 {coupon && (
                   <p>
                     <span>{coupon.code}</span>
@@ -1235,7 +1293,7 @@ export default function CustomerMenu() {
             </button>
           ) : (
             <AsyncButton
-              disabled={placing || cart.length === 0 || (isDelivery && (!isEmailVerified || !isPhoneVerified))}
+              disabled={placing || applyingCoupon || Boolean(couponCode.trim() && !coupon) || cart.length === 0 || (isDelivery && (!isEmailVerified || !isPhoneVerified))}
               onClick={placeOrder}
             >
               {placing ? "Sending..." : "Place Order"}
@@ -1257,7 +1315,7 @@ export default function CustomerMenu() {
           ) : (
             <AsyncButton
               type="button"
-              disabled={placing || (isDelivery && (!isEmailVerified || !isPhoneVerified))}
+              disabled={placing || applyingCoupon || Boolean(couponCode.trim() && !coupon) || (isDelivery && (!isEmailVerified || !isPhoneVerified))}
               onClick={placeOrder}
             >
               {placing ? "Sending..." : "Place Order"}
@@ -1479,23 +1537,7 @@ export default function CustomerMenu() {
               </div>
             )}
 
-            {rewardsOpen && rewardsList && (
-              <div className="order-history-list">
-                {rewardsList.length === 0 ? (
-                  <p>No rewards yet -- complete a delivery order to win one.</p>
-                ) : (
-                  rewardsList.map((reward) => (
-                    <div key={reward.id}>
-                      <span>{reward.title}</span>
-                      <b>{reward.scratched ? reward.offerText : "Not opened"}</b>
-                      <small className={`status-tag ${reward.expired ? "cancelled" : "served"}`}>
-                        {reward.expired ? "Expired" : `Till ${new Date(reward.expiresAt).toLocaleDateString("en-IN")}`}
-                      </small>
-                    </div>
-                  ))
-                )}
-              </div>
-            )}
+            {rewardsOpen && rewardsList && <CustomerRewards rewards={rewardsList} onOpen={setPendingReward} />}
 
             {savedAddresses.length > 0 && (
               <div className="customer-profile-addresses">

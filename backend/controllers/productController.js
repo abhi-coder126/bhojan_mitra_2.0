@@ -1,3 +1,6 @@
+const { normalizeMenuOptions } = require("../utils/menuOptions");
+const CategoryImage = require("../models/CategoryImage");
+const { validateCategoryImage, saveCategoryImage } = require("../utils/categoryImage");
 const Product = require("../models/Product");
 const DeletionLog = require("../models/DeletionLog");
 const { verifyDeletePassword } = require("../utils/deleteAuth");
@@ -8,9 +11,9 @@ const ProductImage = require("../models/ProductImage");
 // Pictures arrive as data URLs on the product payload but are stored separately.
 // Returns the payload with `image` swapped for the cheap `hasImage` flag.
 const splitImage = (body) => {
-  const { image, ...rest } = body || {};
+  const { image, categoryImage, ...rest } = body || {};
   const dataUrl = typeof image === "string" ? image.trim() : "";
-  return { payload: rest, dataUrl, imageProvided: image !== undefined };
+  return { payload: { ...rest, ...normalizeMenuOptions(rest) }, dataUrl, imageProvided: image !== undefined };
 };
 
 const saveImage = async (productId, dataUrl) => {
@@ -24,6 +27,7 @@ const saveImage = async (productId, dataUrl) => {
 
 exports.createProduct = async (req, res) => {
   try {
+    validateCategoryImage(req.body);
     const generatedCode = req.body.barcode || `MENU-${Date.now()}`;
     const mrp = Number(req.body.mrp || req.body.sellingPrice || 0);
     const exist = await Product.findOne({ barcode: generatedCode });
@@ -49,9 +53,10 @@ exports.createProduct = async (req, res) => {
 
     if (dataUrl) await saveImage(product._id, dataUrl);
 
+    await saveCategoryImage(req.body);
     res.status(201).json({ success: true, product });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(error.statusCode || 500).json({ message: error.message });
   }
 };
 
@@ -65,9 +70,10 @@ exports.getProducts = async (req, res) => {
       .sort({ createdAt: -1 })
       .lean();
 
-    res.json({ success: true, products });
+    const categoryImages = await CategoryImage.find().select("name updatedAt").lean();
+    res.json({ success: true, products, categoryImages });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(error.statusCode || 500).json({ message: error.message });
   }
 };
 
@@ -89,12 +95,13 @@ exports.searchProducts = async (req, res) => {
 
     res.json({ success: true, products });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(error.statusCode || 500).json({ message: error.message });
   }
 };
 
 exports.updateProduct = async (req, res) => {
   try {
+    validateCategoryImage(req.body);
     const mrp = Number(req.body.mrp || req.body.sellingPrice || 0);
     const { payload: body, dataUrl, imageProvided } = splitImage(req.body);
     const payload = {
@@ -108,6 +115,7 @@ exports.updateProduct = async (req, res) => {
     };
 
     const existing = await Product.findById(req.params.id);
+    if (!existing) return res.status(404).json({ message: "Menu item not found" });
     const product = await Product.findByIdAndUpdate(req.params.id, payload, {
       new: true,
     });
@@ -127,9 +135,10 @@ exports.updateProduct = async (req, res) => {
       });
     }
 
+    await saveCategoryImage(req.body);
     res.json({ success: true, product });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(error.statusCode || 500).json({ message: error.message });
   }
 };
 
@@ -203,7 +212,7 @@ exports.bulkImportProducts = async (req, res) => {
 
     res.json({ success: true, created, skipped });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(error.statusCode || 500).json({ message: error.message });
   }
 };
 
@@ -249,6 +258,113 @@ exports.getProductImage = async (req, res) => {
     res.set("ETag", etag);
     res.send(Buffer.from(match[2], "base64"));
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(error.statusCode || 500).json({ message: error.message });
+  }
+};
+
+// Category thumbnails are public assets, like the existing product pictures.
+exports.getCategoryImage = async (req, res) => {
+  try {
+    const record = await runUnscoped(() => CategoryImage.findById(req.params.id).select("+dataUrl").lean());
+    const match = /^data:image\/(png|jpeg|webp);base64,(.*)$/.exec(record?.dataUrl || "");
+    if (!match) return res.status(404).end();
+    res.set("Content-Type", "image/" + match[1]);
+    res.set("Cache-Control", "public, max-age=300, must-revalidate");
+    res.set("X-Content-Type-Options", "nosniff");
+    res.send(Buffer.from(match[2], "base64"));
+  } catch {
+    res.status(404).end();
+  }
+};
+
+// ---------------------------------------------------------------------------
+// Categories as first-class things.
+//
+// A category used to exist only as a string on a product, so there was no way to
+// set one up (or give it a picture) before adding items to it. The CategoryImage
+// record doubles as the registry: a category listed there shows in the picker
+// even while it still has no items.
+// ---------------------------------------------------------------------------
+const CATEGORY_MAX = 60;
+
+exports.listCategories = async (req, res) => {
+  try {
+    const [records, used] = await Promise.all([
+      // dataUrl is select:false and huge, so ask only whether one is set.
+      CategoryImage.find().select("name updatedAt").lean().then(async (rows) => {
+        const withImage = await CategoryImage.find({ dataUrl: { $ne: "" } }).select("_id").lean();
+        const ids = new Set(withImage.map((row) => String(row._id)));
+        return rows.map((row) => ({ ...row, hasImage: ids.has(String(row._id)) }));
+      }),
+      Product.distinct("category"),
+    ]);
+
+    const counts = await Product.aggregate([
+      { $match: { category: { $nin: [null, ""] } } },
+      { $group: { _id: "$category", items: { $sum: 1 } } },
+    ]);
+    const byName = new Map(counts.map((row) => [row._id, row.items]));
+    const images = new Map(records.map((row) => [row.name, row]));
+
+    const names = [...new Set([...records.map((r) => r.name), ...used.filter(Boolean)])].sort();
+
+    res.json({
+      categories: names.map((name) => ({
+        name,
+        items: byName.get(name) || 0,
+        imageId: images.get(name)?.hasImage ? images.get(name)._id : null,
+        updatedAt: images.get(name)?.updatedAt || null,
+      })),
+    });
+  } catch (error) {
+    res.status(error.statusCode || 500).json({ message: error.message });
+  }
+};
+
+exports.saveCategory = async (req, res) => {
+  try {
+    const name = String(req.body.name || "").trim();
+    if (!name || name.length > CATEGORY_MAX) {
+      return res.status(400).json({ message: `Enter a category name up to ${CATEGORY_MAX} characters` });
+    }
+
+    const previous = String(req.body.previousName || "").trim();
+    // Renaming has to carry every item across, or they would be orphaned under a
+    // category that no longer exists.
+    if (previous && previous !== name) {
+      const clash = await CategoryImage.findOne({ name }).select("_id").lean();
+      if (clash) return res.status(400).json({ message: "A category with that name already exists" });
+      await Product.updateMany({ category: previous }, { $set: { category: name } });
+      await CategoryImage.updateOne({ name: previous }, { $set: { name } });
+    }
+
+    validateCategoryImage({ category: name, categoryImage: req.body.image });
+    await saveCategoryImage({ category: name, categoryImage: req.body.image });
+
+    // A category with no picture still needs a record, otherwise it vanishes from
+    // the picker the moment it has no items.
+    if (!req.body.image) {
+      await CategoryImage.updateOne({ name }, { $setOnInsert: { name, dataUrl: "" } }, { upsert: true });
+    }
+
+    res.json({ success: true, name });
+  } catch (error) {
+    res.status(error.statusCode || 500).json({ message: error.message });
+  }
+};
+
+exports.deleteCategory = async (req, res) => {
+  try {
+    const name = String(req.params.name || "").trim();
+    const inUse = await Product.countDocuments({ category: name });
+    if (inUse > 0) {
+      return res.status(400).json({
+        message: `${inUse} item${inUse === 1 ? "" : "s"} still use this category. Move or delete them first.`,
+      });
+    }
+    await CategoryImage.deleteOne({ name });
+    res.json({ success: true });
+  } catch (error) {
+    res.status(error.statusCode || 500).json({ message: error.message });
   }
 };

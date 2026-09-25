@@ -1,11 +1,13 @@
+const { couponDiscount, couponPayload } = require("../utils/couponPolicy");
 const Coupon = require("../models/Coupon");
 const DeletionLog = require("../models/DeletionLog");
 const { verifyDeletePassword } = require("../utils/deleteAuth");
 
 exports.createCoupon = async (req, res) => {
   try {
+    const payload = couponPayload(req.body);
     const exist = await Coupon.findOne({
-      code: req.body.code?.toUpperCase(),
+      code: payload.code,
     });
 
     if (exist) {
@@ -16,8 +18,7 @@ exports.createCoupon = async (req, res) => {
     }
 
     const coupon = await Coupon.create({
-      ...req.body,
-      code: req.body.code.toUpperCase(),
+      ...payload,
     });
 
     res.status(201).json({
@@ -26,9 +27,9 @@ exports.createCoupon = async (req, res) => {
       coupon,
     });
   } catch (error) {
-    res.status(500).json({
+    res.status(error.statusCode || 500).json({
       success: false,
-      message: "Coupon create error",
+      message: error.message,
       error: error.message,
     });
   }
@@ -52,7 +53,7 @@ exports.applyCoupon = async (req, res) => {
     const { code, billAmount } = req.body;
 
     const coupon = await Coupon.findOne({
-      code: code?.toUpperCase(),
+      code: String(code || "").trim().toUpperCase(),
       status: "Active",
     });
 
@@ -63,49 +64,7 @@ exports.applyCoupon = async (req, res) => {
       });
     }
 
-    const now = new Date();
-
-    if (coupon.startDate && now < coupon.startDate) {
-      return res.status(400).json({
-        success: false,
-        message: "Coupon not started yet",
-      });
-    }
-
-    if (coupon.endDate && now > coupon.endDate) {
-      return res.status(400).json({
-        success: false,
-        message: "Coupon expired",
-      });
-    }
-
-    if (Number(billAmount) < Number(coupon.minimumBillAmount || 0)) {
-      return res.status(400).json({
-        success: false,
-        message: `Minimum bill amount ₹${coupon.minimumBillAmount} required`,
-      });
-    }
-
-    if (
-      Number(coupon.usageLimit || 0) > 0 &&
-      Number(coupon.usedCount || 0) >= Number(coupon.usageLimit)
-    ) {
-      return res.status(400).json({
-        success: false,
-        message: "Coupon usage limit reached",
-      });
-    }
-
-    let discountAmount = 0;
-
-    if (coupon.discountType === "Amount") {
-      discountAmount = Number(coupon.discountValue || 0);
-    }
-
-    if (coupon.discountType === "Percent") {
-      discountAmount =
-        (Number(billAmount || 0) * Number(coupon.discountValue || 0)) / 100;
-    }
+    const discountAmount = couponDiscount(coupon, Number(billAmount));
 
     res.json({
       success: true,
@@ -115,7 +74,7 @@ exports.applyCoupon = async (req, res) => {
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: "Coupon apply error",
+      message: error.message,
       error: error.message,
     });
   }
@@ -146,5 +105,16 @@ exports.deleteCoupon = async (req, res) => {
       message: "Coupon delete error",
       error: error.message,
     });
+  }
+};
+
+exports.updateCoupon = async (req, res) => {
+  try {
+    const payload = couponPayload(req.body);
+    const coupon = await Coupon.findByIdAndUpdate(req.params.id, { $set: payload }, { new: true, runValidators: true });
+    if (!coupon) return res.status(404).json({ message: "Coupon not found" });
+    res.json({ success: true, coupon });
+  } catch (error) {
+    res.status(error.code === 11000 ? 400 : error.statusCode || 500).json({ message: error.code === 11000 ? "Coupon code already exists" : error.message });
   }
 };

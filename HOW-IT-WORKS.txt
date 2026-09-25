@@ -208,9 +208,20 @@ IMAGES - deliberately NOT stored inline
 
   Helper functions: frontend/src/api/productImage.js
 
-CATEGORY PICTURES
-  A category picture is stored once per category (CategoryImage model), not per
-  item, and is shown above the category name on the customer menu.
+CATEGORIES ARE FIRST-CLASS
+  A category used to exist only as a string on a product, so there was no way
+  to set one up before adding items to it. The CategoryImage record now doubles
+  as the registry: a category listed there appears in the picker even with no
+  items, and its dataUrl may be empty (picture optional). Managed from the
+  "Add Category" dialog beside "+ Add Item", via /api/products/categories
+  (GET / PUT / DELETE). Renaming carries every item across; deleting is refused
+  while any item still uses it.
+
+SIZES AND ADD-ONS
+  A product carries variants (Half/Full, 250ml/500ml -- each with its own
+  price) and optionGroups (extras, with a required flag and a max-selections
+  limit). The customer picks these in the item dialog, which opens on a click
+  anywhere on the card. Validation lives in backend/utils/menuOptions.js.
 
 
 -------------------------------------------------------------------------------

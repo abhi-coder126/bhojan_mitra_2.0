@@ -100,7 +100,7 @@ export default function Login() {
         </div>
       </section>
 
-      <AsyncForm className="login-card" onSubmit={login}>
+      <AsyncForm className="login-card" onSubmit={login} showStatus={false}>
         <div className="login-card-head">
           <span>Welcome back</span>
           <h2>Sign in to RestroSethu</h2>

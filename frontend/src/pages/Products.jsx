@@ -1,6 +1,8 @@
+import MenuOptionsEditor from "../components/MenuOptionsEditor";
+import CategoryManager from "../components/CategoryManager";
 import AsyncForm from "../components/AsyncForm";
-import { useEffect, useMemo, useRef, useState } from "react";
-import { Eye, Flame, ImagePlus, Leaf, Pencil, Sparkles, Trash2, Upload, Utensils, X } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Eye, Flame, FolderPlus, ImagePlus, Leaf, Pencil, Sparkles, Trash2, Upload, Utensils, X } from "lucide-react";
 import API from "../api/axios";
 import { hasProductImage, productImageSrc } from "../api/productImage";
 import { SkeletonTiles } from "../components/Skeleton";
@@ -8,6 +10,8 @@ import { ToastViewport, useToast } from "../components/Toast";
 import DeleteConfirmModal from "../components/DeleteConfirmModal";
 
 const emptyForm = {
+  variants: [],
+  optionGroups: [],
   name: "",
   image: "",
   // Set when editing an item that already has a picture: the list response no longer
@@ -59,6 +63,10 @@ const parseCsv = (text) => {
 
 export default function Products() {
   const [items, setItems] = useState([]);
+  const [showCategories, setShowCategories] = useState(false);
+  // Categories can now exist before any item uses them, so they come from the
+  // server rather than being derived only from the item list.
+  const [savedCategories, setSavedCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [form, setForm] = useState(emptyForm);
@@ -86,8 +94,19 @@ export default function Products() {
 
   const categories = useMemo(() => {
     const fromItems = items.map((item) => item.category).filter(Boolean);
-    return Array.from(new Set([...defaultCategories, ...fromItems]));
-  }, [items]);
+    return Array.from(new Set([...defaultCategories, ...savedCategories, ...fromItems]));
+  }, [items, savedCategories]);
+
+  const loadCategories = useCallback(async () => {
+    try {
+      const res = await API.get("/products/categories");
+      setSavedCategories((res.data.categories || []).map((row) => row.name));
+    } catch {
+      // The picker still works from the item list alone; no need to shout.
+    }
+  }, []);
+
+  useEffect(() => { loadCategories(); }, [loadCategories]);
 
   const filteredItems = useMemo(() => {
     const q = search.toLowerCase().trim();
@@ -108,11 +127,14 @@ export default function Products() {
   }, [filteredItems]);
 
   const normalizePayload = () => ({
+    variants: form.variants || [],
+    optionGroups: form.optionGroups || [],
     name: form.name.trim(),
     // Only send an image when one was picked or typed in; leaving it out keeps the
     // saved picture instead of wiping it.
     ...(form.image.trim() ? { image: form.image.trim() } : {}),
     category: form.category.trim(),
+    ...(form.categoryImage !== undefined ? { categoryImage: form.categoryImage } : {}),
     itemType: form.itemType || "food",
     foodType: form.foodType || "veg",
     description: form.description.trim(),
@@ -149,6 +171,8 @@ export default function Products() {
   const openEdit = (item) => {
     setSelectedItem(item);
     setForm({
+      variants: item.variants || [],
+      optionGroups: item.optionGroups || [],
       name: item.name || "",
       image: "",
       existingImage: hasProductImage(item) ? productImageSrc(item) : "",
@@ -265,6 +289,9 @@ export default function Products() {
             className="hidden-file-input"
             onChange={(e) => importCsv(e.target.files?.[0])}
           />
+          <button className="add-category-btn" onClick={() => setShowCategories(true)}>
+            <FolderPlus size={16} /> Add Category
+          </button>
           <button
             className="add-product-main-btn"
             onClick={() => {
@@ -362,6 +389,14 @@ export default function Products() {
           ))
         )}
       </div>
+
+      {showCategories && (
+        <CategoryManager
+          onClose={() => setShowCategories(false)}
+          onChanged={() => { loadCategories(); fetchItems(); }}
+          showToast={showToast}
+        />
+      )}
 
       {showAdd && (
         <MenuItemModal title="Add Menu Item" close={() => setShowAdd(false)}>
@@ -514,7 +549,7 @@ function MenuItemForm({ form, setForm, categories, submit, buttonText }) {
       <div className="category-input-row">
         <select
           value={categories.includes(form.category) ? form.category : ""}
-          onChange={(e) => setForm({ ...form, category: e.target.value })}
+          onChange={(e) => setForm({ ...form, category: e.target.value, categoryImage: undefined, itemType: /beverage|drink|shake|juice|coffee|tea/i.test(e.target.value) ? "beverage" : /dessert|cake|sweet/i.test(e.target.value) ? "dessert" : "food" })}
         >
           <option value="">Select category</option>
           {categories.map((category) => (
@@ -524,9 +559,10 @@ function MenuItemForm({ form, setForm, categories, submit, buttonText }) {
         <input
           placeholder="Or new category"
           value={categories.includes(form.category) ? "" : form.category}
-          onChange={(e) => setForm({ ...form, category: e.target.value })}
+          onChange={(e) => setForm({ ...form, category: e.target.value, categoryImage: undefined, itemType: /beverage|drink|shake|juice|coffee|tea/i.test(e.target.value) ? "beverage" : /dessert|cake|sweet/i.test(e.target.value) ? "dessert" : "food" })}
         />
       </div>
+
 
       <div className="item-type-row">
         {itemTypes.map((type) => (
@@ -637,7 +673,8 @@ function MenuItemForm({ form, setForm, categories, submit, buttonText }) {
         )}
       </div>
 
-      <button>{buttonText}</button>
+      <MenuOptionsEditor form={form} setForm={setForm} />
+      <button disabled={form.categoryImageLoading}>{buttonText}</button>
     </AsyncForm>
   );
 }

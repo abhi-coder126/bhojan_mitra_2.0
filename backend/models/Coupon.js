@@ -4,6 +4,10 @@ const { branchScopePlugin } = require("../utils/tenant");
 const couponSchema = new mongoose.Schema(
   {
     code: { type: String, required: true },
+    title: { type: String, default: "", maxlength: 100 },
+    description: { type: String, default: "", maxlength: 220 },
+    showOnMenu: { type: Boolean, default: false },
+    activeDays: { type: [Number], default: [0, 1, 2, 3, 4, 5, 6] },
     discountType: {
       type: String,
       enum: ["Amount", "Percent"],

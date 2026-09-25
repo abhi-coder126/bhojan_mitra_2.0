@@ -229,7 +229,25 @@ TABLE QR SETUP
 PART 8 - MENU ITEMS (khane ka menu banana)
 ===============================================================================
 
-Yahan se menu ke items jode aur badle jate hain.
+Yahan se menu ke items jode aur badle jate hain. Upar do button hain:
+"Add Category" aur "+ Add Item".
+
+--- ADD CATEGORY (categories yahan banti hain) ---
+  "Add Category" dabao. Ek dialog khulega jisme:
+      Category name  - jaise Starters, Soups, Desserts
+      Picture        - left me bade box par click karke photo chuno (optional)
+  "Add category" dabao. Bas.
+
+  Neeche saari categories ki list hai, har ek ke saamne kitne item hain.
+      Edit   - naam ya photo badlo. Naam badloge to us category ke saare item
+               apne aap naye naam par chale jayenge.
+      Delete - sirf khali category delete ho sakti hai. Jisme item hain uska
+               delete button band rehta hai - pehle item hatao ya move karo.
+
+  Fayda: category pehle bana sakte ho, item baad me. Photo bhi yahin se lagti
+  hai - ab item wale form me category photo ka section nahi hai.
+
+--- ADD ITEM ---
 
 Ek item jodte samay ye option milte hain:
 
@@ -237,10 +255,8 @@ Ek item jodte samay ye option milte hain:
   Product name             - item ka naam
   Select category          - pehle se bani category chuno
   Or new category          - ya nayi category ka naam type kar do
-  Category image           - category ki photo (ek baar lagane par us category
-                             ke saare item par lagu). Saath hi pehle se kisi
-                             aur category par lagi photo ko ek click me dobara
-                             use kar sakte ho.
+                             (Category ki photo yahan nahi - wo "Add Category"
+                             se lagti hai.)
   Item type                - Food / Beverage or Drink / Dessert
   Food type                - Veg ya Non-veg
   Spice level              - Mild / Medium Spice / Spicy
@@ -248,6 +264,16 @@ Ek item jodte samay ye option milte hain:
   MRP / Final price        - daam
   GST % (optional)         - tax, agar lagana ho
   Offer % (optional)       - chhoot ka percent, jaise 10
+  Sizes & prices           - Half/Full, 250ml/500ml jaisi size aur har size ka
+                             alag daam. Customer popup me chunta hai.
+  Add-ons & extras         - extra cheese, dip, ice cream jaise extras aur unke
+                             daam. Group bana sakte ho, aur tay kar sakte ho ki
+                             group zaroori hai ya nahi aur zyada se zyada kitne
+                             chun sakta hai.
+
+  Customer ki taraf: menu me item ke CARD par kahin bhi click karo (sirf "+"
+  par nahi), popup khulta hai jisme size aur add-ons chunkar cart me daala
+  jata hai.
 
 Upar search box se item ya category dhoondh sakte ho.
 

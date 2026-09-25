@@ -4,6 +4,7 @@ const {
   getCoupons,
   applyCoupon,
   deleteCoupon,
+  updateCoupon,
 } = require("../controllers/couponController");
 const { protect, requireBranch } = require("../middleware/authMiddleware");
 const { staffOrPublicBranch } = require("../middleware/branchContext");
@@ -16,6 +17,7 @@ router.post("/apply", staffOrPublicBranch, applyCoupon);
 
 router.post("/", protect, requireBranch, createCoupon);
 router.get("/", protect, requireBranch, getCoupons);
+router.put("/:id", protect, requireBranch, updateCoupon);
 router.delete("/:id", protect, requireBranch, deleteCoupon);
 
 module.exports = router;

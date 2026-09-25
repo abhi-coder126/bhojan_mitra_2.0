@@ -1,0 +1,21 @@
+﻿const id = () => crypto.randomUUID();
+export default function MenuOptionsEditor({ form, setForm }) {
+  const variants = form.variants || [];
+  const groups = form.optionGroups || [];
+  const setVariants = (value) => setForm({ ...form, variants: value });
+  const setGroups = (value) => setForm({ ...form, optionGroups: value });
+  const updateGroup = (index, patch) => setGroups(groups.map((g, i) => i === index ? { ...g, ...patch } : g));
+  const suggestions = form.itemType === "beverage" ? (/shake/i.test(form.category) ? ["250 ml", "350 ml", "500 ml"] : ["250 ml", "500 ml", "1 L", "2 L"]) : form.itemType === "dessert" ? ["Single", "Double"] : /pizza/i.test(form.category) ? ["Regular", "Medium", "Large"] : ["Half", "Full"];
+  return <section className="menu-options-editor">
+    <h3>{form.itemType === "beverage" ? "Volume & prices" : "Sizes & prices"}</h3><p>Set a price for each serving. Customers choose in the item popup.</p>
+    <div className="menu-size-presets">{suggestions.map((label) => <button type="button" key={label} disabled={variants.some((v) => v.label === label)} onClick={() => setVariants([...variants, { id: id(), label, price: "" }])}>+ {label}</button>)}</div>
+    {variants.map((v, index) => <div className="menu-option-edit-row" key={v.id}><input aria-label="Size or volume" placeholder="e.g. 500 ml" maxLength={120} required value={v.label} onChange={(e) => setVariants(variants.map((item, i) => i === index ? { ...item, label: e.target.value } : item))} /><input aria-label={`${v.label} price`} placeholder="Price ₹" type="number" min="0.01" step="0.01" required value={v.price} onChange={(e) => setVariants(variants.map((item, i) => i === index ? { ...item, price: e.target.value } : item))} /><button type="button" aria-label={`Remove ${v.label}`} onClick={() => setVariants(variants.filter((_, i) => i !== index))}>×</button></div>)}
+    <button type="button" onClick={() => setVariants([...variants, { id: id(), label: "", price: "" }])}>+ Custom size</button>
+    <h3>Add-ons & extras</h3><p>Add toppings, dips, ice cream or other extras with their prices.</p>
+    {groups.map((g, index) => <fieldset key={g.id}><legend>Option group {index + 1}</legend><input aria-label="Group name" placeholder="e.g. Cheese & dips" required maxLength={120} value={g.name} onChange={(e) => updateGroup(index, { name: e.target.value })} /><label>Maximum choices<input aria-label="Maximum choices" type="number" min="1" max={g.options.length} required value={g.maxSelections} onChange={(e) => updateGroup(index, { maxSelections: Number(e.target.value) })} /></label><label><input type="checkbox" checked={g.required} onChange={(e) => updateGroup(index, { required: e.target.checked })} /> Required selection</label>
+      {g.options.map((o, oi) => <div className="menu-option-edit-row" key={o.id}><input aria-label="Add-on name" placeholder="Extra cheese" required maxLength={120} value={o.name} onChange={(e) => updateGroup(index, { options: g.options.map((v, i) => i === oi ? { ...v, name: e.target.value } : v) })} /><input aria-label="Add-on price" placeholder="Price ₹" type="number" min="0" step="0.01" required value={o.price} onChange={(e) => updateGroup(index, { options: g.options.map((v, i) => i === oi ? { ...v, price: e.target.value } : v) })} /><select aria-label="Add-on food type" value={o.foodType} onChange={(e) => updateGroup(index, { options: g.options.map((v, i) => i === oi ? { ...v, foodType: e.target.value } : v) })}><option value="veg">Veg</option><option value="non-veg">Non-veg</option></select><button type="button" disabled={g.options.length === 1} aria-label="Remove add-on" onClick={() => updateGroup(index, { options: g.options.filter((_, i) => i !== oi), maxSelections: Math.min(g.maxSelections, g.options.length - 1) })}>×</button></div>)}
+      <button type="button" onClick={() => updateGroup(index, { options: [...g.options, { id: id(), name: "", price: "", foodType: "veg" }] })}>+ Add option</button><button type="button" onClick={() => setGroups(groups.filter((_, i) => i !== index))}>Remove group</button>
+    </fieldset>)}
+    <button type="button" onClick={() => setGroups([...groups, { id: id(), name: "", required: false, maxSelections: 1, options: [{ id: id(), name: "", price: "", foodType: "veg" }] }])}>+ Add option group</button>
+  </section>;
+}

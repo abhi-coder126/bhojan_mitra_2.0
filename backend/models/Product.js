@@ -11,6 +11,11 @@ const productSchema = new mongoose.Schema(
     barcode: { type: String, required: true },
     sku: String,
     category: String,
+    variants: { type: [new mongoose.Schema({ id: String, label: String, price: Number }, { _id: false })], default: [] },
+    optionGroups: { type: [new mongoose.Schema({
+      id: String, name: String, required: Boolean, maxSelections: Number,
+      options: [new mongoose.Schema({ id: String, name: String, price: Number, foodType: String }, { _id: false })],
+    }, { _id: false })], default: [] },
     // Drives which fields make sense on this item -- e.g. spice level and veg/non-veg
     // are meaningless for a beverage, so the admin form hides them based on this.
     itemType: {

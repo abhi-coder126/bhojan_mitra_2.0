@@ -4118,6 +4118,75 @@
     @apply mb-4 mt-1 text-sm font-semibold text-slate-500;
   }
 
+  /* Categories are set up in their own dialog, beside "Add Item". */
+  .add-category-btn {
+    @apply inline-flex min-h-11 items-center gap-2 rounded-xl border border-[#84091e]/25 bg-white px-4 text-sm font-black text-[#84091e] hover:bg-[#84091e]/[0.06];
+  }
+
+  .category-manager {
+    @apply grid max-h-[86vh] content-start gap-4 overflow-y-auto;
+  }
+
+  .category-draft {
+    @apply grid grid-cols-[auto_minmax(0,1fr)] items-start gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-3.5;
+  }
+
+  .category-draft-image {
+    @apply grid h-[76px] w-[76px] place-items-center overflow-hidden rounded-2xl border border-dashed border-slate-300 bg-white p-0 text-[#84091e] hover:border-[#84091e]/50;
+  }
+
+  .category-draft-image img {
+    @apply h-full w-full object-contain;
+  }
+
+  .category-draft-fields p {
+    @apply mt-1.5 text-xs font-semibold text-slate-500;
+  }
+
+  .category-draft-fields input {
+    @apply h-11 w-full;
+  }
+
+  .category-draft-actions {
+    @apply col-span-full flex flex-wrap items-center justify-end gap-2;
+  }
+
+  .category-draft-actions button:not(.add-product-main-btn) {
+    @apply rounded-xl bg-white px-3 py-2 text-xs font-black text-slate-600 hover:bg-slate-100;
+  }
+
+  .category-draft .async-form-error {
+    @apply col-span-full;
+  }
+
+  .category-list {
+    @apply m-0 grid list-none gap-2 p-0;
+  }
+
+  .category-list li {
+    @apply grid grid-cols-[44px_minmax(0,1fr)_auto] items-center gap-3 rounded-xl border border-slate-200 bg-white p-2.5;
+  }
+
+  .category-list-thumb {
+    @apply grid h-11 w-11 place-items-center overflow-hidden rounded-lg bg-slate-100 text-slate-400;
+  }
+
+  .category-list-thumb img {
+    @apply h-full w-full object-contain;
+  }
+
+  .category-list-name {
+    @apply grid min-w-0;
+  }
+
+  .category-list-name b {
+    @apply truncate text-sm font-black text-slate-900;
+  }
+
+  .category-list-name small {
+    @apply text-xs font-semibold text-slate-400;
+  }
+
   .table-view-panel {
     @apply rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_12px_28px_rgba(15,23,42,0.07)];
   }
@@ -6653,3 +6722,93 @@
 .menu-detail-footer{grid-column:1/-1;position:sticky;bottom:0;padding:18px 24px;background:#fff;border-top:1px solid #eef1ee}.menu-detail-footer button{display:flex;width:100%;justify-content:space-between;align-items:center;gap:12px;border:0;border-radius:14px;padding:20px 24px;background:#08763e;color:white;font-size:17px;font-weight:700;cursor:pointer}.menu-detail-footer button:disabled{background:#87998c}
 .menu-options-editor{border:1px solid #e1e8e2;border-radius:14px;padding:18px;background:#f9fbf9}.menu-options-editor h3{margin:12px 0 8px}.menu-options-editor p{font-size:12px;color:#667369}.menu-options-editor button{width:auto!important;background:#eef4ee!important;color:#235d37!important;border:1px solid #d4e1d6!important;padding:8px 12px!important;border-radius:8px!important;margin:4px;font-size:12px!important}.menu-size-presets{display:flex;flex-wrap:wrap}.menu-option-edit-row{display:flex;gap:8px;align-items:center;margin:10px 0}.menu-option-edit-row input{width:0;min-width:0;flex:1}.menu-option-edit-row select{max-width:95px}.menu-options-editor fieldset{border:1px solid #d9e4db;border-radius:10px;margin:16px 0;padding:12px}.menu-options-editor label{display:flex;gap:10px;align-items:center;margin:12px 0;font-size:12px}.menu-options-editor label input[type=number]{width:70px}.menu-options-editor input[type=checkbox]{width:16px;height:16px}
 @media(max-width:640px){.menu-detail-dialog,.menu-detail-dialog.has-options{width:96vw;max-height:94dvh;border-radius:18px}.has-options .menu-detail-layout{grid-template-columns:minmax(0,1fr)}.menu-detail-image{height:220px}.menu-detail-copy{padding:20px}.menu-detail-options{max-height:none;overflow:visible;border-left:0;border-top:1px solid #edf0ed;padding:20px}.menu-detail-footer{padding:12px}.menu-detail-footer button{padding:17px;font-size:15px}.menu-option-edit-row{flex-wrap:wrap}.menu-option-edit-row input{min-width:70px}}
+
+/* ---------------------------------------------------------------------------
+   Customer item dialog: brand alignment.
+
+   The dialog shipped with a green palette of its own. Repaint the chrome in the
+   menu's maroon (#84091e) so it matches every other surface, and hide the native
+   scrollbars that were sitting over the artwork. Scrolling itself is untouched.
+
+   The veg / non-veg dot keeps its green and red: that is a food-safety
+   convention, not brand colour.
+   --------------------------------------------------------------------------- */
+.menu-detail-dialog,
+.menu-detail-options {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.menu-detail-dialog::-webkit-scrollbar,
+.menu-detail-options::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
+}
+
+.menu-detail-dialog::backdrop {
+  background: rgba(40, 6, 12, 0.66);
+}
+
+.menu-detail-image {
+  background: rgba(132, 9, 30, 0.07);
+  color: #84091e;
+}
+
+.menu-detail-category {
+  color: #9a4a58 !important;
+}
+
+.menu-detail-close {
+  border-color: rgba(132, 9, 30, 0.18);
+  color: #84091e;
+}
+
+.menu-detail-footer button {
+  background: #84091e;
+}
+
+.menu-detail-footer button:hover:enabled {
+  background: #6b0718;
+}
+
+.menu-detail-footer button:disabled {
+  background: #c4a2a8;
+}
+
+.menu-choice:hover {
+  border-color: rgba(132, 9, 30, 0.45);
+}
+
+.menu-choice input {
+  accent-color: #84091e;
+}
+
+/* Admin-side options editor, same treatment. */
+.menu-options-editor {
+  border-color: rgba(132, 9, 30, 0.14);
+  background: #fffafa;
+}
+
+.menu-options-editor button {
+  border-color: rgba(132, 9, 30, 0.2) !important;
+  background: rgba(132, 9, 30, 0.06) !important;
+  color: #84091e !important;
+}
+
+.menu-options-editor fieldset {
+  border-color: rgba(132, 9, 30, 0.16);
+}
+
+/* A global button rule gives this 44x44 circle 12px/16px padding, which pushed
+   the X 6px right and 2px down inside it. It centres its own icon. */
+.menu-detail-close {
+  padding: 0;
+  line-height: 0;
+}
+
+/* The footer is sticky, so on a short item (no sizes or add-ons) it used to sit
+   on top of the last line of copy. Leave room for it. */
+.menu-detail-copy {
+  padding-bottom: 32px;
+}

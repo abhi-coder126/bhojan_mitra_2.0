@@ -12,3 +12,7 @@ export const hasProductImage = (item) => Boolean(item?.hasImage || item?.image);
 // What to point an <img> at: a just-picked/base64 image wins, otherwise the endpoint.
 export const productImageSrc = (item) =>
   item?.image ? item.image : item?.hasImage ? productImageUrl(item._id) : "";
+
+export const categoryImageSrc = (record) => record?._id
+  ? `${API_BASE_URL}/products/category-images/${record._id}?v=${encodeURIComponent(record.updatedAt || "")}`
+  : "";
