@@ -17,10 +17,11 @@ const getAudio = () => {
 
 // Starts the looping ringtone. Resolves false when the browser blocked autoplay
 // (no user interaction on the page yet), so the caller can ask for a tap.
-export const startOrderAlarm = async () => {
+export const startOrderAlarm = async (repeat = true) => {
   const el = getAudio();
   if (!el) return false;
-  el.loop = true;
+  // repeat off: ring once per new order instead of until it is accepted.
+  el.loop = repeat;
   if (!el.paused) return true;
   try {
     await el.play();

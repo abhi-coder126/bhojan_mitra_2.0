@@ -410,9 +410,15 @@ export default function Settings() {
               <div className="settings-grid">
                 <Toggle
                   title="New Order Sound"
-                  description="Loop the order ringtone on every page until each new order is accepted."
+                  description="Play the order tune on every page when a new order arrives."
                   value={settings.restaurantOrderSoundEnabled}
                   onClick={() => change("restaurantOrderSoundEnabled", !settings.restaurantOrderSoundEnabled)}
+                />
+                <Toggle
+                  title="Repeat Sound"
+                  description="Keep ringing until the order is accepted. Turn off to ring once per order."
+                  value={settings.restaurantOrderRepeatSound}
+                  onClick={() => change("restaurantOrderRepeatSound", !settings.restaurantOrderRepeatSound)}
                 />
                 <Toggle
                   title="Order Popup"

@@ -549,13 +549,14 @@ PART 16 - SETTINGS
 Isme nau hisse hain:
 
   Store & Business        - dukan ka naam, pata, GST, logo etc.
-  Captains & Waiters      - NAYA. Yahan se captain/waiter ki ID-password
-                            banate ho. Neeche uski performance bhi dikhti hai.
   Invoice & Billing       - bill kaisa bane, bill number ki setting
   Payments                - kaun-kaunse payment tarike chalu hain
-  Restaurant Operations   - restaurant chalane se judi setting
-  Notifications & Display - naya order aane par bajne wali TUNE, popup aur
-                            auto-refresh ki setting. Neeche PART 19 dekho.
+  Captains & Waiters      - NAYA. captain/waiter ki ID-password banate ho,
+                            aur unki performance dikhti hai (PART 11B dekho)
+  Restaurant Operations   - naya order aane par bajne wali TUNE, popup,
+                            auto-accept, auto-refresh aur table count.
+                            Neeche PART 19 dekho.
+  Notifications & Display - Low Stock Alert Qty aur Expiry Alert Days
   Security                - password badalna etc.
   Data Management         - data ka backup / safai
   Manage Branches         - branch se judi setting
@@ -599,12 +600,16 @@ Iske liye teen cheezein ek saath hoti hain:
   3. LIST APNE AAP REFRESH HOTI HAI
      Har kuch second me nayi list aa jati hai - F5 dabane ki zaroorat nahi.
 
-SETTINGS SE CONTROL:  Settings -> Notifications & Display
-     Sound on/off        - tune bajegi ya nahi
-     Repeat sound        - ek baar bajegi ya bar-bar (jab tak dekh na lo)
-     Popup on/off        - popup dikhega ya nahi
-     Refresh seconds     - kitne second me list refresh ho (kam se kam 3)
-     Test Sound ka button bhi hai - ek baar bajakar dekh lo.
+SETTINGS SE CONTROL:  Settings -> Restaurant Operations
+     New Order Sound     - tune bajegi ya nahi
+     Repeat Sound        - ON: order accept hone tak bajti rahegi.
+                           OFF: har naye order par ek baar bajegi.
+     Order Popup         - naya order ka popup dikhega ya nahi
+     Auto-Accept Orders   - ON karo to QR order bina accept kiye seedha
+                           kitchen chala jayega
+     Auto Refresh Seconds - kitne second me list refresh ho (kam se kam 3)
+     Total Tables         - kitni table hain
+     Upar daayi taraf "Test Sound" ka button hai - ek baar bajakar dekh lo.
 
 *** ZAROORI: TUNE NAHI BAJ RAHI? ***
   Browser ka niyam hai ki page par ek baar click/tap kiye bina aawaz nahi

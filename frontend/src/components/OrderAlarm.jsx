@@ -17,6 +17,7 @@ export default function OrderAlarm() {
   const navigate = useNavigate();
   const location = useLocation();
   const [soundEnabled, setSoundEnabled] = useState(true);
+  const [repeatSound, setRepeatSound] = useState(true);
   const [refreshSeconds, setRefreshSeconds] = useState(5);
   const [newCount, setNewCount] = useState(0);
   const [blocked, setBlocked] = useState(false);
@@ -26,6 +27,7 @@ export default function OrderAlarm() {
       const res = await API.get("/settings");
       const settings = res.data.settings || {};
       setSoundEnabled(settings.restaurantOrderSoundEnabled !== false);
+      setRepeatSound(settings.restaurantOrderRepeatSound !== false);
       setRefreshSeconds(Math.max(3, Number(settings.restaurantOrderRefreshSeconds || 5)));
     } catch {
       // Keep the defaults: ringing for a real order matters more than the setting.
@@ -74,21 +76,21 @@ export default function OrderAlarm() {
       return;
     }
     let alive = true;
-    startOrderAlarm().then((ok) => alive && setBlocked(!ok));
+    startOrderAlarm(repeatSound).then((ok) => alive && setBlocked(!ok));
     return () => {
       alive = false;
     };
-  }, [shouldRing]);
+  }, [shouldRing, repeatSound]);
 
   // Browsers refuse to play audio before the user has interacted with the page.
   // Retry on the first tap/keypress so the alarm starts as soon as possible.
   useEffect(() => {
     if (!blocked) return undefined;
-    const retry = () => startOrderAlarm().then((ok) => ok && setBlocked(false));
+    const retry = () => startOrderAlarm(repeatSound).then((ok) => ok && setBlocked(false));
     const events = ["pointerdown", "keydown", "touchstart"];
     events.forEach((name) => window.addEventListener(name, retry));
     return () => events.forEach((name) => window.removeEventListener(name, retry));
-  }, [blocked]);
+  }, [blocked, repeatSound]);
 
   useEffect(() => () => stopOrderAlarm(), []);
 
