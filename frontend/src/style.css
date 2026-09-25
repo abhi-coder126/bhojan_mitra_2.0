@@ -7178,3 +7178,107 @@
 .product-modal-overlay>.menu-item-modal,.product-modal-overlay>.captain-order-modal{width:min(960px,calc(100vw - 32px));max-width:100%;min-width:0;box-sizing:border-box}
 .product-modal-overlay>.menu-item-modal{width:min(760px,calc(100vw - 32px))}
 .product-modal-overlay>.modal-card.large.captain-order-modal{width:min(960px,calc(100vw - 32px))!important;max-width:calc(100vw - 32px)!important;min-width:0}
+/* Brand action colors. Status indicators and charts keep their semantic colors. */
+.captain-new-order-btn,
+.captain-order-submit-btn:not(:disabled),
+.current-order-actions .serve-order-btn,
+.customer-menu-page .submit-rating-btn {
+  background-color: #84091e !important;
+  color: #fff !important;
+}
+.captain-new-order-btn:hover:not(:disabled),
+.captain-order-submit-btn:hover:not(:disabled),
+.current-order-actions .serve-order-btn:hover:not(:disabled),
+.customer-menu-page .submit-rating-btn:hover:not(:disabled),
+.last-invoice-modal > .no-print:hover:not(:disabled) {
+  background-color: #6b0718 !important;
+  color: #fff !important;
+}
+.pos-bottom-payment > button { background-color: #84091e !important; color: #fff !important; }
+.pos-bottom-payment > button:nth-of-type(2) { background-color: #a81b31 !important; }
+.pos-bottom-payment > button:nth-of-type(3) { background-color: #6b0718 !important; }
+.pos-bottom-payment > button:nth-of-type(4) { background-color: #dc2626 !important; }
+.pos-bottom-payment > button:hover:not(:disabled) { filter: brightness(.9); }
+
+/* Menu Items header: one primary action, two setup actions, and the rare bulk
+   CSV work folded behind a single menu instead of two more buttons. */
+.menu-bulk-menu {
+  position: relative;
+}
+
+.menu-bulk-menu > button {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.menu-bulk-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 30;
+  display: grid;
+  gap: 2px;
+  min-width: 210px;
+  padding: 6px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: white;
+  box-shadow: 0 16px 36px rgba(15, 23, 42, 0.16);
+}
+
+.menu-bulk-dropdown button {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  padding: 9px 10px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #334155;
+  font-size: 13px;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+}
+
+.menu-bulk-dropdown button:hover {
+  background: #f1f5f9;
+}
+
+/* Settings tabs scroll sideways on a phone; say so instead of just clipping. */
+@media (max-width: 767px) {
+  .settings-tabs {
+    scrollbar-width: none;
+    -webkit-mask-image: linear-gradient(90deg, #000 0, #000 calc(100% - 24px), transparent 100%);
+    mask-image: linear-gradient(90deg, #000 0, #000 calc(100% - 24px), transparent 100%);
+  }
+
+  .settings-tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .settings-tabs button {
+    white-space: nowrap;
+  }
+}
+
+/* The title block was taking its natural width and pushing the four header
+   controls onto a second row. Let the text wrap instead, and keep the controls
+   on one line from tablet up; they still wrap on a phone. */
+.menu-management-head > div:first-child {
+  min-width: 0;
+}
+
+@media (min-width: 768px) {
+  .menu-management-head-actions {
+    flex-wrap: nowrap;
+    flex-shrink: 0;
+  }
+
+  .menu-management-head-actions > button,
+  .menu-management-head-actions > .menu-bulk-menu > button {
+    white-space: nowrap;
+  }
+}

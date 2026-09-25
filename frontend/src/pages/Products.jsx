@@ -3,7 +3,7 @@ import CategoryManager from "../components/CategoryManager";
 import MenuOfferManager from "../components/MenuOfferManager";
 import AsyncForm from "../components/AsyncForm";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { BadgePercent, Eye, Flame, FolderPlus, ImagePlus, Leaf, Pencil, Sparkles, Trash2, Upload, Utensils, X } from "lucide-react";
+import { BadgePercent, ChevronDown, Download, Eye, Flame, FolderPlus, ImagePlus, Leaf, Pencil, Sparkles, Trash2, Upload, Utensils, X } from "lucide-react";
 import API from "../api/axios";
 import { hasProductImage, productImageSrc } from "../api/productImage";
 import { SkeletonTiles } from "../components/Skeleton";
@@ -66,6 +66,7 @@ export default function Products() {
   const [items, setItems] = useState([]);
   const [showCategories, setShowCategories] = useState(false);
   const [showOffers, setShowOffers] = useState(false);
+  const [bulkOpen, setBulkOpen] = useState(false);
   // Categories can now exist before any item uses them, so they come from the
   // server rather than being derived only from the item list.
   const [savedCategories, setSavedCategories] = useState([]);
@@ -109,6 +110,13 @@ export default function Products() {
   }, []);
 
   useEffect(() => { loadCategories(); }, [loadCategories]);
+
+  useEffect(() => {
+    if (!bulkOpen) return undefined;
+    const close = (event) => { if (!event.target.closest(".menu-bulk-menu")) setBulkOpen(false); };
+    document.addEventListener("pointerdown", close);
+    return () => document.removeEventListener("pointerdown", close);
+  }, [bulkOpen]);
 
   const filteredItems = useMemo(() => {
     const q = search.toLowerCase().trim();
@@ -273,17 +281,29 @@ export default function Products() {
           <p>Add items by category with photo, MRP and optional GST for clean invoice breakup.</p>
         </div>
         <div className="menu-management-head-actions">
-          <button className="menu-upload-btn" type="button" onClick={downloadCsvTemplate}>
-            Download Template
-          </button>
-          <button
-            className="menu-upload-btn"
-            type="button"
-            disabled={importing}
-            onClick={() => fileInputRef.current?.click()}
-          >
-            <Upload size={16} /> {importing ? "Importing..." : "Upload Items (CSV)"}
-          </button>
+          <div className="menu-bulk-menu">
+            <button
+              className="menu-upload-btn"
+              type="button"
+              aria-expanded={bulkOpen}
+              aria-haspopup="true"
+              disabled={importing}
+              onClick={() => setBulkOpen((open) => !open)}
+            >
+              <Upload size={16} /> {importing ? "Importing..." : "Bulk import"}
+              <ChevronDown size={14} />
+            </button>
+            {bulkOpen && (
+              <div className="menu-bulk-dropdown" role="menu">
+                <button type="button" role="menuitem" onClick={() => { setBulkOpen(false); fileInputRef.current?.click(); }}>
+                  <Upload size={14} /> Upload items (CSV)
+                </button>
+                <button type="button" role="menuitem" onClick={() => { setBulkOpen(false); downloadCsvTemplate(); }}>
+                  <Download size={14} /> Download template
+                </button>
+              </div>
+            )}
+          </div>
           <input
             ref={fileInputRef}
             type="file"

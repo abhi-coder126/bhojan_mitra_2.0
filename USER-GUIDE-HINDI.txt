@@ -264,8 +264,15 @@ TABLE QR SETUP
 PART 8 - MENU ITEMS (khane ka menu banana)
 ===============================================================================
 
-Yahan se menu ke items jode aur badle jate hain. Upar do button hain:
-"Add Category" aur "+ Add Item".
+Yahan se menu ke items jode aur badle jate hain. Upar CHAAR control hain:
+
+  Bulk import   - ek menu. Khol kar do cheezein milti hain:
+                      Upload items (CSV)  - ek saath bahut saare item chadhao
+                      Download template   - pehle sahi format wali file le lo
+                  (ye kaam kabhi-kabhi hi hota hai, isliye menu me chhupa hai)
+  Add Category  - nayi category banao (neeche dekho)
+  Add Offer     - BOGO / free item offer banao (PART 11C dekho)
+  + Add Item    - naya menu item jodo
 
 --- ADD CATEGORY (categories yahan banti hain) ---
   "Add Category" dabao. Ek dialog khulega jisme:
