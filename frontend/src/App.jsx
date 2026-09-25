@@ -67,8 +67,8 @@ const pageMeta = {
     title: "Sales Return / Refund | RestroSethu Billing Software",
     description: "Manage invoice returns, returned products, refund amounts and stock reversal records.",
   },
-  "/reports": {
-    title: "Sales Reports | RestroSethu Billing Software",
+  "/invoices": {
+    title: "Invoices | RestroSethu Billing Software",
     description: "Search and review invoices, customers, payment modes, sale totals and billing history.",
   },
   "/customers": {
@@ -297,7 +297,8 @@ function ProtectedLayout() {
           <Route path="/grn-management" element={<GRNManagement />} />
           <Route path="/supplier-bills" element={<SupplierBills />} />
           <Route path="/sales-return" element={<SalesReturn />} />
-          <Route path="/reports" element={<Reports />} />
+          <Route path="/reports" element={<Navigate to="/invoices" replace />} />
+          <Route path="/invoices" element={<Reports />} />
           <Route path="/customers" element={<Customers />} />
           <Route path="/vendors" element={<Vendors />} />
           <Route path="/accounts" element={<Accounts />} />

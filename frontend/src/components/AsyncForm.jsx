@@ -1,6 +1,8 @@
 import { useRef, useState } from "react";
 
-export default function AsyncForm({ onSubmit, children, ...props }) {
+// showStatus: opt out where the submit button already reports its own progress,
+// so the form does not repeat it underneath (e.g. the login card).
+export default function AsyncForm({ onSubmit, children, showStatus = true, ...props }) {
   const locked = useRef(false);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
@@ -24,7 +26,7 @@ export default function AsyncForm({ onSubmit, children, ...props }) {
   return (
     <form {...props} onSubmit={submit} aria-busy={pending}>
       <fieldset className="async-form-fields" disabled={pending}>{children}</fieldset>
-      {pending && <p className="async-form-status" role="status">Saving, please wait…</p>}
+      {pending && showStatus && <p className="async-form-status" role="status">Saving, please wait…</p>}
       {error && <p className="async-form-error" role="alert">{error}</p>}
     </form>
   );

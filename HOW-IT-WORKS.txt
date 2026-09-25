@@ -1,0 +1,331 @@
+===============================================================================
+RESTROSETHU - HOW THE SOFTWARE ACTUALLY WORKS
+===============================================================================
+A plain-language walkthrough of the system: what the pieces are, how a request
+travels through them, and the rules that are easy to miss.
+
+Last updated: 26 September 2026
+
+
+-------------------------------------------------------------------------------
+1. WHAT THIS IS
+-------------------------------------------------------------------------------
+RestroSethu is a restaurant POS + back-office system. One installation can run
+several branches (outlets) of the same business, kept strictly separated from
+each other.
+
+It has TWO front doors:
+
+  (a) THE STAFF APP        - everything behind a login: billing, orders,
+                             kitchen display, menu, inventory, reports.
+
+  (b) THE CUSTOMER QR MENU - no login needed. A guest scans the QR on their
+                             table, browses the menu, and places an order.
+                             URL: /menu/<branchCode>/<tableNo>
+
+Both are served by the SAME React app and talk to the SAME Express API.
+
+
+-------------------------------------------------------------------------------
+2. THE STACK, AND HOW TO RUN IT
+-------------------------------------------------------------------------------
+  frontend/   React 19 + Vite + React Router + Tailwind (via @apply in
+              style.css) + Recharts for charts + lucide-react for icons.
+  backend/    Node + Express 5 + Mongoose (MongoDB).
+
+Running it locally - you need BOTH halves up:
+
+  Terminal 1:   cd backend    &&  npm run dev      -> http://localhost:5000
+  Terminal 2:   cd frontend   &&  npm run dev      -> http://localhost:5173
+
+IMPORTANT: if the backend is not running, the login screen will still load
+(it is just static React), but every login attempt fails. This is the single
+most common "why is nothing working" cause.
+
+Config:
+  backend/.env    PORT, MONGO_URI, JWT_SECRET, EMAIL_USER, BREVO_API_KEY
+  frontend/.env   VITE_API_BASE_URL  (defaults to the hosted Render URL if
+                  this is not set - so a missing .env silently points your
+                  local frontend at PRODUCTION. Worth knowing.)
+
+
+-------------------------------------------------------------------------------
+3. THE MOST IMPORTANT IDEA: BRANCH ISOLATION
+-------------------------------------------------------------------------------
+This is the cleverest part of the codebase and the thing to understand first.
+
+Every piece of business data (orders, products, customers, coupons, stock...)
+belongs to exactly one branch. Instead of hoping every database query
+remembers to filter by branch, isolation is enforced in ONE place:
+
+  backend/utils/tenant.js
+
+How it works:
+  - Each incoming request is wrapped in an "async context" carrying a branchId.
+    Staff requests get theirs from authMiddleware.protect; customer QR-menu
+    requests get theirs from middleware/branchContext.publicBranch (read from
+    the branch code in the URL).
+  - Every branch-owned model uses branchScopePlugin. That plugin automatically
+    injects the branch filter into every find / update / delete / aggregate,
+    and stamps branchId onto every insert.
+
+The key safety property: it FAILS CLOSED. If a query touches branch data with
+no branch context set at all, it throws an error rather than quietly returning
+every branch's data. A forgotten filter becomes a loud crash, not a data leak.
+
+Two deliberate escape hatches exist:
+  runWithBranch(id, fn)  - run this work as that branch.
+  runUnscoped(fn)        - deliberately cross-branch. Used ONLY for master-admin
+                           reports, a customer's own order history across
+                           branches, and maintenance scripts.
+
+On the frontend side, the axios layer mirrors this:
+  - A master admin sends an "x-branch-id" header for whichever branch they have
+    open.
+  - On the customer menu, the staff token is deliberately NOT sent. Instead an
+    "x-branch-code" header from the QR URL is used - so an order placed by a
+    guest goes to the branch printed on the QR, never to the branch of whoever
+    happens to be logged in on that device.
+  See frontend/src/api/axios.js.
+
+
+-------------------------------------------------------------------------------
+4. WHO CAN LOG IN (ROLES)
+-------------------------------------------------------------------------------
+backend/models/User.js defines these roles:
+
+  master_admin  - head office. The only role NOT tied to a single branch.
+                  Can switch between branches; sees cross-branch data.
+  owner         - branch owner
+  admin         - branch admin
+  manager
+  cashier
+  waiter
+  kitchen
+  inventory
+  staff
+
+Every role EXCEPT master_admin is permanently bound to one branchId and can
+never see another branch's data.
+
+Auth flow:
+  1. POST /api/auth/login with email + password.
+  2. Server returns a JWT + the user object.
+  3. Frontend stores both in localStorage ("token", "user").
+  4. Every later request sends "Authorization: Bearer <token>".
+  5. If any response comes back 401, the axios interceptor clears the session
+     and bounces the user to /login.
+
+Route guards on the server (backend/middleware/authMiddleware.js):
+  protect       - must be logged in; also establishes the branch context.
+  requireBranch - must have a branch open (blocks head-office-only sessions
+                  from operational screens).
+  requireRole(...) - restricts an endpoint to named roles.
+  requireMaster - master_admin only.
+
+On the client, ProtectedLayout in App.jsx does the equivalent: no token means
+redirect to /login; a master admin with no branch chosen is sent to /branches.
+
+
+-------------------------------------------------------------------------------
+5. THE CORE FLOW: HOW AN ORDER BECOMES AN INVOICE
+-------------------------------------------------------------------------------
+This is the heart of the product. An order can start in two ways:
+
+  PATH A - the guest orders themselves
+    Guest scans the table QR -> /menu/<branchCode>/<tableNo>
+    -> browses the menu, adds items to cart
+    -> optionally applies a coupon code (see section 7)
+    -> places the order
+    -> the order lands in the staff app with status "new", and an alarm sounds
+       (OrderAlarm component).
+
+  PATH B - staff take the order
+    Staff use the counter / billing screen and create the order directly.
+
+Either way the order is a RestaurantOrder document, and it moves through
+these statuses:
+
+    new -> accepted -> preparing -> ready -> served
+                                        (or -> cancelled at any point)
+
+  "accepted"  - the counter has acknowledged it.
+  KOT         - the Kitchen Order Ticket is sent to the kitchen; the Kitchen
+                Display screen (/kds) works off these.
+  "served"    - the order is complete. NOTE: for a delivery order the UI shows
+                this same status as "Delivered" instead of "Served" - same
+                underlying value, friendlier wording.
+
+Order types today: "dine-in" and "delivery". (There is no "takeaway" type yet.)
+
+WHEN STOCK IS DEDUCTED
+  When an order is placed, deductOrderInventory() runs. It looks up the RECIPE
+  for each dish sold and subtracts that dish's ingredients from raw-material
+  stock. The order is then flagged inventoryDeducted: true so it can never be
+  double-deducted. See section 8.
+
+WHEN AN INVOICE NUMBER IS ISSUED
+  Invoice numbers come from nextInvoiceNo(), backed by a Counter document, so
+  numbers are sequential and never collide.
+
+TWO KINDS OF BILL EXIST - this trips people up:
+  - RestaurantOrder : a restaurant/table/delivery order.
+  - Sale            : a direct counter sale (retail-style billing).
+  The Invoices screen merges BOTH lists into one table and tags each row with
+  its type. That is why rows there carry a "reportType" of either
+  "restaurant" or "sale".
+
+
+-------------------------------------------------------------------------------
+6. THE MENU (PRODUCTS)
+-------------------------------------------------------------------------------
+Menu items live in the Product model and are managed on the "Menu Items"
+screen (route /menu-items; the old /products URL redirects there).
+
+Each item has: name, category, price, item type (food / beverage), food type
+(veg / non-veg), an optional picture, and an optional offer percentage.
+
+IMAGES - deliberately NOT stored inline
+  Pictures are base64 in MongoDB but are NEVER included in list responses -
+  a 50-item menu would balloon past 2 MB. Instead:
+    - list rows carry a lightweight "hasImage" boolean
+    - the browser fetches each picture separately from
+      GET /api/products/:id/image
+  so they load in parallel and get cached by the browser.
+  Same idea for category pictures: GET /api/products/category-images/:id
+  Both image endpoints are PUBLIC (no login) because the customer QR menu has
+  to show pictures to guests who are not logged in.
+
+  Helper functions: frontend/src/api/productImage.js
+
+CATEGORY PICTURES
+  A category picture is stored once per category (CategoryImage model), not per
+  item, and is shown above the category name on the customer menu.
+
+
+-------------------------------------------------------------------------------
+7. COUPONS / "TOP OFFERS"
+-------------------------------------------------------------------------------
+Managed on the Coupons screen. A coupon has a code, a discount (flat amount or
+percentage), a minimum bill, a usage limit, a start/end date, and two things
+worth calling out:
+
+  showOnMenu  - if true, the coupon is advertised in the "Top Offers" rail at
+                the top of the customer menu. If false, it is a silent code
+                that only works if the customer types it.
+  activeDays  - which days of the week the offer runs, evaluated in INDIAN
+                TIME (IST), not the server's timezone.
+
+VALIDATION HAPPENS TWICE, ON PURPOSE
+  1. When the customer clicks "Apply" on the menu, the server checks the code
+     and returns the discount.
+  2. Again when the order is actually placed - the server re-validates the
+     coupon and claims one use ATOMICALLY (a conditional update that only
+     succeeds if the usage limit has not been hit). Two people racing for the
+     last use of a coupon cannot both win.
+
+The UI will not let an order through with an unapplied code sitting in the box:
+the Place Order button stays disabled until the code is either applied or
+cleared. Changing the cart after applying invalidates the coupon and forces a
+re-apply, so the discount always matches what is actually in the cart.
+
+All the rules live in one file: backend/utils/couponPolicy.js
+
+
+-------------------------------------------------------------------------------
+8. INVENTORY - THE PART THAT RUNS ITSELF
+-------------------------------------------------------------------------------
+Screen: "Smart Inventory". There are two distinct levels of stock:
+
+  RAW MATERIALS (RawMaterial)  - paneer, tomato, oil, rice...
+                                 measured in kg / ltr / pcs.
+  RECIPES (Recipe)             - "one Paneer Tikka consumes 0.2 kg paneer and
+                                 0.05 ltr oil".
+
+Because recipes link dishes to raw materials, selling a dish automatically
+consumes its ingredients. You do not hand-adjust stock after every sale.
+
+Every stock change is written to a ledger (movements / InventoryTransaction),
+so you can always see why a number moved: a purchase, wastage, a physical
+stock count, or consumption by an order.
+
+REORDER
+  Each material has a reorder level (lowStockThreshold). Anything at or below
+  it shows up on the "Reorder" tab, flagged Low or Out of Stock, with how much
+  it is short by, and a one-click "Record purchase" button.
+
+FOOD COST
+  Because the system knows each dish's recipe and each material's cost, it can
+  show what a dish actually costs to make - the "Food Cost" tab.
+
+
+-------------------------------------------------------------------------------
+9. THE OTHER SCREENS, BRIEFLY
+-------------------------------------------------------------------------------
+  Dashboard          Sales/orders KPIs, revenue & orders trend (Today /
+                     Yesterday / This Week / This Month), orders-by-category
+                     donut, payment breakdown. A financial-year selector and a
+                     date filter (Today / Full FY / day / month / year /
+                     custom range) sit at the top and drive the whole page.
+  Restaurant Orders  The live order board: accept, send KOT, mark ready/served,
+                     take payment.
+  Kitchen Display    Kitchen-facing screen driven by KOTs.
+  Table Management   Tables, and Table QR generates the per-table QR codes.
+  Invoices           Merged list of restaurant orders + counter sales, with an
+                     info popup showing the full bill. Read-only: there is no
+                     delete on this screen, by design.
+  Customers          Customer profiles and purchase history.
+  Coupons / Rewards  Offers, and a loyalty scheme where customers unlock reward
+                     tiers after N orders.
+  Purchase / Vendors / Supplier Bills / Accounts
+                     Buying side: vendors, purchase entries, GRN, payments.
+  Audit Log          Who changed what.
+  Branch Management  master_admin only: create branches, put one on hold,
+                     approve branch change requests.
+  Settings           Business profile, tax, printing, notifications.
+
+
+-------------------------------------------------------------------------------
+10. THINGS THAT ARE EASY TO GET WRONG
+-------------------------------------------------------------------------------
+* Backend down = login fails. The error message shown is not always obvious
+  about this. Check that port 5000 is actually serving before debugging
+  anything else.
+
+* frontend/.env missing = your local frontend talks to PRODUCTION, because
+  VITE_API_BASE_URL falls back to the hosted Render URL.
+
+* Branch context is mandatory. If you write a new controller and touch branch
+  data outside a request (a script, a cron, a callback), wrap it in
+  runWithBranch() or it will throw.
+
+* Never send the staff token on the customer menu. The axios interceptor
+  already prevents this; do not "helpfully" add it back.
+
+* Images must not be added to list responses. Keep using hasImage + the
+  separate image endpoint.
+
+* Order status "served" means delivered for delivery orders. Do not add a
+  separate status for it.
+
+* Money is stored as numbers and rounded to 2 decimals at the point of
+  calculation (see couponPolicy.couponDiscount). Keep that convention.
+
+
+-------------------------------------------------------------------------------
+11. QUICK MAP: WHERE TO LOOK
+-------------------------------------------------------------------------------
+  Branch isolation .............. backend/utils/tenant.js
+  Login / route guards .......... backend/middleware/authMiddleware.js
+  Customer-menu branch context .. backend/middleware/branchContext.js
+  Coupon rules .................. backend/utils/couponPolicy.js
+  Order lifecycle ............... backend/controllers/restaurantOrderController.js
+  Menu items .................... backend/controllers/productController.js
+  API client + interceptors ..... frontend/src/api/axios.js
+  Session helpers ............... frontend/src/api/session.js
+  App shell, routes, guards ..... frontend/src/App.jsx
+  Customer QR menu .............. frontend/src/pages/CustomerMenu.jsx
+  Styling (one big file) ........ frontend/src/style.css
+                                  (branch screens: frontend/src/branches.css)
+
+===============================================================================

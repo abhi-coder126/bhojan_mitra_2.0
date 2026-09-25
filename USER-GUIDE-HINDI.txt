@@ -1,0 +1,488 @@
+===============================================================================
+RestroSethu - PURA USER GUIDE (Hinglish)
+Software kaise kaam karta hai, har screen kaise use karein, aur kya-kya option hai
+===============================================================================
+
+Note: Screen aur button ke naam English me hi likhe hain, kyunki software me wahi
+English me dikhte hain. Samjhane wali baat Hinglish me hai.
+
+Last updated: 26 September 2026
+
+
+===============================================================================
+PART 1 - SABSE PEHLE: YE SOFTWARE HAI KYA
+===============================================================================
+
+RestroSethu ek restaurant billing + management system hai. Isme do alag hisse hain:
+
+  1. STAFF APP (staff wala hissa)
+     Login karke khulta hai. Isme billing, orders, kitchen, menu, stock,
+     reports - sab kuch hai.
+
+  2. CUSTOMER QR MENU (customer wala hissa)
+     Isme koi login nahi. Customer table par rakha QR scan karta hai, menu
+     dekhta hai, aur apne phone se hi order kar deta hai.
+
+Ek hi software me aap kai branch (outlets) chala sakte ho. Har branch ka data
+doosri branch se poori tarah alag rehta hai - ek branch ka staff doosri branch
+ka kuch bhi nahi dekh sakta.
+
+
+===============================================================================
+PART 2 - SOFTWARE CHALU KAISE KAREIN
+===============================================================================
+
+Iske do hisse alag-alag chalte hain, aur dono ka chalna zaroori hai:
+
+  Pehli window:   cd backend    phir   npm run dev
+  Doosri window:  cd frontend   phir   npm run dev
+
+Phir browser me kholo:  http://localhost:5173
+
+*** BAHUT ZAROORI BAAT ***
+Agar backend (pehli window) band hai, to login page to khul jayega lekin login
+nahi hoga. "Login kyu nahi ho raha" ki sabse aam wajah yahi hai. Pehle check
+karo ki backend chal raha hai ya nahi.
+
+*** DOOSRI ZAROORI BAAT ***
+Agar aapne code me change kiya hai aur browser me purana hi dikh raha hai, to
+browser me hard refresh karo: Ctrl + Shift + R
+
+
+===============================================================================
+PART 3 - LOGIN AUR KISKO KYA DIKHEGA (ROLES)
+===============================================================================
+
+Login page par apna email aur password daalo. Password dekhne ke liye aankh wale
+icon par click karo.
+
+System me ye roles hain:
+
+  master_admin  - head office. Sirf yahi kisi bhi branch me jaa sakta hai aur
+                  branch badal sakta hai.
+  owner         - branch ka malik
+  admin         - branch admin
+  manager       - manager
+  cashier       - cashier (billing)
+  waiter        - waiter
+  kitchen       - kitchen staff
+  inventory     - store / stock wala
+  staff         - general staff
+
+master_admin ko chhodkar baaki har aadmi hamesha ek hi branch se juda rehta hai.
+
+Agar login ke baad kuch der baad apne aap logout ho jaye, to matlab session
+khatam ho gaya - dobara login kar lo.
+
+
+===============================================================================
+PART 4 - DASHBOARD (sabse pehli screen)
+===============================================================================
+
+Login karte hi yahi khulta hai. Yahan se pure business ki halat ek nazar me
+dikhti hai.
+
+Upar do filter hain - ye poore page ko control karte hain:
+
+  "Show" dropdown - kaunsa time dekhna hai:
+      Today               - aaj ka
+      Full financial year - poore financial year ka
+      Day wise            - koi ek date chuno
+      Month wise          - koi ek mahina chuno
+      Year wise           - koi ek saal chuno
+      Custom range        - apni marzi ki do dates ke beech ka
+
+  "Financial Year" dropdown - kaunsa financial year dekhna hai (FY 2025-26 etc.)
+
+Neeche jo cards dikhte hain:
+
+  Pehli line (bikri):
+      Today Sale       - aaj ki sale
+      Yesterday Sale   - kal ki sale
+      Monthly Sale     - is mahine ki
+      Yearly Sale      - is saal ki
+
+  Doosri line (detail):
+      Total Customer   - kul customer
+      Total Items      - kul items
+      Average Bill     - average bill
+      Cancelled Order  - cancel hue orders
+      Dine In Order    - table par baithkar khane wale orders
+      Delivery Order   - delivery orders
+      Total Delivery   - kul delivery
+      Active Customer  - chalu customers
+      Active Order     - abhi chal rahe orders
+      Paid Order       - jinka payment ho gaya
+
+  Teesri line (main figures):
+      Total Revenue / Total Orders / New Customers / Average Order Value
+
+GRAPHS:
+
+  "Revenue & Orders Trend" - kamai aur orders ka graph. Upar chaar button hain:
+      Today / Yesterday / This Week / This Month
+      Today aur Yesterday ghante-dar-ghante dikhate hain (subah 6 baje se raat
+      tak), baaki dono din-dar-din.
+
+  "Orders by Category" - gol (donut) graph. Kis category ke kitne item bike.
+      Mouse le jaane par beech me usi category ka naam, ginti aur percent
+      dikh jata hai.
+
+  "Payment breakdown" - Cash / UPI / Card me kitna-kitna aaya.
+
+Upar dayi taraf:
+      Download report - report download karo
+      Add menu item   - seedha menu item jodne wali screen par le jayega
+
+
+===============================================================================
+PART 5 - RESTAURANT ORDERS (roz ka sabse zyada use hone wala page)
+===============================================================================
+
+Yahi asli kaam ki screen hai. Upar teen view hain:
+
+  Table View      - table ka naksha. Jis table par order hai wo highlight hogi.
+                    Jab QR se naya order aata hai to table chamakti hai aur
+                    counter par alarm bajta hai.
+  Current Orders  - abhi chal rahe saare orders ki list
+  Invoices        - ban chuke bill
+
+--- NAYA ORDER BANANA ---
+  "New Order" button dabao. Usme:
+      Order Type       - Dine-in (table par) ya Delivery (delivery)
+      Table            - kaunsi table (dine-in ke liye)
+      Delivery Address - pata (delivery ke liye zaroori hai)
+      Customer         - customer ka naam
+  Phir items jodo aur order save kar do.
+
+--- ORDER KI STAGE (status) ---
+  Order in stages se guzarta hai:
+
+      new  ->  accepted  ->  preparing  ->  ready  ->  served
+
+      new        - abhi-abhi aaya, counter ne dekha nahi
+      accepted   - counter ne accept kar liya
+      preparing  - kitchen me ban raha hai
+      ready      - ban gaya, serve karna baaki hai
+      served     - de diya gaya
+      cancelled  - cancel
+
+  Dhyan do: delivery order me "served" ki jagah "Delivered" likha dikhega -
+  andar se dono ek hi cheez hain, bas shabd alag hai.
+
+--- AUR KYA-KYA OPTION HAIN ---
+  Bill            - bill banana / print karna
+  Apply Discount  - chhoot dena
+  Merge Bill      - do order ka bill ek saath jod dena
+                    (jaise do table wale ek saath payment karna chahein)
+  Split Bill      - ek bill ko alag-alag baant dena
+  Hold            - order ko rok dena
+  Resume          - roka hua order dobara chalu karna
+  Delete          - order hatana (password poocha jayega)
+
+
+===============================================================================
+PART 6 - KITCHEN DISPLAY (kitchen ki screen)
+===============================================================================
+
+Kitchen me lagi screen ke liye hai. Counter se jo KOT (Kitchen Order Ticket)
+bheja jata hai, wo yahan dikhta hai.
+
+  Kitchen wala yahan se: order Accept karta hai, banata hai, aur Ready mark
+  karta hai. Serve karne ka kaam counter karta hai.
+
+  Ye screen har 5 second me apne aap refresh hoti rehti hai - baar-baar
+  refresh karne ki zaroorat nahi.
+
+
+===============================================================================
+PART 7 - TABLE MANAGEMENT aur TABLE QR
+===============================================================================
+
+TABLE MANAGEMENT
+  Table ka visual naksha. Kisi table par tap karke uska status badal sakte ho
+  (khaali / bhari hui etc.). Yahin se nayi table jodi jati hain.
+
+TABLE QR SETUP
+  Har table ka apna QR code yahan se banta hai aur print hota hai.
+  Ye QR table par rakh do - customer ise scan karke khud order kar sakega.
+
+  Zaroori: har QR me uski branch aur table number chhupa hota hai. Isliye
+  customer ka order hamesha usi branch aur usi table par jata hai - chahe us
+  phone me koi bhi staff login ho.
+
+
+===============================================================================
+PART 8 - MENU ITEMS (khane ka menu banana)
+===============================================================================
+
+Yahan se menu ke items jode aur badle jate hain.
+
+Ek item jodte samay ye option milte hain:
+
+  Upload item image        - item ki photo
+  Product name             - item ka naam
+  Select category          - pehle se bani category chuno
+  Or new category          - ya nayi category ka naam type kar do
+  Category image           - category ki photo (ek baar lagane par us category
+                             ke saare item par lagu). Saath hi pehle se kisi
+                             aur category par lagi photo ko ek click me dobara
+                             use kar sakte ho.
+  Item type                - Food / Beverage or Drink / Dessert
+  Food type                - Veg ya Non-veg
+  Spice level              - Mild / Medium Spice / Spicy
+  Short item description   - chhota sa vivran, ye customer ke menu me dikhega
+  MRP / Final price        - daam
+  GST % (optional)         - tax, agar lagana ho
+  Offer % (optional)       - chhoot ka percent, jaise 10
+
+Upar search box se item ya category dhoondh sakte ho.
+
+Photo ke baare me: photo alag se load hoti hain taaki menu ki list bhaari na ho
+jaye aur jaldi khule.
+
+
+===============================================================================
+PART 9 - SMART INVENTORY (kachche maal ka stock)
+===============================================================================
+
+Ye sabse kaam ki cheezon me se ek hai. Yahan kachcha maal (paneer, tomato, tel,
+chawal) track hota hai - aur sabse badi baat, ye khud-ba-khud ghatta hai.
+
+YE KAISE APNE AAP HOTA HAI:
+  Aap har dish ki "recipe" bana dete ho - jaise "ek paneer tikka me 200 gram
+  paneer aur 50 ml tel lagta hai". Iske baad jab bhi wo dish bikegi, utna
+  kachcha maal apne aap stock se kam ho jayega. Har bikri ke baad haath se
+  stock ghatane ki zaroorat nahi.
+
+Upar paanch tab hain:
+
+  Stock        - saara kachcha maal, kitna bacha hai, uska daam aur kul keemat.
+                 Har line par button: Purchase (kharid darj karo),
+                 Wastage (barbadi darj karo), Count (ginti milao),
+                 History (itihaas dekho), edit (badlo), delete (hatao)
+  Recipes      - kaunsi dish me kaunsa maal kitna lagta hai
+  Food Cost    - ek dish banane me asal me kitna kharch aata hai
+  Stock Ledger - har ghatne-badhne ka pura hisab: kab, kyun, kitna
+  Reorder      - jo maal khatam hone wala hai
+
+REORDER TAB (khatam hone wala maal):
+  Upar laal patti me likha aata hai ki kitne item mangwane hain aur kitne
+  bilkul khatam ho chuke hain. Har line par:
+      "Low" ya "Out of Stock" ka nishan
+      "Short by 3.5 kg" - yani kitna kam pad raha hai, taaki aapko hisab na
+      lagana pade ki kitna mangwana hai
+      "Record purchase" button - ek click me kharid darj karo
+
+  Har maal ke liye "Reorder level" set hota hai. Stock usse neeche girte hi wo
+  maal is tab me aa jata hai.
+
+Upar ke card me dikhta hai: Stock value (kul stock ki keemat), Need reorder,
+Purchased (30 days), Used in orders (30 days), Wastage (30 days)
+
+
+===============================================================================
+PART 10 - INVOICES (pehle iska naam Reports tha)
+===============================================================================
+
+Yahan saare bill ek jagah dikhte hain - restaurant ke order aur counter ki
+seedhi bikri, dono.
+
+  Upar search box - order number, customer, phone ya item se dhoondho
+  Har line par "Info" button - pura bill khulega: number, date, customer,
+  mobile, type, status, Sub Total, GST, Discount, Grand Total, aur neeche
+  saare items ki list.
+
+*** DHYAN DO ***
+Is screen se bill delete karne ka koi option nahi hai - jaanbujh kar hataya
+gaya hai. Bill ek pakka hisab-kitab ka record hai, use mitaya nahi jana chahiye.
+
+
+===============================================================================
+PART 11 - CUSTOMERS (customer)
+===============================================================================
+
+Customers ki puri jankari: naam, CRN number, phone, pata, aur unki kharid ka
+itihaas. Yahan se naya customer jod sakte ho aur purane ki detail badal sakte ho.
+
+
+===============================================================================
+PART 12 - COUPONS (offer aur coupon)
+===============================================================================
+
+Customer ko chhoot dene ke liye coupon yahan bante hain.
+
+Ek coupon banate samay ye option hain:
+
+  Code                 - coupon code, jaise WELCOME20
+                         (2 se 40 akshar, sirf English letters, digits, - aur _)
+  Title                - offer ka naam, jo customer ko dikhega
+  Description          - chhota sa vivran
+  Discount type        - Amount (seedhe rupaye) ya Percent (percent)
+  Discount value       - kitni chhoot (percent me 1 se 100 tak)
+  Minimum bill amount  - itne se upar ka bill hone par hi chalega
+  Usage limit          - kul kitni baar use ho sakta hai (0 = unlimited)
+  Start / End date     - kab se kab tak chalega
+  Available days       - hafte ke kin dino chalega (Indian time ke hisab se)
+  "Show in Top Offers on the customer menu"
+                       - ise tick karne par ye offer customer ke menu me sabse
+                         upar "Top Offers" me dikhega.
+                         Tick na karo to ye chhupa rahega - sirf usi ko milega
+                         jise code pata hai.
+  Status               - Active ya Inactive
+
+COUPON KAISE LAGTA HAI (customer ki taraf):
+  Customer menu me upar "Top Offers" dekhta hai, ya khud code type karta hai,
+  phir "Apply" dabata hai.
+
+  Zaroori baat: code daal kar Apply dabana zaroori hai. Agar code box me likha
+  hai par Apply nahi dabaya, to order place nahi hoga - button band rahega. Ye
+  jaanbujh kar rakha gaya hai taaki customer ko chhoot mile bina order na chala
+  jaye.
+
+  Agar Apply karne ke baad customer cart me kuch badalta hai, to coupon hat
+  jayega aur dobara lagana padega - taaki chhoot hamesha sahi rakam par lage.
+
+  Coupon ki jaanch do baar hoti hai: ek baar Apply dabane par, aur doosri baar
+  order place hote samay. Isliye limit khatam ho chuka coupon aakhri waqt par
+  bhi nahi chalega.
+
+
+===============================================================================
+PART 13 - REWARDS (customer ko wapas laane ki scheme)
+===============================================================================
+
+Ye loyalty scheme hai - customer jitne zyada order karega, utna bada inaam.
+
+"Reward Tier" banate samay:
+  Title          - inaam ka naam, jaise "Gold Member"
+  Orders Needed  - kitne order ke baad milega (jaise 15+)
+  Offer          - kya milega, jaise "20% off up to Rs 400"
+  Validity       - kitne din tak chalega
+  Status         - Active / Paused
+
+Neeche "Recently Issued Rewards" me dikhta hai ki kis customer ko kaunsa inaam
+mila, usne scratch kiya ya nahi, aur kab khatam ho raha hai.
+
+Har line par Pause (rokna) aur Delete (hatana) ke button hain.
+
+
+===============================================================================
+PART 14 - KHARID WALA HISSA (PURCHASE, VENDORS, BILLS, ACCOUNTS)
+===============================================================================
+
+PURCHASE / GRN ENTRY
+  Vendor se maal aane par yahan entry hoti hai. Isse product ka cost, GST aur
+  payment update ho jata hai.
+
+VENDOR MANAGEMENT
+  Supplier ki jankari: naam, GST number, shuruati bakaya, kharid aur payment
+  ka hisab.
+
+GRN MANAGEMENT
+  Vendor ki saari GRN entry. Supplier ke naam, invoice number ya rakam se
+  dhoondh sakte ho.
+
+SUPPLIER BILLS
+  Vendor ke bill: kul rakam, kitna diya, kitna baaki, aur status.
+
+ACCOUNTS PAYABLE
+  Kis supplier ka kitna paisa baaki hai, kitna diya jaa chuka hai, aur payment
+  ka pura itihaas.
+
+SALES RETURN / REFUND
+  Maal wapas aane par: kaunsa bill, kaunse item, kitni matra wapas aayi, aur
+  stock me uska asar.
+
+
+===============================================================================
+PART 15 - BAAKI SCREEN
+===============================================================================
+
+INVENTORY OVERVIEW (All Products)
+  Bane hue item ka live stock, kam stock wale item, category, vendor aur daam.
+
+AUDIT LOG
+  Kisne kya badla aur kisne kab login kiya - saath me IP address aur device.
+  Gadbadi pakadne ke liye bahut kaam ki screen.
+
+ROYALTY MANAGEMENT
+  Royalty ka hisab.
+
+BRANCH MANAGEMENT  (sirf master_admin ko dikhta hai)
+  Nayi branch banana, kisi branch ko Hold par daalna, branch ke badlav ki
+  request manzoor karna.
+
+SUPPORT
+  Koi dikkat ho to yahan se seedhe support team ko batao.
+
+
+===============================================================================
+PART 16 - SETTINGS
+===============================================================================
+
+Isme nau hisse hain:
+
+  Store & Business        - dukan ka naam, pata, GST, logo etc.
+  Invoice & Billing       - bill kaisa bane, bill number ki setting
+  Payments                - kaun-kaunse payment tarike chalu hain
+  Restaurant Operations   - restaurant chalane se judi setting
+  Notifications & Display - alert aur screen ki setting
+  Security                - password badalna etc.
+  Data Management         - data ka backup / safai
+  Manage Branches         - branch se judi setting
+  Support Contacts        - support ke number
+
+
+===============================================================================
+PART 17 - CUSTOMER KI TARAF SE PURA FLOW (shuru se aakhir tak)
+===============================================================================
+
+  1. Customer table par baithta hai aur table par rakha QR scan karta hai.
+  2. Uske phone me menu khulta hai. Sabse upar "Top Offers" dikhte hain.
+  3. Wo item chunkar cart me daalta hai.
+  4. Chahe to coupon code lagata hai aur "Apply" dabata hai.
+  5. Order place karta hai.
+  6. Usi waqt counter par alarm bajta hai aur wo table highlight ho jati hai.
+  7. Counter order Accept karta hai aur kitchen ko KOT bhejta hai.
+  8. Kitchen ki screen par order aata hai. Kitchen banakar "Ready" kar deta hai.
+  9. Counter serve karta hai aur status "served" ho jata hai.
+ 10. Jo dishes bikin, unki recipe ke hisab se kachcha maal apne aap stock se
+     kam ho jata hai.
+ 11. Bill banta hai, invoice number milta hai, aur wo Invoices screen me aa
+     jata hai.
+
+
+===============================================================================
+PART 18 - AAM DIKKATEIN AUR UNKA HAL
+===============================================================================
+
+"Login nahi ho raha"
+   -> backend chal raha hai ya nahi, ye check karo. Ye sabse aam wajah hai.
+
+"Browser me naya change dikh hi nahi raha"
+   -> Ctrl + Shift + R se hard refresh karo. Tab bahut der se khula ho to
+      purana version dikhta rehta hai.
+   -> Agar aap deployed (online) site dekh rahe ho, to naya code tabhi dikhega
+      jab changes push/deploy ho chuke hon.
+
+"Customer ka order nahi aa raha"
+   -> Dekho ki QR sahi branch aur table ka hai.
+   -> Restaurant Orders screen khuli hai ya nahi (alarm wahin bajta hai).
+
+"Coupon nahi lag raha"
+   -> Coupon ka Status Active hai?
+   -> Aaj ka din "Available days" me chuna hua hai?
+   -> Bill "Minimum bill amount" se upar hai?
+   -> Usage limit khatam to nahi ho gaya?
+   -> Start/End date ke beech me hai?
+
+"Stock apne aap kam nahi ho raha"
+   -> Us dish ki Recipe bani hai ya nahi, ye check karo. Recipe ke bina system
+      ko pata hi nahi chalega ki kaunsa maal kitna ghatana hai.
+
+"Bill delete karna hai"
+   -> Invoices screen se bill delete nahi ho sakta, ye jaanbujh kar band hai.
+      Galat order ko Restaurant Orders se cancel kiya jaa sakta hai.
+
+===============================================================================

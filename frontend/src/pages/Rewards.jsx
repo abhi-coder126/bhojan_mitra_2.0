@@ -3,6 +3,7 @@ import AsyncButton from "../components/AsyncButton";
 import { useEffect, useState } from "react";
 import API from "../api/axios";
 import { SkeletonTable } from "../components/Skeleton";
+import ConfirmActionModal from "../components/ConfirmActionModal";
 
 const emptyTier = {
   title: "",
@@ -47,16 +48,15 @@ export default function Rewards() {
     }
   };
 
+  const [deleteId, setDeleteId] = useState(null);
+
   const toggleActive = async (tier) => {
     await API.put(`/rewards/tiers/${tier._id}`, { isActive: !tier.isActive });
     fetchTiers();
   };
 
-  const remove = async (id) => {
-    if (!window.confirm("Delete this reward tier?")) return;
-    await API.delete(`/rewards/tiers/${id}`);
-    fetchTiers();
-  };
+  // In-app dialog instead of window.confirm, which cannot be styled.
+  const remove = (id) => setDeleteId(id);
 
   return (
     <div className="settings-page">
@@ -151,8 +151,10 @@ export default function Rewards() {
                   <td>{tier.validityDays} days</td>
                   <td>{tier.isActive ? "Active" : "Paused"}</td>
                   <td>
-                    <AsyncButton onClick={() => toggleActive(tier)}>{tier.isActive ? "Pause" : "Activate"}</AsyncButton>
-                    <AsyncButton onClick={() => remove(tier._id)}>Delete</AsyncButton>
+                    <div className="row-actions">
+                      <AsyncButton onClick={() => toggleActive(tier)}>{tier.isActive ? "Pause" : "Activate"}</AsyncButton>
+                      <AsyncButton onClick={() => remove(tier._id)}>Delete</AsyncButton>
+                    </div>
                   </td>
                 </tr>
               ))
@@ -198,6 +200,18 @@ export default function Rewards() {
           </tbody>
         </table>
       </div>
+      <ConfirmActionModal
+        open={Boolean(deleteId)}
+        title="Delete this reward tier?"
+        message="Customers will stop earning this reward. Rewards already issued are not affected."
+        confirmText="Delete tier"
+        onCancel={() => setDeleteId(null)}
+        onConfirm={async () => {
+          await API.delete(`/rewards/tiers/${deleteId}`);
+          setDeleteId(null);
+          fetchTiers();
+        }}
+      />
     </div>
   );
 }

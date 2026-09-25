@@ -177,6 +177,10 @@
 
 .login-page .login-showcase {
   color: white;
+  /* The opaque showcase needs no backdrop sampling. Avoid nested blur layers
+     that can leave rectangular repaint seams when nearby controls hover. */
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
   background:
     linear-gradient(135deg, rgba(127, 6, 21, 0.98), rgba(185, 28, 28, 0.94) 58%, rgba(220, 38, 38, 0.88)),
     #991b1b;
@@ -237,8 +241,8 @@
   border-color: rgba(255, 255, 255, 0.24);
   background: linear-gradient(145deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.08));
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 16px 32px rgba(71, 4, 15, 0.18);
-  -webkit-backdrop-filter: blur(14px);
-  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
   transition: transform 180ms ease, border-color 180ms ease, background 180ms ease;
 }
 
@@ -825,6 +829,11 @@
     @apply overflow-x-auto;
   }
 
+  /* Keeps the buttons in a table row's action cell from butting together. */
+  .row-actions {
+    @apply flex flex-wrap items-center gap-2;
+  }
+
   .panel table,
   .sales-return-card table,
   .products-table-card table,
@@ -1106,6 +1115,40 @@
   .pos-customer-grid,
   .grn-detail-grid {
     @apply grid grid-cols-2 gap-3.5 p-5;
+  }
+
+  /* The info grid carries its own p-5, but the "Items" heading and its table are
+     direct children of the modal, so they sat flush against its edges and the
+     table spilled past the rounded corners. Give them the same gutter. */
+  .report-modal > h3 {
+    @apply mx-5 mb-2 mt-1 text-[15px] font-black text-slate-900;
+  }
+
+  .report-modal > table {
+    @apply mx-5 w-[calc(100%-2.5rem)] overflow-hidden rounded-xl border border-slate-200 text-sm;
+    border-collapse: separate;
+    border-spacing: 0;
+  }
+
+  .report-modal > table th {
+    @apply bg-slate-50 px-3 py-2.5 text-left text-xs font-black uppercase tracking-wide text-slate-500;
+  }
+
+  .report-modal > table td {
+    @apply border-t border-slate-100 px-3 py-2.5 font-semibold text-slate-700;
+  }
+
+  /* Keeps the title and close button reachable while a long bill scrolls. */
+  .report-modal-head {
+    @apply sticky top-0 z-10;
+  }
+
+  .report-modal .report-info-grid {
+    @apply gap-3 pb-4;
+  }
+
+  .report-modal .report-info-grid div {
+    @apply p-3.5;
   }
 
   .product-form-grid button,
@@ -2801,6 +2844,136 @@
     scroll-snap-type: x proximity;
   }
 
+  .foodora-categories-row.with-images {
+    gap: 12px;
+    padding-bottom: 8px;
+  }
+
+  .foodora-categories-row.with-images button {
+    flex-direction: column;
+    gap: 10px;
+    width: 112px;
+    min-width: 112px;
+    padding: 10px 6px;
+    border-radius: 16px;
+  }
+
+  .category-menu-thumbnail {
+    display: grid;
+    place-items: center;
+    width: 88px;
+    height: 80px;
+    color: #84091e;
+    background: white;
+    border-radius: 12px;
+  }
+
+  .category-menu-thumbnail img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+
+  .foodora-categories-row.with-images b {
+    white-space: normal;
+    line-height: 1.3;
+  }
+
+  .category-image-picker {
+    display: flex;
+    gap: 14px;
+    padding: 14px;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    background: #f8fafc;
+  }
+
+  .category-image-preview {
+    display: grid;
+    place-items: center;
+    flex: 0 0 72px;
+    height: 72px;
+    border-radius: 12px;
+    background: white;
+    color: #84091e;
+  }
+
+  .category-image-preview img {
+    width: 72px;
+    height: 72px;
+    object-fit: contain;
+  }
+
+  .category-image-controls { min-width: 0; }
+  .category-image-controls p, .category-image-controls small { font-size: 12px; }
+  .category-image-controls small { display: inline-block; color: #64748b; }
+  .category-image-upload { display: block; margin-top: 8px; font-size: 12px; font-weight: 700; }
+  .category-image-upload input { display: block; width: 100%; margin-top: 6px; padding: 6px; font-size: 12px; }
+  .category-image-controls .category-image-remove { background: transparent; color: #991b1b; padding: 6px 0; font-size: 12px; }
+  .category-image-controls [role="alert"] { color: #b91c1c; }
+
+  /* Thumbnails of images already saved for other categories, so a shared icon
+     can be picked in one click instead of being re-uploaded per category. */
+  .category-image-reuse {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid #e2e8f0;
+  }
+
+  .category-image-reuse > small {
+    display: block;
+    margin-bottom: 7px;
+    color: #64748b;
+    font-size: 12px;
+    font-weight: 700;
+  }
+
+  .category-image-reuse ul {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .category-image-reuse button {
+    display: grid;
+    justify-items: center;
+    gap: 3px;
+    width: 64px;
+    padding: 6px 4px;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    background: white;
+    cursor: pointer;
+  }
+
+  .category-image-reuse button:hover:enabled {
+    border-color: #84091e;
+  }
+
+  .category-image-reuse button:disabled {
+    opacity: 0.55;
+    cursor: default;
+  }
+
+  .category-image-reuse img {
+    width: 34px;
+    height: 34px;
+    object-fit: contain;
+  }
+
+  .category-image-reuse span {
+    max-width: 100%;
+    overflow: hidden;
+    color: #475569;
+    font-size: 10px;
+    font-weight: 700;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
   .foodora-categories-row::-webkit-scrollbar {
     display: none;
   }
@@ -3098,6 +3271,70 @@
 
   .foodora-card-price s {
     @apply text-xs font-bold text-slate-400;
+  }
+
+  /* Top Offers rail at the head of the customer menu. Carries the same maroon
+     accent as the rest of the menu rather than a separate promo palette. */
+  .menu-top-offers {
+    @apply mb-5 grid gap-2;
+  }
+
+  .menu-top-offers-heading {
+    @apply flex items-center justify-center gap-3;
+  }
+
+  .menu-top-offers-heading span {
+    @apply h-px max-w-[60px] flex-1 bg-[#84091e]/25;
+  }
+
+  .menu-top-offers-heading h2 {
+    @apply m-0 text-lg font-black tracking-tight text-[#84091e];
+  }
+
+  .menu-top-offers-intro {
+    @apply m-0 text-center text-xs font-semibold text-slate-500;
+  }
+
+  .menu-top-offers-row {
+    @apply flex gap-3 overflow-x-auto pb-1;
+    scrollbar-width: none;
+  }
+
+  .menu-top-offers-row::-webkit-scrollbar {
+    display: none;
+  }
+
+  .menu-top-offer {
+    @apply relative grid w-[232px] shrink-0 content-start gap-1 overflow-hidden rounded-2xl border border-[#84091e]/10 bg-[linear-gradient(135deg,#ffffff_0%,#fff5f6_100%)] p-3 shadow-[0_10px_24px_rgba(132,9,30,0.1)];
+  }
+
+  /* Oversized watermark stamp; children sit above it via their own stacking. */
+  .menu-top-offer-stamp {
+    @apply pointer-events-none absolute -bottom-4 -right-4 h-24 w-24 text-[#84091e]/10;
+  }
+
+  .menu-top-offer h3 {
+    @apply relative m-0 line-clamp-2 text-lg font-black leading-tight text-slate-950;
+  }
+
+  .menu-top-offer p {
+    @apply relative m-0 line-clamp-2 text-xs font-semibold text-slate-500;
+  }
+
+  .menu-top-offer small {
+    @apply relative text-[11px] font-bold text-slate-400;
+  }
+
+  .menu-top-offer button {
+    @apply relative mt-1 justify-self-start rounded-full border border-dashed border-[#84091e]/50 bg-white px-3 py-1.5 text-[11px] font-bold text-[#84091e] transition hover:bg-[#84091e]/[0.06];
+  }
+
+  .menu-top-offer button b {
+    @apply font-black tracking-wide;
+  }
+
+  .menu-top-offer button:disabled {
+    @apply border-solid border-emerald-600/40 bg-emerald-50 text-emerald-700;
   }
 
   .foodora-offers-strip {
@@ -6301,3 +6538,10 @@
     @apply h-10 shrink-0 rounded-xl bg-white px-4 text-sm font-black text-red-700 hover:bg-red-50;
   }
 }
+.menu-item-title{background:none!important;border:0!important;padding:0!important;color:inherit!important;font:inherit!important;text-align:left;cursor:pointer}
+.menu-detail-dialog{border:0;padding:0;border-radius:24px;width:min(580px,94vw);max-height:90dvh;margin:auto;color:#202722;background:#fff;box-shadow:0 24px 90px #0005;overflow:auto}.menu-detail-dialog::backdrop{background:#111a16a8;backdrop-filter:blur(4px)}.menu-detail-dialog.has-options{width:min(1080px,94vw)}.menu-detail-layout{position:relative;display:grid;grid-template-columns:minmax(0,1fr)}.has-options .menu-detail-layout{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+.menu-detail-close{position:absolute;right:16px;top:16px;z-index:2;width:44px;height:44px;display:grid;place-items:center;border:1px solid #e6e9e7;border-radius:50%;background:#fffffff2;color:#26372b;cursor:pointer}.menu-detail-image{height:280px;background:#edf3ed;display:grid;place-items:center;color:#538563;overflow:hidden}.menu-detail-image img{width:100%;height:100%;object-fit:cover}.menu-detail-copy{padding:24px 28px}.menu-detail-copy h2{font-size:25px;margin:10px 0}.menu-detail-copy p{line-height:1.65;color:#68736c}.menu-detail-copy strong{font-size:19px}.menu-detail-category{font-size:11px!important;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#6c8071!important;margin:10px 0}.menu-diet{font-size:11px;color:#16713e;font-weight:700}.menu-diet.nonveg{color:#b63737}.menu-detail-rating{color:#997112!important}
+.menu-detail-options{padding:32px 26px;border-left:1px solid #edf0ed;max-height:72dvh;overflow:auto}.menu-detail-options>h2{font-size:23px;margin:8px 0 28px}.menu-detail-options fieldset{border:0;padding:0;margin:0 0 26px}.menu-detail-options legend{font-size:18px;font-weight:700;width:100%}.menu-detail-options small{font-size:9px;letter-spacing:1px;background:#f1f4f1;color:#69746a;border-radius:4px;padding:5px;margin-left:8px}.menu-detail-options fieldset>p{font-size:12px;color:#788079;margin:8px 0 14px}.menu-choice{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:16px;margin-bottom:10px;border:1px solid #e1e7e1;border-radius:13px;cursor:pointer}.menu-choice:has(input:checked){border-color:#14814b;background:#f0f9f3}.menu-choice:has(input:disabled){opacity:.5}.menu-choice span{font-size:15px}.menu-choice b{display:block;margin-top:6px;font-size:13px;color:#617267;font-weight:500}.menu-choice input{width:19px;height:19px;accent-color:#08793d;flex-shrink:0}.menu-option-dot{display:inline-block;width:8px;height:8px;background:#139245;border-radius:50%;margin-right:8px}.menu-option-dot.nonveg{background:#c34848}
+.menu-detail-footer{grid-column:1/-1;position:sticky;bottom:0;padding:18px 24px;background:#fff;border-top:1px solid #eef1ee}.menu-detail-footer button{display:flex;width:100%;justify-content:space-between;align-items:center;gap:12px;border:0;border-radius:14px;padding:20px 24px;background:#08763e;color:white;font-size:17px;font-weight:700;cursor:pointer}.menu-detail-footer button:disabled{background:#87998c}
+.menu-options-editor{border:1px solid #e1e8e2;border-radius:14px;padding:18px;background:#f9fbf9}.menu-options-editor h3{margin:12px 0 8px}.menu-options-editor p{font-size:12px;color:#667369}.menu-options-editor button{width:auto!important;background:#eef4ee!important;color:#235d37!important;border:1px solid #d4e1d6!important;padding:8px 12px!important;border-radius:8px!important;margin:4px;font-size:12px!important}.menu-size-presets{display:flex;flex-wrap:wrap}.menu-option-edit-row{display:flex;gap:8px;align-items:center;margin:10px 0}.menu-option-edit-row input{width:0;min-width:0;flex:1}.menu-option-edit-row select{max-width:95px}.menu-options-editor fieldset{border:1px solid #d9e4db;border-radius:10px;margin:16px 0;padding:12px}.menu-options-editor label{display:flex;gap:10px;align-items:center;margin:12px 0;font-size:12px}.menu-options-editor label input[type=number]{width:70px}.menu-options-editor input[type=checkbox]{width:16px;height:16px}
+@media(max-width:640px){.menu-detail-dialog,.menu-detail-dialog.has-options{width:96vw;max-height:94dvh;border-radius:18px}.has-options .menu-detail-layout{grid-template-columns:minmax(0,1fr)}.menu-detail-image{height:220px}.menu-detail-copy{padding:20px}.menu-detail-options{max-height:none;overflow:visible;border-left:0;border-top:1px solid #edf0ed;padding:20px}.menu-detail-footer{padding:12px}.menu-detail-footer button{padding:17px;font-size:15px}.menu-option-edit-row{flex-wrap:wrap}.menu-option-edit-row input{min-width:70px}}

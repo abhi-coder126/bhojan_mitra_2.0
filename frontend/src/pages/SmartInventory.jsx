@@ -14,6 +14,7 @@ import API from "../api/axios";
 import { SkeletonTable } from "../components/Skeleton";
 import AsyncButton from "../components/AsyncButton";
 import { ToastViewport, useToast } from "../components/Toast";
+import ConfirmActionModal from "../components/ConfirmActionModal";
 
 // Smart Inventory = raw materials behind the menu:
 //  - stock goes UP only through recorded purchases (priced at weighted average cost)
@@ -366,6 +367,9 @@ export default function SmartInventory() {
   const [ledger, setLedger] = useState([]);
   const [ledgerFilter, setLedgerFilter] = useState({ materialId: "", type: "", from: "", to: "" });
   const [modal, setModal] = useState(null);
+  // Destructive actions go through the app's own dialog rather than window.confirm,
+  // which cannot be styled and looks nothing like the rest of the product.
+  const [confirm, setConfirm] = useState(null);
   const [editingRecipe, setEditingRecipe] = useState(null); // productId or "" for new
   const { toast, showToast } = useToast();
 
@@ -415,25 +419,29 @@ export default function SmartInventory() {
     if (tab === "ledger") fetchLedger();
   };
 
-  const removeMaterial = async (material) => {
-    if (!window.confirm(`Delete ${material.name}? Its stock history stays in the ledger.`)) return;
-    try {
-      await API.delete(`/raw-materials/${material._id}`);
-      done("Raw material deleted");
-    } catch (error) {
-      showToast(errorText(error, "Could not delete"), "error");
-    }
-  };
+  const removeMaterial = (material) =>
+    setConfirm({
+      title: `Delete ${material.name}?`,
+      message: "Its stock history stays in the ledger. This cannot be undone.",
+      confirmText: "Delete material",
+      run: async () => {
+        await API.delete(`/raw-materials/${material._id}`);
+        done("Raw material deleted");
+      },
+      failure: "Could not delete",
+    });
 
-  const removeRecipe = async (recipe) => {
-    if (!window.confirm(`Delete the recipe for ${recipe.productName}? Its ingredients will stop being deducted.`)) return;
-    try {
-      await API.delete(`/recipes/${recipe._id}`);
-      done("Recipe deleted");
-    } catch (error) {
-      showToast(errorText(error, "Could not delete recipe"), "error");
-    }
-  };
+  const removeRecipe = (recipe) =>
+    setConfirm({
+      title: `Delete the recipe for ${recipe.productName}?`,
+      message: "Its ingredients will stop being deducted from stock when this dish is sold.",
+      confirmText: "Delete recipe",
+      run: async () => {
+        await API.delete(`/recipes/${recipe._id}`);
+        done("Recipe deleted");
+      },
+      failure: "Could not delete recipe",
+    });
 
   const showHistory = (material) => {
     setLedgerFilter({ materialId: material._id, type: "", from: "", to: "" });
@@ -783,6 +791,14 @@ export default function SmartInventory() {
           {reorderList.length === 0 ? (
             <div className="bm-empty">Everything is above its reorder level.</div>
           ) : (
+            <>
+            <div className="bm-reorder-head">
+              <AlertTriangle size={17} />
+              <p>
+                <b>{reorderList.length} {reorderList.length === 1 ? "material needs" : "materials need"} restocking.</b>{" "}
+                {reorderList.filter((m) => Number(m.stock) <= 0).length} out of stock.
+              </p>
+            </div>
             <div className="bm-table-wrap">
               <table className="bm-table" style={{ minWidth: 640 }}>
                 <thead>
@@ -794,28 +810,59 @@ export default function SmartInventory() {
                   </tr>
                 </thead>
                 <tbody>
-                  {reorderList.map((m) => (
-                    <tr key={m._id}>
-                      <td className="bm-branch-name">{m.name}</td>
-                      <td className="num" style={{ color: "#b91c1c" }}>
-                        {qtyText(m.stock)} {m.unit}
-                      </td>
-                      <td className="num">
-                        {qtyText(m.lowStockThreshold)} {m.unit}
-                      </td>
-                      <td>
-                        <button type="button" className="bm-btn bm-btn-sm bm-btn-primary" onClick={() => setModal({ type: "purchase", material: m })}>
-                          <PackagePlus size={14} /> Record purchase
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
+                  {reorderList.map((m) => {
+                    const out = Number(m.stock) <= 0;
+                    // How much to buy to get back to the reorder level.
+                    const shortfall = Math.max(0, Number(m.lowStockThreshold) - Number(m.stock));
+                    return (
+                      <tr key={m._id}>
+                        <td>
+                          <div className="bm-reorder-name">
+                            <span className="bm-branch-name">{m.name}</span>
+                            <span className={`bm-status ${out ? "bm-status-archived" : "bm-status-hold"}`}>
+                              {out ? "Out of stock" : "Low"}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="num">
+                          <b className={`bm-reorder-stock ${out ? "out" : "low"}`}>{qtyText(m.stock)} {m.unit}</b>
+                          {shortfall > 0 && <small className="bm-reorder-short">Short by {qtyText(shortfall)} {m.unit}</small>}
+                        </td>
+                        <td className="num">
+                          {qtyText(m.lowStockThreshold)} {m.unit}
+                        </td>
+                        <td>
+                          <button type="button" className="bm-btn bm-btn-sm bm-btn-primary" onClick={() => setModal({ type: "purchase", material: m })}>
+                            <PackagePlus size={14} /> Record purchase
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
+            </>
           )}
         </div>
       )}
+
+      <ConfirmActionModal
+        open={Boolean(confirm)}
+        title={confirm?.title}
+        message={confirm?.message}
+        confirmText={confirm?.confirmText}
+        onCancel={() => setConfirm(null)}
+        onConfirm={async () => {
+          try {
+            await confirm.run();
+          } catch (error) {
+            showToast(errorText(error, confirm.failure), "error");
+          } finally {
+            setConfirm(null);
+          }
+        }}
+      />
 
       {modal?.type === "material" && <MaterialModal material={modal.material} onClose={() => setModal(null)} onSaved={done} />}
       {["purchase", "wastage", "count"].includes(modal?.type) && (

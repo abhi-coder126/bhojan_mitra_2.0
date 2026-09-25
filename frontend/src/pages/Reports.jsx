@@ -1,9 +1,7 @@
-import AsyncButton from "../components/AsyncButton";
 import { useEffect, useMemo, useState } from "react";
-import { Info, Search, Trash2, X } from "lucide-react";
+import { Info, Search, X } from "lucide-react";
 import API from "../api/axios";
 import { SkeletonTable } from "../components/Skeleton";
-import DeleteConfirmModal from "../components/DeleteConfirmModal";
 
 const REPORT_LIMIT = 500;
 
@@ -13,7 +11,6 @@ export default function Reports() {
   const [restaurantOrders, setRestaurantOrders] = useState([]);
   const [search, setSearch] = useState("");
   const [selectedReport, setSelectedReport] = useState(null);
-  const [deleteTarget, setDeleteTarget] = useState(null);
 
   // The newest bills are what this screen is for; older ones stay a query away
   // instead of being shipped to the browser on every visit.
@@ -30,21 +27,6 @@ export default function Reports() {
     fetchReports().finally(() => setLoading(false));
   }, []);
 
-  const deleteReport = async (row) => {
-    setDeleteTarget(row);
-  };
-
-  const confirmDeleteReport = async (password) => {
-    const row = deleteTarget;
-    await API.delete(row.reportType === "restaurant" ? `/restaurant-orders/${row._id}` : `/sales/${row._id}`, {
-      data: { password },
-    });
-    if (selectedReport?._id === row._id) {
-      setSelectedReport(null);
-    }
-    setDeleteTarget(null);
-    fetchReports();
-  };
 
   const formatDate = (date) => {
     if (!date) return "N/A";
@@ -104,14 +86,14 @@ export default function Reports() {
     <div className="reports-page">
       <div className="page-head">
         <div>
-          <h1>Reports</h1>
+          <h1>Invoices</h1>
           <p>Restaurant orders, sales, customer names, totals and complete bill details.</p>
         </div>
       </div>
 
       <div className="panel">
         <div className="reports-toolbar">
-          <h2>All Orders & Sales</h2>
+          <h2>All Invoices</h2>
           <label>
             <Search size={18} />
             <input
@@ -132,19 +114,18 @@ export default function Reports() {
               <th>Price</th>
               <th>Status</th>
               <th>Info</th>
-              <th>Delete</th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan="8" className="report-loading-cell">
-                  <SkeletonTable rows={8} columns={8} />
+                <td colSpan="7" className="report-loading-cell">
+                  <SkeletonTable rows={8} columns={7} />
                 </td>
               </tr>
             ) : rows.length === 0 ? (
               <tr>
-                <td colSpan="8">No report found</td>
+                <td colSpan="7">No report found</td>
               </tr>
             ) : (
               rows.map((row) => (
@@ -159,11 +140,6 @@ export default function Reports() {
                     <button className="report-info-btn" onClick={() => setSelectedReport(row)}>
                       <Info size={15} />
                     </button>
-                  </td>
-                  <td>
-                    <AsyncButton className="report-delete-btn" onClick={() => deleteReport(row)}>
-                      <Trash2 size={15} />
-                    </AsyncButton>
                   </td>
                 </tr>
               ))
@@ -219,21 +195,10 @@ export default function Reports() {
               </tbody>
             </table>
 
-            <AsyncButton className="report-delete-detail-btn" onClick={() => deleteReport(selectedReport)}>
-              <Trash2 size={16} />
-              Delete This Record
-            </AsyncButton>
           </div>
         </div>
       )}
 
-      <DeleteConfirmModal
-        open={!!deleteTarget}
-        title={`Delete ${deleteTarget?.reportNo || "record"}?`}
-        message="Stock will be restored for its items. Enter login password to continue."
-        onCancel={() => setDeleteTarget(null)}
-        onConfirm={confirmDeleteReport}
-      />
     </div>
   );
 }

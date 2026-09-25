@@ -54,7 +54,7 @@ const branchLinks = [
   { to: "/table-barcodes", label: "Table QR", icon: QrCode },
   { to: "/menu-items", label: "Menu Items", icon: Utensils },
   { to: "/smart-inventory", label: "Smart Inventory", icon: Package },
-  { to: "/reports", label: "Reports", icon: ReceiptText },
+  { to: "/invoices", label: "Invoices", icon: ReceiptText },
   { to: "/customers", label: "Customers", icon: Users },
   { to: "/coupons", label: "Coupons", icon: BadgePercent },
   { to: "/rewards", label: "Rewards", icon: Gift },

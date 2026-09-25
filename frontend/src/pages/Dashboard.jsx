@@ -394,8 +394,9 @@ export default function Dashboard() {
   }, [orders]);
 
   const revenueTrend = useMemo(() => {
-    if (trendPeriod === "today") {
-      const today = new Date();
+    if (trendPeriod === "today" || trendPeriod === "yesterday") {
+      const day = new Date();
+      if (trendPeriod === "yesterday") day.setDate(day.getDate() - 1);
       const buckets = Array.from({ length: 24 }, (_, hour) => ({
         name: `${String(hour % 12 === 0 ? 12 : hour % 12).padStart(2, "0")} ${hour < 12 ? "AM" : "PM"}`,
         revenue: 0,
@@ -403,7 +404,7 @@ export default function Dashboard() {
       }));
       orders.forEach((order) => {
         const date = getOrderDate(order);
-        if (!isSameDay(date, today)) return;
+        if (!isSameDay(date, day)) return;
         const hour = date.getHours();
         buckets[hour].orders += 1;
         if (order.paymentStatus === "paid") buckets[hour].revenue += Number(order.grandTotal || 0);
@@ -428,13 +429,16 @@ export default function Dashboard() {
 
   const trendStrip = useMemo(() => {
     const now = new Date();
+    // The hourly views cover one whole day, so their strip sums the day; the
+    // day-by-day views instead report their most recent bucket.
+    const hourly = trendPeriod === "today" || trendPeriod === "yesterday";
     const todayRevenue = revenueTrend.length
-      ? trendPeriod === "today"
+      ? hourly
         ? revenueTrend.reduce((sum, row) => sum + row.revenue, 0)
         : revenueTrend[revenueTrend.length - 1]?.revenue || 0
       : 0;
     const todayOrders = revenueTrend.length
-      ? trendPeriod === "today"
+      ? hourly
         ? revenueTrend.reduce((sum, row) => sum + row.orders, 0)
         : revenueTrend[revenueTrend.length - 1]?.orders || 0
       : 0;
@@ -445,9 +449,9 @@ export default function Dashboard() {
     const peakOrdersRow = revenueTrend.reduce((best, row) => (row.orders > (best?.orders || 0) ? row : best), null);
 
     return {
-      todayLabel: trendPeriod === "today" ? "Today's Revenue" : "Latest Revenue",
+      todayLabel: hourly ? (trendPeriod === "today" ? "Today's Revenue" : "Yesterday's Revenue") : "Latest Revenue",
       todayRevenue,
-      todayOrdersLabel: trendPeriod === "today" ? "Today's Orders" : "Latest Orders",
+      todayOrdersLabel: hourly ? (trendPeriod === "today" ? "Today's Orders" : "Yesterday's Orders") : "Latest Orders",
       todayOrders,
       peakRevenue: peakRevenueRow?.revenue || 0,
       peakRevenueLabel: peakRevenueRow?.name || "-",
@@ -672,7 +676,30 @@ export default function Dashboard() {
       {loading ? (
         <SkeletonCards count={4} className="dashboard-skeleton-cards" />
       ) : (
-        <>
+      <div className="dashboard-stats-grid restaurant-kpi-grid four-col">
+        <Kpi title="Today Sale" value={money(stats.todaySale)} quiet />
+        <Kpi title="Yesterday Sale" value={money(stats.yesterdaySale)} quiet />
+        <Kpi title="Monthly Sale" value={money(stats.monthlySale)} quiet />
+        <Kpi title="Yearly Sale" value={money(stats.yearlySale)} quiet />
+      </div>
+      )}
+
+      <div className="dashboard-stats-grid restaurant-metric-grid">
+        <Kpi title="Total Customer" value={stats.totalCustomers} quiet />
+        <Kpi title="Total Items" value={stats.totalItems} quiet />
+        <Kpi title="Average Bill" value={money(stats.averageBill)} quiet />
+        <Kpi title="Cancelled Order" value={stats.cancelledOrders} quiet />
+        <Kpi title="Dine In Order" value={stats.dineInOrders} quiet />
+        <Kpi title="Delivery Order" value={stats.deliveryOrders} quiet />
+        <Kpi title="Total Delivery" value={stats.totalDelivery} quiet />
+        <Kpi title="Active Customer" value={stats.activeCustomers} quiet />
+        <Kpi title="Active Order" value={stats.activeOrders} quiet />
+        <Kpi title="Paid Order" value={paidOrders.length} quiet />
+      </div>
+
+      {loading ? (
+        <SkeletonCards count={4} className="dashboard-skeleton-cards" />
+      ) : (
       <div className="dashboard-stats-grid restaurant-kpi-grid four-col">
         <Kpi
           title="Total Revenue"
@@ -709,28 +736,7 @@ export default function Dashboard() {
           sparklineColor="#a855f7"
         />
       </div>
-
-      <div className="dashboard-stats-grid restaurant-kpi-grid four-col">
-        <Kpi title="Today Sale" value={money(stats.todaySale)} quiet />
-        <Kpi title="Yesterday Sale" value={money(stats.yesterdaySale)} quiet />
-        <Kpi title="Monthly Sale" value={money(stats.monthlySale)} quiet />
-        <Kpi title="Yearly Sale" value={money(stats.yearlySale)} quiet />
-      </div>
-        </>
       )}
-
-      <div className="dashboard-stats-grid restaurant-metric-grid">
-        <Kpi title="Total Customer" value={stats.totalCustomers} quiet />
-        <Kpi title="Total Items" value={stats.totalItems} quiet />
-        <Kpi title="Average Bill" value={money(stats.averageBill)} quiet />
-        <Kpi title="Cancelled Order" value={stats.cancelledOrders} quiet />
-        <Kpi title="Dine In Order" value={stats.dineInOrders} quiet />
-        <Kpi title="Delivery Order" value={stats.deliveryOrders} quiet />
-        <Kpi title="Total Delivery" value={stats.totalDelivery} quiet />
-        <Kpi title="Active Customer" value={stats.activeCustomers} quiet />
-        <Kpi title="Active Order" value={stats.activeOrders} quiet />
-        <Kpi title="Paid Order" value={paidOrders.length} quiet />
-      </div>
 
       <div className="dashboard-main-grid">
         <div className="dashboard-chart-box dashboard-trend-card">
@@ -739,6 +745,7 @@ export default function Dashboard() {
             <div className="dashboard-trend-tabs">
               {[
                 ["today", "Today"],
+                ["yesterday", "Yesterday"],
                 ["week", "This Week"],
                 ["month", "This Month"],
               ].map(([value, label]) => (
@@ -830,29 +837,7 @@ export default function Dashboard() {
             <p>No category data</p>
           ) : (
             <>
-              <div className="dashboard-category-donut">
-                <ResponsiveContainer width="100%" height={220}>
-                  <PieChart>
-                    <Pie
-                      data={categoryBreakdown.rows}
-                      dataKey="orders"
-                      nameKey="name"
-                      innerRadius="62%"
-                      outerRadius="88%"
-                      paddingAngle={2}
-                    >
-                      {categoryBreakdown.rows.map((row) => (
-                        <Cell key={row.name} fill={row.color} stroke="#fff" strokeWidth={2} />
-                      ))}
-                    </Pie>
-                    <Tooltip contentStyle={tooltipContentStyle} labelStyle={tooltipLabelStyle} />
-                  </PieChart>
-                </ResponsiveContainer>
-                <div className="dashboard-category-donut-center">
-                  <b>{categoryBreakdown.totalOrders}</b>
-                  <span>Total Items</span>
-                </div>
-              </div>
+              <CategoryDonut breakdown={categoryBreakdown} />
 
               <div className="dashboard-category-legend">
                 {categoryBreakdown.rows.map((row) => (
@@ -1233,6 +1218,34 @@ function ItemRanking({ items, ascending = false, moneyValue = false, preserveOrd
             />
           </BarChart>
         </ResponsiveContainer>
+      </div>
+    </div>
+  );
+}
+
+// Hovering a slice retitles the centre of the donut instead of opening a
+// floating tooltip, which used to be drawn on top of that centre label.
+function CategoryDonut({ breakdown }) {
+  const [selected, setSelected] = useState(null);
+  const active = breakdown.rows.find((row) => row.name === selected);
+
+  return (
+    <div className="dashboard-category-donut" onMouseLeave={() => setSelected(null)}>
+      <ResponsiveContainer width="100%" height={220}>
+        <PieChart>
+          <Pie data={breakdown.rows} dataKey="orders" nameKey="name" innerRadius="62%" outerRadius="88%" paddingAngle={2}
+            onMouseEnter={(entry) => setSelected(entry.name)} onClick={(entry) => setSelected(entry.name)}>
+            {breakdown.rows.map((row) => (
+              <Cell key={row.name} fill={row.color} stroke="#fff" strokeWidth={2}
+                opacity={!selected || selected === row.name ? 1 : 0.35} />
+            ))}
+          </Pie>
+        </PieChart>
+      </ResponsiveContainer>
+      <div className="dashboard-category-donut-center">
+        <b>{active ? active.orders : breakdown.totalOrders}</b>
+        <span>{active ? active.name : "Total Items"}</span>
+        {active && <span>{active.share.toFixed(0)}%</span>}
       </div>
     </div>
   );
