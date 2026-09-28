@@ -1,0 +1,793 @@
+[
+  {
+    "route": "/",
+    "label": "",
+    "class": "sidebar-toggle-btn",
+    "bg": "rgb(58, 11, 18)",
+    "color": "rgb(255, 255, 255)"
+  },
+  {
+    "route": "/",
+    "label": "Logout",
+    "class": "sidebar-logout",
+    "bg": "rgb(220, 38, 38)",
+    "color": "rgb(255, 255, 255)"
+  },
+  {
+    "route": "/",
+    "label": "Download Report",
+    "class": "dashboard-btn-ghost",
+    "bg": "rgb(255, 255, 255)",
+    "color": "rgb(51, 65, 85)"
+  },
+  {
+    "route": "/",
+    "label": "Add Item",
+    "class": "dashboard-btn-solid",
+    "bg": "rgb(132, 9, 30)",
+    "color": "rgb(255, 255, 255)"
+  },
+  {
+    "route": "/",
+    "label": "Today",
+    "class": "",
+    "bg": "rgba(0, 0, 0, 0)",
+    "color": "rgb(51, 65, 85)"
+  },
+  {
+    "route": "/",
+    "label": "Yesterday",
+    "class": "",
+    "bg": "rgba(0, 0, 0, 0)",
+    "color": "rgb(51, 65, 85)"
+  },
+  {
+    "route": "/",
+    "label": "This Week",
+    "class": "active",
+    "bg": "rgb(185, 28, 28)",
+    "color": "rgb(255, 255, 255)"
+  },
+  {
+    "route": "/",
+    "label": "This Month",
+    "class": "",
+    "bg": "rgba(0, 0, 0, 0)",
+    "color": "rgb(51, 65, 85)"
+  },
+  {
+    "route": "/restaurant-orders",
+    "label": "",
+    "class": "sidebar-toggle-btn",
+    "bg": "rgb(58, 11, 18)",
+    "color": "rgb(255, 255, 255)"
+  },
+  {
+    "route": "/restaurant-orders",
+    "label": "Logout",
+    "class": "sidebar-logout",
+    "bg": "rgb(220, 38, 38)",
+    "color": "rgb(255, 255, 255)"
+  },
+  {
+    "route": "/restaurant-orders",
+    "label": "New Order",
+    "class": "captain-new-order-btn",
+    "bg": "rgb(132, 9, 30)",
+    "color": "rgb(255, 255, 255)"
+  },
+  {
+    "route": "/restaurant-orders",
+    "label": "Refresh",
+    "class": "",
+    "bg": "rgb(255, 255, 255)",
+    "color": "rgb(2, 6, 23)"
+  },
+  {
+    "route": "/restaurant-orders",
+    "label": "Table View",
+    "class": "active",
+    "bg": "rgb(185, 28, 28)",
+    "color": "rgb(255, 255, 255)"
+  },
+  {
+    "route": "/restaurant-orders",
+    "label": "Running Orders",
+    "class": "",
+    "bg": "rgb(241, 245, 249)",
+    "color": "rgb(51, 65, 85)"
+  },
+  {
+    "route": "/restaurant-orders",
+    "label": "Takeaway & Delivery",
+    "class": "",
+    "bg": "rgb(241, 245, 249)",
+    "color": "rgb(51, 65, 85)"
+  },
+  {
+    "route": "/restaurant-orders",
+    "label": "Invoices",
+    "class": "",
+    "bg": "rgb(241, 245, 249)",
+    "color": "rgb(51, 65, 85)"
+  },
+  {
+    "route": "/restaurant-orders",
+    "label": "Table 1\nBlank",
+    "class": "restaurant-table-card blank",
+    "bg": "rgb(248, 250, 252)",
+    "color": "rgb(51, 65, 85)"
+  },
+  {
+    "route": "/restaurant-orders",
+    "label": "Table 2\nBlank",
+    "class": "restaurant-table-card blank",
+    "bg": "rgb(248, 250, 252)",
+    "color": "rgb(51, 65, 85)"
+  },
+  {
+    "route": "/restaurant-orders",
+    "label": "Table 3\nBlank",
+    "class": "restaurant-table-card blank",
+    "bg": "rgb(248, 250, 252)",
+    "color": "rgb(51, 65, 85)"
+  },
+  {
+    "route": "/restaurant-orders",
+    "label": "Table 4\nBlank",
+    "class": "restaurant-table-card blank",
+    "bg": "rgb(248, 250, 252)",
+    "color": "rgb(51, 65, 85)"
+  },
+  {
+    "route": "/restaurant-orders",
+    "label": "Table 5\nBlank",
+    "class": "restaurant-table-card blank",
+    "bg": "rgb(248, 250, 252)",
+    "color": "rgb(51, 65, 85)"
+  },
+  {
+    "route": "/restaurant-orders",
+    "label": "Table 6\nBlank",
+    "class": "restaurant-table-card blank",
+    "bg": "rgb(248, 250, 252)",
+    "color": "rgb(51, 65, 85)"
+  },
+  {
+    "route": "/restaurant-orders",
+    "label": "Table 7\nBlank",
+    "class": "restaurant-table-card blank",
+    "bg": "rgb(248, 250, 252)",
+    "color": "rgb(51, 65, 85)"
+  },
+  {
+    "route": "/restaurant-orders",
+    "label": "Table 8\nBlank",
+    "class": "restaurant-table-card blank",
+    "bg": "rgb(248, 250, 252)",
+    "color": "rgb(51, 65, 85)"
+  },
+  {
+    "route": "/restaurant-orders",
+    "label": "Table 9\nBlank",
+    "class": "restaurant-table-card blank",
+    "bg": "rgb(248, 250, 252)",
+    "color": "rgb(51, 65, 85)"
+  },
+  {
+    "route": "/restaurant-orders",
+    "label": "Table 10\nBlank",
+    "class": "restaurant-table-card blank",
+    "bg": "rgb(248, 250, 252)",
+    "color": "rgb(51, 65, 85)"
+  },
+  {
+    "route": "/restaurant-orders",
+    "label": "Table 11\nBlank",
+    "class": "restaurant-table-card blank",
+    "bg": "rgb(248, 250, 252)",
+    "color": "rgb(51, 65, 85)"
+  },
+  {
+    "route": "/restaurant-orders",
+    "label": "Table 12\nBlank",
+    "class": "restaurant-table-card blank",
+    "bg": "rgb(248, 250, 252)",
+    "color": "rgb(51, 65, 85)"
+  },
+  {
+    "route": "/restaurant-orders",
+    "label": "Table 13\nBlank",
+    "class": "restaurant-table-card blank",
+    "bg": "rgb(248, 250, 252)",
+    "color": "rgb(51, 65, 85)"
+  },
+  {
+    "route": "/restaurant-orders",
+    "label": "Table 14\nBlank",
+    "class": "restaurant-table-card blank",
+    "bg": "rgb(248, 250, 252)",
+    "color": "rgb(51, 65, 85)"
+  },
+  {
+    "route": "/restaurant-orders",
+    "label": "Table 15\nBlank",
+    "class": "restaurant-table-card blank",
+    "bg": "rgb(248, 250, 252)",
+    "color": "rgb(51, 65, 85)"
+  },
+  {
+    "route": "/restaurant-orders",
+    "label": "Table 16\nBlank",
+    "class": "restaurant-table-card blank",
+    "bg": "rgb(248, 250, 252)",
+    "color": "rgb(51, 65, 85)"
+  },
+  {
+    "route": "/restaurant-orders",
+    "label": "Table 17\nBlank",
+    "class": "restaurant-table-card blank",
+    "bg": "rgb(248, 250, 252)",
+    "color": "rgb(51, 65, 85)"
+  },
+  {
+    "route": "/restaurant-orders",
+    "label": "Table 18\nBlank",
+    "class": "restaurant-table-card blank",
+    "bg": "rgb(248, 250, 252)",
+    "color": "rgb(51, 65, 85)"
+  },
+  {
+    "route": "/restaurant-orders",
+    "label": "Table 19\nBlank",
+    "class": "restaurant-table-card blank",
+    "bg": "rgb(248, 250, 252)",
+    "color": "rgb(51, 65, 85)"
+  },
+  {
+    "route": "/restaurant-orders",
+    "label": "Table 20\nBlank",
+    "class": "restaurant-table-card blank",
+    "bg": "rgb(248, 250, 252)",
+    "color": "rgb(51, 65, 85)"
+  },
+  {
+    "route": "/restaurant-orders",
+    "label": "Table 21\nBlank",
+    "class": "restaurant-table-card blank",
+    "bg": "rgb(248, 250, 252)",
+    "color": "rgb(51, 65, 85)"
+  },
+  {
+    "route": "/restaurant-orders",
+    "label": "Table 22\nBlank",
+    "class": "restaurant-table-card blank",
+    "bg": "rgb(248, 250, 252)",
+    "color": "rgb(51, 65, 85)"
+  },
+  {
+    "route": "/restaurant-orders",
+    "label": "Table 23\nBlank",
+    "class": "restaurant-table-card blank",
+    "bg": "rgb(248, 250, 252)",
+    "color": "rgb(51, 65, 85)"
+  },
+  {
+    "route": "/restaurant-orders",
+    "label": "Table 24\nBlank",
+    "class": "restaurant-table-card blank",
+    "bg": "rgb(248, 250, 252)",
+    "color": "rgb(51, 65, 85)"
+  },
+  {
+    "route": "/restaurant-orders",
+    "label": "Table 25\nBlank",
+    "class": "restaurant-table-card blank",
+    "bg": "rgb(248, 250, 252)",
+    "color": "rgb(51, 65, 85)"
+  },
+  {
+    "route": "/restaurant-orders",
+    "label": "Table 26\nBlank",
+    "class": "restaurant-table-card blank",
+    "bg": "rgb(248, 250, 252)",
+    "color": "rgb(51, 65, 85)"
+  },
+  {
+    "route": "/restaurant-orders",
+    "label": "Table 27\nBlank",
+    "class": "restaurant-table-card blank",
+    "bg": "rgb(248, 250, 252)",
+    "color": "rgb(51, 65, 85)"
+  },
+  {
+    "route": "/restaurant-orders",
+    "label": "Table 28\nBlank",
+    "class": "restaurant-table-card blank",
+    "bg": "rgb(248, 250, 252)",
+    "color": "rgb(51, 65, 85)"
+  },
+  {
+    "route": "/menu-items",
+    "label": "",
+    "class": "sidebar-toggle-btn",
+    "bg": "rgb(58, 11, 18)",
+    "color": "rgb(255, 255, 255)"
+  },
+  {
+    "route": "/menu-items",
+    "label": "Logout",
+    "class": "sidebar-logout",
+    "bg": "rgb(220, 38, 38)",
+    "color": "rgb(255, 255, 255)"
+  },
+  {
+    "route": "/menu-items",
+    "label": "Download Template",
+    "class": "menu-upload-btn",
+    "bg": "rgba(255, 255, 255, 0.15)",
+    "color": "rgb(255, 255, 255)"
+  },
+  {
+    "route": "/menu-items",
+    "label": "Upload Items (CSV)",
+    "class": "menu-upload-btn",
+    "bg": "rgba(255, 255, 255, 0.15)",
+    "color": "rgb(255, 255, 255)"
+  },
+  {
+    "route": "/menu-items",
+    "label": "Add Category",
+    "class": "add-category-btn",
+    "bg": "rgb(255, 255, 255)",
+    "color": "rgb(2, 6, 23)"
+  },
+  {
+    "route": "/menu-items",
+    "label": "Add Offer",
+    "class": "add-category-btn",
+    "bg": "rgb(255, 255, 255)",
+    "color": "rgb(2, 6, 23)"
+  },
+  {
+    "route": "/menu-items",
+    "label": "+ Add Item",
+    "class": "add-product-main-btn",
+    "bg": "rgb(220, 38, 38)",
+    "color": "rgb(255, 255, 255)"
+  },
+  {
+    "route": "/menu-items",
+    "label": "",
+    "class": "",
+    "bg": "rgb(15, 23, 42)",
+    "color": "rgb(255, 255, 255)"
+  },
+  {
+    "route": "/menu-items",
+    "label": "",
+    "class": "",
+    "bg": "rgb(220, 38, 38)",
+    "color": "rgb(255, 255, 255)"
+  },
+  {
+    "route": "/purchase",
+    "label": "",
+    "class": "sidebar-toggle-btn",
+    "bg": "rgb(58, 11, 18)",
+    "color": "rgb(255, 255, 255)"
+  },
+  {
+    "route": "/purchase",
+    "label": "Logout",
+    "class": "sidebar-logout",
+    "bg": "rgb(220, 38, 38)",
+    "color": "rgb(255, 255, 255)"
+  },
+  {
+    "route": "/purchase",
+    "label": "+ New Vendor",
+    "class": "",
+    "bg": "rgb(220, 38, 38)",
+    "color": "rgb(255, 255, 255)"
+  },
+  {
+    "route": "/purchase",
+    "label": "+ New Product",
+    "class": "",
+    "bg": "rgb(220, 38, 38)",
+    "color": "rgb(255, 255, 255)"
+  },
+  {
+    "route": "/purchase",
+    "label": "Save GRN & Increase Stock",
+    "class": "",
+    "bg": "rgb(220, 38, 38)",
+    "color": "rgb(255, 255, 255)"
+  },
+  {
+    "route": "/grn-management",
+    "label": "",
+    "class": "sidebar-toggle-btn",
+    "bg": "rgb(58, 11, 18)",
+    "color": "rgb(255, 255, 255)"
+  },
+  {
+    "route": "/grn-management",
+    "label": "Logout",
+    "class": "sidebar-logout",
+    "bg": "rgb(220, 38, 38)",
+    "color": "rgb(255, 255, 255)"
+  },
+  {
+    "route": "/grn-management",
+    "label": "Previous",
+    "class": "",
+    "bg": "rgb(220, 38, 38)",
+    "color": "rgb(255, 255, 255)"
+  },
+  {
+    "route": "/grn-management",
+    "label": "Next",
+    "class": "",
+    "bg": "rgb(220, 38, 38)",
+    "color": "rgb(255, 255, 255)"
+  },
+  {
+    "route": "/invoices",
+    "label": "",
+    "class": "sidebar-toggle-btn",
+    "bg": "rgb(58, 11, 18)",
+    "color": "rgb(255, 255, 255)"
+  },
+  {
+    "route": "/invoices",
+    "label": "Logout",
+    "class": "sidebar-logout",
+    "bg": "rgb(220, 38, 38)",
+    "color": "rgb(255, 255, 255)"
+  },
+  {
+    "route": "/customers",
+    "label": "",
+    "class": "sidebar-toggle-btn",
+    "bg": "rgb(58, 11, 18)",
+    "color": "rgb(255, 255, 255)"
+  },
+  {
+    "route": "/customers",
+    "label": "Logout",
+    "class": "sidebar-logout",
+    "bg": "rgb(220, 38, 38)",
+    "color": "rgb(255, 255, 255)"
+  },
+  {
+    "route": "/customers",
+    "label": "Customer List",
+    "class": "active",
+    "bg": "rgb(185, 28, 28)",
+    "color": "rgb(255, 255, 255)"
+  },
+  {
+    "route": "/customers",
+    "label": "Segments & Loyalty",
+    "class": "",
+    "bg": "rgb(241, 245, 249)",
+    "color": "rgb(51, 65, 85)"
+  },
+  {
+    "route": "/customers",
+    "label": "Search",
+    "class": "",
+    "bg": "rgb(220, 38, 38)",
+    "color": "rgb(255, 255, 255)"
+  },
+  {
+    "route": "/customers",
+    "label": "+ Add Customer",
+    "class": "add-customer-btn",
+    "bg": "rgb(220, 38, 38)",
+    "color": "rgb(255, 255, 255)"
+  },
+  {
+    "route": "/customers",
+    "label": "Previous",
+    "class": "",
+    "bg": "rgb(220, 38, 38)",
+    "color": "rgb(255, 255, 255)"
+  },
+  {
+    "route": "/customers",
+    "label": "Next",
+    "class": "",
+    "bg": "rgb(220, 38, 38)",
+    "color": "rgb(255, 255, 255)"
+  },
+  {
+    "route": "/vendors",
+    "label": "",
+    "class": "sidebar-toggle-btn",
+    "bg": "rgb(58, 11, 18)",
+    "color": "rgb(255, 255, 255)"
+  },
+  {
+    "route": "/vendors",
+    "label": "Logout",
+    "class": "sidebar-logout",
+    "bg": "rgb(220, 38, 38)",
+    "color": "rgb(255, 255, 255)"
+  },
+  {
+    "route": "/vendors",
+    "label": "Add Vendor",
+    "class": "",
+    "bg": "rgb(220, 38, 38)",
+    "color": "rgb(255, 255, 255)"
+  },
+  {
+    "route": "/coupons",
+    "label": "",
+    "class": "sidebar-toggle-btn",
+    "bg": "rgb(58, 11, 18)",
+    "color": "rgb(255, 255, 255)"
+  },
+  {
+    "route": "/coupons",
+    "label": "Logout",
+    "class": "sidebar-logout",
+    "bg": "rgb(220, 38, 38)",
+    "color": "rgb(255, 255, 255)"
+  },
+  {
+    "route": "/coupons",
+    "label": "Create Offer",
+    "class": "",
+    "bg": "rgb(124, 40, 68)",
+    "color": "rgb(255, 255, 255)"
+  },
+  {
+    "route": "/rewards",
+    "label": "",
+    "class": "sidebar-toggle-btn",
+    "bg": "rgb(58, 11, 18)",
+    "color": "rgb(255, 255, 255)"
+  },
+  {
+    "route": "/rewards",
+    "label": "Logout",
+    "class": "sidebar-logout",
+    "bg": "rgb(220, 38, 38)",
+    "color": "rgb(255, 255, 255)"
+  },
+  {
+    "route": "/rewards",
+    "label": "Create Reward Tier",
+    "class": "",
+    "bg": "rgb(220, 38, 38)",
+    "color": "rgb(255, 255, 255)"
+  },
+  {
+    "route": "/settings",
+    "label": "",
+    "class": "sidebar-toggle-btn",
+    "bg": "rgb(58, 11, 18)",
+    "color": "rgb(255, 255, 255)"
+  },
+  {
+    "route": "/settings",
+    "label": "Logout",
+    "class": "sidebar-logout",
+    "bg": "rgb(220, 38, 38)",
+    "color": "rgb(255, 255, 255)"
+  },
+  {
+    "route": "/settings",
+    "label": "Security",
+    "class": "",
+    "bg": "rgba(0, 0, 0, 0)",
+    "color": "rgb(100, 116, 139)"
+  },
+  {
+    "route": "/tables",
+    "label": "",
+    "class": "sidebar-toggle-btn",
+    "bg": "rgb(58, 11, 18)",
+    "color": "rgb(255, 255, 255)"
+  },
+  {
+    "route": "/tables",
+    "label": "Logout",
+    "class": "sidebar-logout",
+    "bg": "rgb(220, 38, 38)",
+    "color": "rgb(255, 255, 255)"
+  },
+  {
+    "route": "/tables",
+    "label": "Generate Tables",
+    "class": "",
+    "bg": "rgb(220, 38, 38)",
+    "color": "rgb(255, 255, 255)"
+  },
+  {
+    "route": "/tables",
+    "label": "Add Table",
+    "class": "",
+    "bg": "rgb(220, 38, 38)",
+    "color": "rgb(255, 255, 255)"
+  },
+  {
+    "route": "/kds",
+    "label": "",
+    "class": "sidebar-toggle-btn",
+    "bg": "rgb(58, 11, 18)",
+    "color": "rgb(255, 255, 255)"
+  },
+  {
+    "route": "/kds",
+    "label": "Logout",
+    "class": "sidebar-logout",
+    "bg": "rgb(220, 38, 38)",
+    "color": "rgb(255, 255, 255)"
+  },
+  {
+    "route": "/smart-inventory",
+    "label": "",
+    "class": "sidebar-toggle-btn",
+    "bg": "rgb(58, 11, 18)",
+    "color": "rgb(255, 255, 255)"
+  },
+  {
+    "route": "/smart-inventory",
+    "label": "Logout",
+    "class": "sidebar-logout",
+    "bg": "rgb(220, 38, 38)",
+    "color": "rgb(255, 255, 255)"
+  },
+  {
+    "route": "/smart-inventory",
+    "label": "Add raw material",
+    "class": "bm-btn bm-btn-primary",
+    "bg": "rgb(132, 9, 30)",
+    "color": "rgb(255, 255, 255)"
+  },
+  {
+    "route": "/smart-inventory",
+    "label": "Stock",
+    "class": "active",
+    "bg": "rgb(255, 255, 255)",
+    "color": "rgb(132, 9, 30)"
+  },
+  {
+    "route": "/smart-inventory",
+    "label": "Recipes",
+    "class": "",
+    "bg": "rgba(0, 0, 0, 0)",
+    "color": "rgb(71, 85, 105)"
+  },
+  {
+    "route": "/smart-inventory",
+    "label": "Food Cost",
+    "class": "",
+    "bg": "rgba(0, 0, 0, 0)",
+    "color": "rgb(71, 85, 105)"
+  },
+  {
+    "route": "/smart-inventory",
+    "label": "Stock Ledger",
+    "class": "",
+    "bg": "rgba(0, 0, 0, 0)",
+    "color": "rgb(71, 85, 105)"
+  },
+  {
+    "route": "/smart-inventory",
+    "label": "Reorder",
+    "class": "",
+    "bg": "rgba(0, 0, 0, 0)",
+    "color": "rgb(71, 85, 105)"
+  },
+  {
+    "route": "/order-management",
+    "label": "",
+    "class": "sidebar-toggle-btn",
+    "bg": "rgb(58, 11, 18)",
+    "color": "rgb(255, 255, 255)"
+  },
+  {
+    "route": "/order-management",
+    "label": "Logout",
+    "class": "sidebar-logout",
+    "bg": "rgb(220, 38, 38)",
+    "color": "rgb(255, 255, 255)"
+  },
+  {
+    "route": "/order-management",
+    "label": "Running orders",
+    "class": "active",
+    "bg": "rgb(185, 28, 28)",
+    "color": "rgb(255, 255, 255)"
+  },
+  {
+    "route": "/order-management",
+    "label": "Order history",
+    "class": "",
+    "bg": "rgb(241, 245, 249)",
+    "color": "rgb(51, 65, 85)"
+  },
+  {
+    "route": "/menu/1",
+    "label": "Login",
+    "class": "foodora-login-chip",
+    "bg": "rgb(255, 255, 255)",
+    "color": "rgb(132, 9, 30)"
+  },
+  {
+    "route": "/menu/1",
+    "label": "Order Now",
+    "class": "",
+    "bg": "rgb(132, 9, 30)",
+    "color": "rgb(255, 255, 255)"
+  },
+  {
+    "route": "/menu/1",
+    "label": "All",
+    "class": "active",
+    "bg": "rgb(132, 9, 30)",
+    "color": "rgb(255, 255, 255)"
+  },
+  {
+    "route": "/menu/1",
+    "label": "Veg",
+    "class": "",
+    "bg": "rgb(255, 255, 255)",
+    "color": "rgb(30, 41, 59)"
+  },
+  {
+    "route": "/menu/1",
+    "label": "Non Veg",
+    "class": "",
+    "bg": "rgb(255, 255, 255)",
+    "color": "rgb(30, 41, 59)"
+  },
+  {
+    "route": "/menu/1",
+    "label": "All",
+    "class": "active",
+    "bg": "rgb(132, 9, 30)",
+    "color": "rgb(255, 255, 255)"
+  },
+  {
+    "route": "/menu/1",
+    "label": "Starters",
+    "class": "",
+    "bg": "rgb(255, 255, 255)",
+    "color": "rgb(255, 255, 255)"
+  },
+  {
+    "route": "/menu/1",
+    "label": "Add Paneer Tikka to favorites",
+    "class": "foodora-favorite-btn ",
+    "bg": "rgba(255, 255, 255, 0.95)",
+    "color": "rgb(100, 116, 139)"
+  },
+  {
+    "route": "/menu/1",
+    "label": "Paneer Tikka",
+    "class": "menu-item-title",
+    "bg": "rgba(0, 0, 0, 0)",
+    "color": "rgb(2, 6, 23)"
+  },
+  {
+    "route": "/menu/1",
+    "label": "Add Paneer Tikka",
+    "class": "menu-add-button",
+    "bg": "rgb(132, 9, 30)",
+    "color": "rgb(255, 255, 255)"
+  },
+  {
+    "route": "/menu/1",
+    "label": "Continue",
+    "class": "",
+    "bg": "rgba(132, 9, 30, 0.35)",
+    "color": "rgb(255, 255, 255)"
+  }
+]

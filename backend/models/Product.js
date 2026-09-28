@@ -29,6 +29,10 @@ const productSchema = new mongoose.Schema(
       default: "veg",
     },
     description: String,
+    // "What's inside" chips on the customer menu (e.g. ["Paneer", "Butter", "Cream"]).
+    ingredients: { type: [String], default: [] },
+    // Portion shown to guests, e.g. "300 ml" or "4 pcs · approx 250 g".
+    servingSize: { type: String, default: "" },
     spiceLevel: {
       type: String,
       enum: ["mild", "medium", "spicy"],

@@ -1,11 +1,12 @@
 import CustomerRewards from "../components/CustomerRewards";
 import MenuItemDialog from "../components/MenuItemDialog";
 import AsyncButton from "../components/AsyncButton";
-import { useEffect, useMemo, useRef, useState } from "react";
-import { BadgePercent, CheckCircle2, ChefHat, Clock, Flame, Gift, Heart, History, Leaf, LogOut, Mail, MapPin, Minus, PackageCheck, PartyPopper, Plus, Search, ShieldCheck, ShoppingBag, Sparkles, Star, UserCircle2, Utensils, X } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { BadgePercent, CheckCircle2, ChefHat, ChevronLeft, ChevronRight, Clock, Flame, Gift, Heart, History, Leaf, LogOut, Mail, MapPin, Minus, PackageCheck, Plus, Search, ShieldCheck, ShoppingBag, Sparkles, Star, UserCircle2, Utensils, X } from "lucide-react";
 import { useParams } from "react-router-dom";
 import API from "../api/axios";
 import { categoryImageSrc, hasProductImage, productImageSrc } from "../api/productImage";
+import { generatedCategoryImage } from "../data/categoryFoodImages";
 import PhoneInput from "../components/PhoneInput";
 import PublicLottie from "../components/PublicLottie";
 import { ToastViewport, useToast } from "../components/Toast";
@@ -29,6 +30,26 @@ const loadStoredCustomerAuth = () => {
 // that lifetime, and keying by branch + table keeps separate QR tables (and the
 // same table number at two branches) from mixing carts.
 const cartStorageKey = (cartKey) => `bhojan_cart_${cartKey}`;
+
+// Fixed (not random) so the burst looks the same on every render.
+const COUPON_CONFETTI = [
+  ["8%", "#fbbf24", "0s", "-40px", "-18deg"], ["18%", "#ffffff", "0.08s", "-60px", "24deg"],
+  ["27%", "#f472b6", "0.16s", "-30px", "-32deg"], ["36%", "#34d399", "0.04s", "-70px", "40deg"],
+  ["45%", "#fbbf24", "0.2s", "-50px", "-12deg"], ["54%", "#ffffff", "0.12s", "-80px", "28deg"],
+  ["63%", "#f472b6", "0.02s", "-45px", "-36deg"], ["72%", "#34d399", "0.18s", "-65px", "18deg"],
+  ["81%", "#fbbf24", "0.1s", "-35px", "-24deg"], ["90%", "#ffffff", "0.06s", "-55px", "34deg"],
+].map(([left, color, delay, rise, spin]) => ({ left, background: color, animationDelay: delay, "--rise": rise, "--spin": spin }));
+
+const orderHistoryMeta = (order) => {
+  const type =
+    order.orderType === "delivery" ? "Delivery"
+    : order.orderType === "takeaway" ? "Takeaway"
+    : `Dine-in${order.tableNo ? ` · Table ${order.tableNo}` : ""}`;
+  const date = order.createdAt
+    ? new Date(order.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short" })
+    : "";
+  return [type, date].filter(Boolean).join(" · ");
+};
 
 const loadStoredCart = (cartKey) => {
   try {
@@ -80,7 +101,15 @@ export default function CustomerMenu() {
   const [itemRatings, setItemRatings] = useState({});
   const [ratingSubmitted, setRatingSubmitted] = useState(false);
   const [submittingRating, setSubmittingRating] = useState(false);
+  // Shown inside the coupon box (with a shake) when a code is rejected.
+  const [couponError, setCouponError] = useState("");
+  // Order-level review: food, restaurant and (delivery orders) the delivery.
+  const [orderReview, setOrderReview] = useState({ food: 0, restaurant: 0, delivery: 0, comment: "" });
   const cartPanelRef = useRef(null);
+  const categoryRowRef = useRef(null);
+  const menuBrowserRef = useRef(null);
+  const trackingRef = useRef(null);
+  const [categoryScroll, setCategoryScroll] = useState({ left: false, right: false });
   const { toast, showToast } = useToast();
 
   // Email verification state for delivery checkout.
@@ -221,24 +250,70 @@ export default function CustomerMenu() {
     [products]
   );
 
+  // "My Orders" row -> open that order in the live tracking panel (status
+  // timeline, items, and the review box once it is served).
+  const openOrderStatus = async (orderId) => {
+    try {
+      const res = await API.get(`/restaurant-orders/${orderId}`);
+      setOrderPlaced(res.data.order);
+      setItemRatings({});
+      setOrderReview({ food: 0, restaurant: 0, delivery: 0, comment: "" });
+      setRatingSubmitted(false);
+      setProfileModalOpen(false);
+      window.setTimeout(() => trackingRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 80);
+    } catch (error) {
+      showToast(error.response?.data?.message || "Could not open this order");
+    }
+  };
+
   const submitRatings = async () => {
+    const isDeliveryOrder = orderPlaced.orderType === "delivery";
+    if (!orderReview.food || !orderReview.restaurant || (isDeliveryOrder && !orderReview.delivery)) {
+      return showToast(
+        isDeliveryOrder ? "Please rate the order, the restaurant and the delivery" : "Please rate the order and the restaurant",
+        "warning"
+      );
+    }
     const ratings = Object.entries(itemRatings)
       .filter(([, stars]) => stars > 0)
       .map(([productId, stars]) => ({ productId, stars }));
 
-    if (ratings.length === 0) return showToast("Tap the stars to rate at least one item", "warning");
-
     setSubmittingRating(true);
     try {
-      await API.post(`/restaurant-orders/${orderPlaced._id}/rate`, { ratings });
+      await API.post(`/restaurant-orders/${orderPlaced._id}/review`, {
+        foodStars: orderReview.food,
+        restaurantStars: orderReview.restaurant,
+        deliveryStars: isDeliveryOrder ? orderReview.delivery : undefined,
+        comment: orderReview.comment,
+      });
+      // Per-dish stars are optional extras on top of the order review.
+      if (ratings.length > 0) await API.post(`/restaurant-orders/${orderPlaced._id}/rate`, { ratings });
       setRatingSubmitted(true);
-      showToast("Thanks for rating your order!", "success");
+      showToast("Thanks for your review!", "success");
     } catch (error) {
-      showToast(error.response?.data?.message || "Could not submit rating");
+      showToast(error.response?.data?.message || "Could not submit your review");
     } finally {
       setSubmittingRating(false);
     }
   };
+
+  const renderStarPicker = (value, onPick, label) => (
+    <div className="customer-rating-stars" role="radiogroup" aria-label={label}>
+      {[1, 2, 3, 4, 5].map((star) => (
+        <button
+          key={star}
+          type="button"
+          role="radio"
+          aria-checked={value === star}
+          aria-label={`${star} star${star > 1 ? "s" : ""}`}
+          className={value >= star ? "star-active" : ""}
+          onClick={() => onPick(star)}
+        >
+          <Star size={22} fill={value >= star ? "currentColor" : "none"} />
+        </button>
+      ))}
+    </div>
+  );
 
   const categoryStats = useMemo(() => {
     const stats = new Map();
@@ -258,6 +333,43 @@ export default function CustomerMenu() {
       ...Array.from(stats.entries()).map(([name, count]) => ({ name, count })),
     ];
   }, [activeFoodType, products]);
+
+  const updateCategoryScroll = useCallback(() => {
+    const row = categoryRowRef.current;
+    if (!row) return;
+    setCategoryScroll({
+      left: row.scrollLeft > 2,
+      right: row.scrollLeft + row.clientWidth < row.scrollWidth - 2,
+    });
+  }, []);
+
+  useEffect(() => {
+    const row = categoryRowRef.current;
+    if (!row) return;
+    const frame = requestAnimationFrame(updateCategoryScroll);
+    const observer = new ResizeObserver(updateCategoryScroll);
+    observer.observe(row);
+    return () => {
+      cancelAnimationFrame(frame);
+      observer.disconnect();
+    };
+  }, [categoryStats, updateCategoryScroll]);
+
+  const scrollCategories = (direction) => {
+    const row = categoryRowRef.current;
+    row?.scrollBy({ left: direction * Math.max(140, row.clientWidth * 0.7), behavior: "smooth" });
+  };
+
+  const scrollToCart = () => {
+    cartPanelRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
+  const openCategory = (categoryName) => {
+    setActiveCategory(categoryName);
+    window.requestAnimationFrame(() => {
+      menuBrowserRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  };
 
   useEffect(() => {
     if (activeCategory === "All") return;
@@ -303,7 +415,9 @@ export default function CustomerMenu() {
   }, [visibleProducts]);
 
   const updateCart = (product, change, selection) => {
-    if (change > 0 && !selection) { setSelectedProduct(product); return; }
+    // Only a brand-new line needs the options dialog; "+" on an item already in the
+    // cart (product.fromCart) just bumps that line's qty with the same size/add-ons.
+    if (change > 0 && !selection && !product.fromCart) { setSelectedProduct(product); return; }
     const lineKey = selection ? [product._id, selection.variantId, ...selection.addonIds.slice().sort()].join("|") : product.lineKey;
     if (orderBusy.current) return;
     couponRequest.current += 1;
@@ -539,9 +653,13 @@ export default function CustomerMenu() {
 
   const fetchOrderHistory = async () => {
     if (!customerAuth.token) return;
-    setHistoryOpen((open) => !open);
-    if (orderHistory) return;
+    if (historyOpen) {
+      setHistoryOpen(false);
+      return;
+    }
+    setHistoryOpen(true);
 
+    // Refetch on every open so statuses (preparing -> served) are never stale.
     try {
       const res = await API.get("/customer-auth/me/orders", {
         headers: { Authorization: `Bearer ${customerAuth.token}` },
@@ -603,12 +721,14 @@ export default function CustomerMenu() {
 
       setOrderPlaced(res.data.order);
       setItemRatings({});
+      setOrderReview({ food: 0, restaurant: 0, delivery: 0, comment: "" });
       setRatingSubmitted(false);
       setCart([]);
       setCheckoutStep("cart");
       setCoupon(null);
       setCouponCode("");
       setOrderHistory(null);
+      setHistoryOpen(false);
       // A logged-in customer keeps their name/phone/email/address prefilled for
       // next time; a guest gets a clean form.
       if (!customerAuth.token) {
@@ -633,7 +753,11 @@ export default function CustomerMenu() {
     if (couponBusy.current || orderBusy.current) return;
     const code = selectedCode.trim().toUpperCase();
     setCouponCode(code);
-    if (!code) return showToast("Enter a coupon code", "warning");
+    setCouponError("");
+    if (!code) {
+      setCouponError("Enter a coupon code");
+      return showToast("Enter a coupon code", "warning");
+    }
     if (grandTotal <= 0) return showToast("Add an item before applying a coupon", "warning");
 
     const requestId = ++couponRequest.current;
@@ -656,7 +780,9 @@ export default function CustomerMenu() {
     } catch (error) {
       if (requestId !== couponRequest.current) return;
       setCoupon(null);
-      showToast(error.response?.data?.message || "Coupon could not be applied");
+      const message = error.response?.data?.message || "Coupon could not be applied";
+      setCouponError(message);
+      showToast(message);
     } finally {
       if (requestId === couponRequest.current) {
         couponBusy.current = false;
@@ -672,19 +798,36 @@ export default function CustomerMenu() {
     setApplyingCoupon(false);
     setCoupon(null);
     setCouponCode("");
+    setCouponError("");
   };
 
   const startCheckout = () => {
     if (cart.length === 0) return showToast("Please add a menu item first", "warning");
     setCheckoutStep("details");
-    window.setTimeout(() => {
-      cartPanelRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-    }, 50);
   };
+
+  // Checkout popup: Esc closes it (unless the order is being sent) and the page
+  // behind it stops scrolling.
+  useEffect(() => {
+    if (checkoutStep !== "details") return undefined;
+    const overflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const onKey = (event) => {
+      if (event.key === "Escape" && !orderBusy.current) setCheckoutStep("cart");
+    };
+    window.addEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = overflow;
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [checkoutStep]);
 
   const renderProductCard = (product, index) => {
     const matchingLines = cart.filter((item) => item.productId === product._id);
     const cartItem = matchingLines.length ? { qty: matchingLines.reduce((sum, item) => sum + item.qty, 0) } : null;
+    // The card's +/- act on the most recently added line of this product.
+    const lastLine = matchingLines[matchingLines.length - 1];
+    const cartLineRef = lastLine ? { ...product, lineKey: lastLine.lineKey, fromCart: true } : product;
     const displayPrice = product.variants?.length ? Math.min(...product.variants.map((v) => Number(v.price))) : Number(product.mrp || product.sellingPrice || 0);
     const hue = ["#84091e", "#b3132c", "#7c3aed", "#0f766e", "#b45309"][index % 5];
 
@@ -730,7 +873,9 @@ export default function CustomerMenu() {
             </span>
           )}
           {product.description && <p>{product.description}</p>}
-          {product.variants?.length > 0 && <small>Choose size ? Starts from</small>}
+          {product.variants?.length > 0
+            ? <small className="foodora-card-serving">{product.variants.length} sizes · starts from</small>
+            : product.servingSize && <small className="foodora-card-serving">{product.servingSize}</small>}
           <div className="foodora-card-foot">
             {Number(product.offerPercent || 0) > 0 ? (
               <span className="foodora-card-price">
@@ -743,11 +888,11 @@ export default function CustomerMenu() {
             <div className="menu-add-control">
               {cartItem ? (
                 <>
-                  <button onClick={() => updateCart(product, -1)} title="Remove one">
+                  <button onClick={() => updateCart(cartLineRef, -1)} title="Remove one">
                     <Minus size={16} />
                   </button>
                   <b>{cartItem.qty}</b>
-                  <button onClick={() => updateCart(product, 1)} title="Add one">
+                  <button onClick={() => updateCart(cartLineRef, 1)} title="Add one">
                     <Plus size={16} />
                   </button>
                 </>
@@ -795,9 +940,10 @@ export default function CustomerMenu() {
   };
 
   return (
-    <div className={`customer-menu-page ${checkoutStep === "details" ? "checkout-open" : ""}`}>
+    <div className="customer-menu-page">
       {selectedProduct && <MenuItemDialog product={selectedProduct} onClose={() => setSelectedProduct(null)} onAdd={(selection) => { updateCart(selectedProduct, 1, selection); setSelectedProduct(null); }} />}
-      <ToastViewport toast={toast} />
+      {/* While the checkout popup is open its own notice bar shows toasts instead. */}
+      {checkoutStep !== "details" && <ToastViewport toast={toast} />}
 
       {closedMessage && (
         <div className="customer-page-preloader" role="alert">
@@ -837,10 +983,15 @@ export default function CustomerMenu() {
                 </button>
               )}
 
-              <div className="foodora-cart-chip">
+              <button
+                type="button"
+                className="foodora-cart-chip"
+                onClick={scrollToCart}
+                aria-label={`View your order (${cartQty} items)`}
+              >
                 <ShoppingBag size={18} />
                 <b>{cartQty}</b>
-              </div>
+              </button>
             </div>
           </div>
 
@@ -855,27 +1006,16 @@ export default function CustomerMenu() {
         </div>
       </header>
 
-      <section className="foodora-hero">
-        <div className="foodora-hero-text">
-          <h1>
-            {isDelivery ? "Delicious food," : "Delicious food,"} <span>{isDelivery ? "delivered fast" : "served fresh"}</span>
-          </h1>
-          <p>{isDelivery ? "Place your delivery order from this QR. Delivery details are required." : "Select items from the fresh menu. Your order will go directly to the counter."}</p>
-          <button type="button" onClick={startCheckout}>
-            Order Now <ShoppingBag size={16} />
-          </button>
-        </div>
-        <div className="foodora-hero-deal">
-          <span><Sparkles size={14} /> Your cart</span>
-          <strong>₹{payableTotal.toFixed(2)}</strong>
-          <p>{cartQty} items added</p>
-        </div>
-      </section>
-
-      {offers.length > 0 && (
+      {(offers.length > 0 || menuOffers.length > 0 || offerProducts.length > 0) && (
         <section className="menu-top-offers" aria-label="Top Offers">
-          <div className="menu-top-offers-heading"><span /><h2>Top Offers</h2><span /></div>
-          <p className="menu-top-offers-intro">Fresh deals from {branchName || "your restaurant"}, available today.</p>
+          <div className="menu-top-offers-head">
+            <span className="menu-top-offers-icon"><BadgePercent size={20} /></span>
+            <div>
+              <h2>Top Offers</h2>
+              <p>Fresh deals from {branchName || "your restaurant"}, available today.</p>
+            </div>
+            <span className="menu-top-offers-count">{offers.length + menuOffers.length + offerProducts.length} deals</span>
+          </div>
           <div className="menu-top-offers-row">
             {offers.map((offer) => (
               <article className="menu-top-offer" key={offer.code}>
@@ -892,17 +1032,6 @@ export default function CustomerMenu() {
                 </button>
               </article>
             ))}
-          </div>
-        </section>
-      )}
-
-      {(offerProducts.length > 0 || menuOffers.length > 0) && (
-        <section className="foodora-offers-strip">
-          <div className="foodora-offers-head">
-            <BadgePercent size={16} />
-            <h2>Offers for you</h2>
-          </div>
-          <div className="foodora-offers-row">
             {menuOffers.map((offer) => {
               const product = products.find((row) => String(row._id) === String(offer.productId));
               return (
@@ -927,37 +1056,42 @@ export default function CustomerMenu() {
                 </button>
               );
             })}
-            {offerProducts.map((product) => (
-              <button
-                key={product._id}
-                type="button"
-                className="foodora-offer-card"
-                onClick={() => {
-                  setActiveCategory(product.category || "Recommended");
-                  setSearch("");
-                }}
-              >
-                <div className="foodora-offer-card-media">
+            {offerProducts.map((product) => {
+              const mrp = Number(product.mrp || product.sellingPrice || 0);
+              const price = mrp * (1 - Number(product.offerPercent || 0) / 100);
+              return (
+                <button
+                  key={product._id}
+                  type="button"
+                  className="menu-dish-offer"
+                  onClick={() => setSelectedProduct(product)}
+                  aria-label={`${product.name}, ${product.offerPercent}% off -- view dish`}
+                >
                   {hasProductImage(product) ? (
-                    <img src={productImageSrc(product)} alt={product.name} loading="lazy" />
+                    <img src={productImageSrc(product)} alt="" loading="lazy" />
                   ) : (
-                    <span>{product.name?.slice(0, 1) || "M"}</span>
+                    <span className="menu-dish-offer-fallback">{product.name?.slice(0, 1) || "M"}</span>
                   )}
-                  <b>{product.offerPercent}% OFF</b>
-                </div>
-                <span>{product.name}</span>
-                <small>
-                  ₹{(Number(product.mrp || product.sellingPrice || 0) * (1 - product.offerPercent / 100)).toFixed(0)}{" "}
-                  <s>₹{Number(product.mrp || product.sellingPrice || 0).toFixed(0)}</s>
-                </small>
-              </button>
-            ))}
+                  <span className="menu-dish-offer-tag">{product.offerPercent}% OFF</span>
+                  <span className="menu-dish-offer-body">
+                    <b>{product.name}</b>
+                    <span className="menu-dish-offer-price">
+                      ₹{price.toFixed(0)} <s>₹{mrp.toFixed(0)}</s>
+                    </span>
+                    <span className="menu-dish-offer-cta">Add to order <Plus size={14} /></span>
+                  </span>
+                </button>
+              );
+            })}
           </div>
         </section>
       )}
 
       {orderPlaced && (
-        <section className={`order-tracking-panel ${orderPlaced.status}`}>
+        <section className={`order-tracking-panel ${orderPlaced.status}`} ref={trackingRef}>
+          <button type="button" className="order-tracking-close" aria-label="Close order status" onClick={() => setOrderPlaced(null)}>
+            <X size={18} />
+          </button>
           <div className="order-placed-animation">
             <PublicLottie path="/order_placed.json" loop={false} />
           </div>
@@ -1012,28 +1146,44 @@ export default function CustomerMenu() {
                 <p className="rating-thanks"><CheckCircle2 size={16} /> Thanks for rating your order!</p>
               ) : (
                 <>
-                  <h3>Rate your order</h3>
+                  <h3>{orderPlaced.orderType === "delivery" ? "How was your delivery?" : "How was your order?"}</h3>
+                  <p className="customer-review-intro">Your feedback helps us serve you better. No login needed.</p>
+
+                  <div className="customer-review-rows">
+                    {[
+                      ["food", "Order & food", "Taste, quantity and freshness"],
+                      ["restaurant", "Restaurant", "Service, packing and hygiene"],
+                      ...(orderPlaced.orderType === "delivery" ? [["delivery", "Delivery partner", "Speed and behaviour"]] : []),
+                    ].map(([key, title, hint]) => (
+                      <div className="customer-review-row" key={key}>
+                        <div>
+                          <b>{title}</b>
+                          <small>{hint}</small>
+                        </div>
+                        {renderStarPicker(orderReview[key], (star) => setOrderReview((prev) => ({ ...prev, [key]: star })), `Rate ${title}`)}
+                      </div>
+                    ))}
+                  </div>
+
+                  <textarea
+                    className="customer-review-comment"
+                    placeholder="Anything you'd like to tell us? (optional)"
+                    maxLength={500}
+                    value={orderReview.comment}
+                    onChange={(e) => setOrderReview((prev) => ({ ...prev, comment: e.target.value }))}
+                  />
+
+                  <p className="customer-review-subhead">Rate the dishes (optional)</p>
                   <div className="customer-rating-items">
                     {orderPlaced.items?.map((item, index) => (
                       <div className="customer-rating-row" key={`${item.productId}-${index}`}>
-                        <span>{item.name}<button type="button" aria-label={`Remove one ${item.name}`} onClick={() => updateCart({ _id: item.productId, lineKey: item.lineKey }, -1)}><Minus size={14} /></button></span>
-                        <div className="customer-rating-stars">
-                          {[1, 2, 3, 4, 5].map((star) => (
-                            <button
-                              key={star}
-                              type="button"
-                              className={(itemRatings[item.productId] || 0) >= star ? "star-active" : ""}
-                              onClick={() => setItemRatings((prev) => ({ ...prev, [item.productId]: star }))}
-                            >
-                              <Star size={18} fill={(itemRatings[item.productId] || 0) >= star ? "currentColor" : "none"} />
-                            </button>
-                          ))}
-                        </div>
+                        <span>{item.name}</span>
+                        {renderStarPicker(itemRatings[item.productId] || 0, (star) => setItemRatings((prev) => ({ ...prev, [item.productId]: star })), `Rate ${item.name}`)}
                       </div>
                     ))}
                   </div>
                   <AsyncButton type="button" className="submit-rating-btn" disabled={submittingRating} onClick={submitRatings}>
-                    {submittingRating ? "Submitting..." : "Submit Rating"}
+                    {submittingRating ? "Submitting..." : "Submit Review"}
                   </AsyncButton>
                 </>
               )}
@@ -1045,49 +1195,59 @@ export default function CustomerMenu() {
       <section className="foodora-categories">
         <div className="foodora-categories-head">
           <h2>Categories</h2>
-          <div className="food-filter-tabs">
-            <button
-              className={activeFoodType === "all" ? "active" : ""}
-              onClick={() => setActiveFoodType("all")}
-              type="button"
-            >
-              All
-            </button>
-            <button
-              className={activeFoodType === "veg" ? "active veg" : ""}
-              onClick={() => setActiveFoodType("veg")}
-              type="button"
-            >
-              <Leaf size={16} />
-              Veg
-            </button>
-            <button
-              className={activeFoodType === "non-veg" ? "active non-veg" : ""}
-              onClick={() => setActiveFoodType("non-veg")}
-              type="button"
-            >
-              <Flame size={16} />
-              Non Veg
-            </button>
+          <div className="category-head-actions">
+            <div className="food-filter-tabs">
+              <button className={activeFoodType === "all" ? "active" : ""} onClick={() => setActiveFoodType("all")} type="button">All</button>
+              <button className={activeFoodType === "veg" ? "active veg" : ""} onClick={() => setActiveFoodType("veg")} type="button"><Leaf size={16} /> Veg</button>
+              <button className={activeFoodType === "non-veg" ? "active non-veg" : ""} onClick={() => setActiveFoodType("non-veg")} type="button"><Flame size={16} /> Non Veg</button>
+            </div>
+            <div className="category-scroll-controls" aria-label="Scroll categories">
+              <button type="button" aria-label="Previous categories" disabled={!categoryScroll.left}
+                onClick={() => scrollCategories(-1)}><ChevronLeft size={19} /></button>
+              <button type="button" aria-label="Next categories" disabled={!categoryScroll.right}
+                onClick={() => scrollCategories(1)}><ChevronRight size={19} /></button>
+            </div>
           </div>
         </div>
 
-        <nav className={`foodora-categories-row${categoryImages.length ? " with-images" : ""}`} aria-label="Menu categories">
+        <nav ref={categoryRowRef} onScroll={updateCategoryScroll} className="foodora-categories-row with-images" aria-label="Menu categories">
           {categoryStats.map((category) => (
               <button
                 key={category.name}
                 className={activeCategory === category.name ? "active" : ""}
-                onClick={() => setActiveCategory(category.name)}
+                onClick={() => openCategory(category.name)}
                 type="button"
+                aria-label={`Show ${category.name} category`}
+                title={category.name}
               >
-                {categoryImages.length > 0 && (
-                  <span className="category-menu-thumbnail">
-                    {categoryImages.some((record) => record.name === category.name) ? (
-                      <img src={categoryImageSrc(categoryImages.find((record) => record.name === category.name))}
-                        alt="" loading="lazy" onError={(event) => { event.currentTarget.style.display = "none"; }} />
-                    ) : <Utensils size={32} />}
-                  </span>
-                )}
+                <span className="category-menu-thumbnail">
+                  {(() => {
+                    const saved = categoryImages.find((record) => record.name === category.name);
+                    const generatedFallback = generatedCategoryImage(category.name);
+                    const image = saved ? categoryImageSrc(saved) : generatedFallback;
+                    return (
+                      <>
+                        {image && (
+                          <img
+                            src={image}
+                            alt=""
+                            loading="lazy"
+                            onLoad={(event) => event.currentTarget.parentElement?.classList.remove("image-error")}
+                            onError={(event) => {
+                              if (saved && generatedFallback && !event.currentTarget.dataset.fallbackTried) {
+                                event.currentTarget.dataset.fallbackTried = "true";
+                                event.currentTarget.src = generatedFallback;
+                                return;
+                              }
+                              event.currentTarget.parentElement?.classList.add("image-error");
+                            }}
+                          />
+                        )}
+                        <Utensils className="category-image-fallback" size={24} />
+                      </>
+                    );
+                  })()}
+                </span>
                 <b>{category.name}</b>
               </button>
           ))}
@@ -1095,7 +1255,7 @@ export default function CustomerMenu() {
       </section>
 
       <main className="menu-layout">
-        <section className="order-menu-browser">
+        <section className="order-menu-browser" ref={menuBrowserRef}>
           <div className="customer-items-pane">
             {renderMenuSection("Veg Menu", "veg", groupedMenu.veg)}
             {renderMenuSection("Non-Veg Menu", "non-veg", groupedMenu.nonVeg)}
@@ -1116,34 +1276,9 @@ export default function CustomerMenu() {
               <span className="verified-customer-badge">
                 <ShieldCheck size={14} /> You are our Verified Customer
               </span>
-              {isDelivery && (
-                <AsyncButton type="button" onClick={fetchOrderHistory}>
-                  <History size={13} /> My Orders
-                </AsyncButton>
-              )}
-              <AsyncButton type="button" onClick={fetchMyRewards}>
-                <Gift size={13} /> My Rewards
-              </AsyncButton>
             </div>
           )}
 
-          {historyOpen && orderHistory && (
-            <div className="order-history-list">
-              {orderHistory.length === 0 ? (
-                <p>No past delivery orders yet.</p>
-              ) : (
-                orderHistory.map((order) => (
-                  <div key={order._id}>
-                    <span>{order.orderNo}</span>
-                    <b>₹{Number(order.grandTotal || 0).toFixed(2)}</b>
-                    <StatusBadge status={order.status} orderType={order.orderType} className="!px-2 !py-0.5 !text-[10px]" />
-                  </div>
-                ))
-              )}
-            </div>
-          )}
-
-          {rewardsOpen && rewardsList && <CustomerRewards rewards={rewardsList} onOpen={setPendingReward} />}
 
           {cart.length === 0 ? (
             <p className="empty-cart-copy">Add items from the menu.</p>
@@ -1166,13 +1301,63 @@ export default function CustomerMenu() {
             </div>
           )}
 
-          {checkoutStep === "details" && (
-            <div className="customer-details-step">
-              <div className="checkout-step-head">
-                <button type="button" onClick={() => setCheckoutStep("cart")}>Back</button>
-                <span>Final details</span>
-              </div>
+          <div className="menu-total-lines">
+            <p><span>{gstAmount > 0 ? "Base Price" : "Price"}</span><b>₹{subTotal.toFixed(2)}</b></p>
+            {gstAmount > 0 && <p><span>GST Included</span><b>₹{gstAmount.toFixed(2)}</b></p>}
+            {discountAmount > 0 && <p><span>Coupon Discount</span><b>- ₹{discountAmount.toFixed(2)}</b></p>}
+            <h3><span>Total</span><b>₹{payableTotal.toFixed(2)}</b></h3>
+          </div>
 
+          <button disabled={cart.length === 0} onClick={startCheckout}>
+            Continue
+          </button>
+        </aside>
+      </main>
+
+      {cart.length > 0 && checkoutStep !== "details" && (
+        <div className="mobile-cart-cta">
+          <button type="button" className="mobile-cart-icon" onClick={scrollToCart} aria-label={`View your order (${cartQty} items)`}>
+            <ShoppingBag size={20} />
+            <b>{cartQty}</b>
+          </button>
+          <div>
+            <span>{cartQty} items</span>
+            <strong>₹{payableTotal.toFixed(2)}</strong>
+          </div>
+          <button type="button" onClick={startCheckout}>
+            Continue
+          </button>
+        </div>
+      )}
+
+      {checkoutStep === "details" && cart.length > 0 && (
+        <div className="checkout-modal-overlay" onClick={() => !placing && setCheckoutStep("cart")}>
+          <div
+            className="checkout-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="checkout-modal-title"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="checkout-modal-head">
+              <div>
+                <span>Almost done</span>
+                <h2 id="checkout-modal-title">Final details</h2>
+                <p>{cartQty} item{cartQty === 1 ? "" : "s"} · {isDelivery ? "Delivery order" : `Table ${tableNo}`}</p>
+              </div>
+              <button type="button" aria-label="Back to cart" disabled={placing} onClick={() => setCheckoutStep("cart")}>
+                <X size={20} />
+              </button>
+            </div>
+
+            {toast && (
+              <div className={`checkout-modal-notice ${toast.type}`} role={toast.type === "success" ? "status" : "alert"} key={toast.id}>
+                {toast.type === "success" ? <CheckCircle2 size={18} /> : <X size={18} />}
+                <span>{toast.message}</span>
+              </div>
+            )}
+
+            <div className="checkout-modal-body customer-details-step">
               {!isDelivery && !customerAuth.token && (
                 <button type="button" className="optional-login-banner" onClick={() => setOptionalLoginOpen((v) => !v)}>
                   <Gift size={16} />
@@ -1286,7 +1471,11 @@ export default function CustomerMenu() {
                   <input
                     placeholder="Coupon code"
                     value={couponCode}
-                    onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                    onChange={(e) => {
+                      setCouponCode(e.target.value.toUpperCase());
+                      setCouponError("");
+                    }}
+                    className={couponError ? "coupon-input-error" : ""}
                     disabled={Boolean(coupon) || applyingCoupon || placing}
                   />
                   {coupon ? (
@@ -1297,7 +1486,12 @@ export default function CustomerMenu() {
                     </AsyncButton>
                   )}
                 </div>
-                {couponCode.trim() && !coupon && <p role="status">{applyingCoupon ? "Checking your coupon..." : "Apply this code before placing your order, or clear it to continue without a coupon."}</p>}
+                {couponError && !coupon && (
+                  <p className="coupon-inline-error" role="alert" key={couponError + (toast?.id || "")}>
+                    <X size={14} /> {couponError}
+                  </p>
+                )}
+                {!couponError && couponCode.trim() && !coupon && <p role="status">{applyingCoupon ? "Checking your coupon..." : "Apply this code before placing your order, or clear it to continue without a coupon."}</p>}
                 {coupon && (
                   <p>
                     <span>{coupon.code}</span>
@@ -1305,50 +1499,29 @@ export default function CustomerMenu() {
                   </p>
                 )}
               </div>
+
+              <div className="menu-total-lines">
+                <p><span>{gstAmount > 0 ? "Base Price" : "Price"}</span><b>₹{subTotal.toFixed(2)}</b></p>
+                {gstAmount > 0 && <p><span>GST Included</span><b>₹{gstAmount.toFixed(2)}</b></p>}
+                {discountAmount > 0 && <p><span>Coupon Discount</span><b>- ₹{discountAmount.toFixed(2)}</b></p>}
+                <h3><span>Total</span><b>₹{payableTotal.toFixed(2)}</b></h3>
+              </div>
             </div>
-          )}
 
-          <div className="menu-total-lines">
-            <p><span>{gstAmount > 0 ? "Base Price" : "Price"}</span><b>₹{subTotal.toFixed(2)}</b></p>
-            {gstAmount > 0 && <p><span>GST Included</span><b>₹{gstAmount.toFixed(2)}</b></p>}
-            {discountAmount > 0 && <p><span>Coupon Discount</span><b>- ₹{discountAmount.toFixed(2)}</b></p>}
-            <h3><span>Total</span><b>₹{payableTotal.toFixed(2)}</b></h3>
+            <div className="checkout-modal-foot">
+              <button type="button" className="checkout-modal-back" disabled={placing} onClick={() => setCheckoutStep("cart")}>
+                Back
+              </button>
+              <AsyncButton
+                type="button"
+                className="checkout-modal-place"
+                disabled={placing || applyingCoupon || Boolean(couponCode.trim() && !coupon) || (isDelivery && (!isEmailVerified || !isPhoneVerified))}
+                onClick={placeOrder}
+              >
+                {placing ? "Sending..." : `Place Order · ₹${payableTotal.toFixed(2)}`}
+              </AsyncButton>
+            </div>
           </div>
-
-          {checkoutStep === "cart" ? (
-            <button disabled={cart.length === 0} onClick={startCheckout}>
-              Continue
-            </button>
-          ) : (
-            <AsyncButton
-              disabled={placing || applyingCoupon || Boolean(couponCode.trim() && !coupon) || cart.length === 0 || (isDelivery && (!isEmailVerified || !isPhoneVerified))}
-              onClick={placeOrder}
-            >
-              {placing ? "Sending..." : "Place Order"}
-            </AsyncButton>
-          )}
-        </aside>
-      </main>
-
-      {cart.length > 0 && !orderPlaced && (
-        <div className="mobile-cart-cta">
-          <div>
-            <span>{cartQty} items</span>
-            <strong>₹{payableTotal.toFixed(2)}</strong>
-          </div>
-          {checkoutStep === "cart" ? (
-            <button type="button" onClick={startCheckout}>
-              Continue
-            </button>
-          ) : (
-            <AsyncButton
-              type="button"
-              disabled={placing || applyingCoupon || Boolean(couponCode.trim() && !coupon) || (isDelivery && (!isEmailVerified || !isPhoneVerified))}
-              onClick={placeOrder}
-            >
-              {placing ? "Sending..." : "Place Order"}
-            </AsyncButton>
-          )}
         </div>
       )}
 
@@ -1364,15 +1537,31 @@ export default function CustomerMenu() {
 
       {couponSavedPopup && (
         <div className="coupon-saved-overlay" onClick={() => setCouponSavedPopup(null)}>
-          <div className="coupon-saved-card" onClick={(e) => e.stopPropagation()}>
-            <span className="coupon-confetti c1">🎉</span>
-            <span className="coupon-confetti c2">✨</span>
-            <span className="coupon-confetti c3">🎊</span>
-            <span className="coupon-confetti c4">✨</span>
-            <div className="coupon-saved-icon"><PartyPopper size={30} /></div>
-            <h2>You saved ₹{couponSavedPopup.amount.toFixed(0)}!</h2>
-            <p>Coupon <b>{couponSavedPopup.code}</b> applied successfully.</p>
-            <button type="button" onClick={() => setCouponSavedPopup(null)}>Yay, Continue</button>
+          <div className="coupon-saved-card" role="dialog" aria-modal="true" aria-label="Coupon applied" onClick={(e) => e.stopPropagation()}>
+            <div className="coupon-confetti" aria-hidden="true">
+              {COUPON_CONFETTI.map((piece, index) => (
+                <i key={index} style={piece} />
+              ))}
+            </div>
+
+            <div className="coupon-saved-top">
+              <span className="coupon-saved-check"><CheckCircle2 size={26} /></span>
+              <span className="coupon-saved-eyebrow">Coupon applied</span>
+              <h2>
+                <small>₹</small>{couponSavedPopup.amount.toFixed(0)}
+              </h2>
+              <p>saved on this order</p>
+            </div>
+
+            <div className="coupon-saved-cut" aria-hidden="true" />
+
+            <div className="coupon-saved-bottom">
+              <span className="coupon-saved-code">
+                <BadgePercent size={16} /> {couponSavedPopup.code}
+              </span>
+              <p>The discount is already reflected in your bill.</p>
+              <button type="button" autoFocus onClick={() => setCouponSavedPopup(null)}>Continue ordering</button>
+            </div>
           </div>
         </div>
       )}
@@ -1539,11 +1728,9 @@ export default function CustomerMenu() {
             </div>
 
             <div className="verified-customer-strip">
-              {isDelivery && (
-                <AsyncButton type="button" onClick={fetchOrderHistory}>
-                  <History size={13} /> My Orders
-                </AsyncButton>
-              )}
+              <AsyncButton type="button" onClick={fetchOrderHistory}>
+                <History size={13} /> My Orders
+              </AsyncButton>
               <AsyncButton type="button" onClick={fetchMyRewards}>
                 <Gift size={13} /> My Rewards
               </AsyncButton>
@@ -1552,14 +1739,15 @@ export default function CustomerMenu() {
             {historyOpen && orderHistory && (
               <div className="order-history-list">
                 {orderHistory.length === 0 ? (
-                  <p>No past delivery orders yet.</p>
+                  <p>No past orders yet.</p>
                 ) : (
                   orderHistory.map((order) => (
-                    <div key={order._id}>
-                      <span>{order.orderNo}</span>
+                    <button type="button" className="order-history-row" key={order._id} onClick={() => openOrderStatus(order._id)} aria-label={`View status of ${order.orderNo}`}>
+                      <span className="order-history-id">{order.orderNo}<small>{orderHistoryMeta(order)}</small></span>
                       <b>₹{Number(order.grandTotal || 0).toFixed(2)}</b>
                       <StatusBadge status={order.status} orderType={order.orderType} className="!px-2 !py-0.5 !text-[10px]" />
-                    </div>
+                      <ChevronRight size={16} className="order-history-chevron" />
+                    </button>
                   ))
                 )}
               </div>

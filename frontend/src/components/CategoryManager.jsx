@@ -3,6 +3,7 @@ import { ImagePlus, Pencil, Plus, Trash2, X } from "lucide-react";
 import API, { API_BASE_URL } from "../api/axios";
 import AsyncButton from "./AsyncButton";
 import ConfirmActionModal from "./ConfirmActionModal";
+import { categoryFoodImages, generatedCategoryImage, generatedImageDataUrl } from "../data/categoryFoodImages";
 
 const MAX_NAME = 60;
 const emptyDraft = { name: "", previousName: "", image: undefined };
@@ -58,7 +59,7 @@ export default function CategoryManager({ onClose, onChanged, showToast }) {
   const preview =
     draft.image !== undefined
       ? draft.image
-      : savedImageSrc(categories.find((row) => row.name === draft.previousName) || {});
+      : savedImageSrc(categories.find((row) => row.name === draft.previousName) || {}) || generatedCategoryImage(draft.name);
 
   const reset = () => {
     setDraft(emptyDraft);
@@ -77,6 +78,16 @@ export default function CategoryManager({ onClose, onChanged, showToast }) {
       setDraft((current) => ({ ...current, image: thumbnail }));
     } catch {
       setError("That image could not be opened. Please choose another file.");
+    }
+  };
+
+  const pickGenerated = async (image) => {
+    setError("");
+    try {
+      const dataUrl = await generatedImageDataUrl(image);
+      setDraft((current) => ({ ...current, image: dataUrl }));
+    } catch {
+      setError("That image could not be loaded. Please try again.");
     }
   };
 
@@ -149,7 +160,7 @@ export default function CategoryManager({ onClose, onChanged, showToast }) {
           </div>
 
           <div className="category-draft-actions">
-            {preview && (
+            {(draft.image || savedImageSrc(categories.find((row) => row.name === draft.previousName) || {})) && (
               <button type="button" onClick={() => setDraft((current) => ({ ...current, image: "" }))}>
                 Remove picture
               </button>
@@ -164,6 +175,15 @@ export default function CategoryManager({ onClose, onChanged, showToast }) {
             </button>
           </div>
 
+          <div className="category-draft-presets">
+            <span>Ready-made food images</span>
+            <div>{categoryFoodImages.map(({ name, image }) => (
+              <button key={name} type="button" title={`Use ${name} image`} onClick={() => pickGenerated(image)}>
+                <img src={image} alt="" loading="lazy" /><small>{name}</small>
+              </button>
+            ))}</div>
+          </div>
+
           {error && <p className="async-form-error" role="alert">{error}</p>}
         </form>
 
@@ -176,7 +196,9 @@ export default function CategoryManager({ onClose, onChanged, showToast }) {
             {categories.map((category) => (
               <li key={category.name}>
                 <span className="category-list-thumb">
-                  {category.imageId ? <img src={savedImageSrc(category)} alt="" /> : <ImagePlus size={18} />}
+                  {category.imageId || generatedCategoryImage(category.name)
+                    ? <img src={savedImageSrc(category) || generatedCategoryImage(category.name)} alt="" />
+                    : <ImagePlus size={18} />}
                 </span>
                 <span className="category-list-name">
                   <b>{category.name}</b>

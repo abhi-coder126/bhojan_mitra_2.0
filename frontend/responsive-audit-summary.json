@@ -1,0 +1,58 @@
+{
+  "testedAt": "2026-09-25T21:48:38.629Z",
+  "browser": "Chromium (Chrome), automated viewport checks with mocked API data",
+  "widths": [
+    320,
+    390,
+    480,
+    768,
+    1024,
+    1440,
+    1920
+  ],
+  "routes": [
+    "/",
+    "/restaurant-orders",
+    "/menu-items",
+    "/all-products",
+    "/purchase",
+    "/grn-management",
+    "/supplier-bills",
+    "/sales-return",
+    "/invoices",
+    "/customers",
+    "/vendors",
+    "/accounts",
+    "/coupons",
+    "/rewards",
+    "/settings",
+    "/table-barcodes",
+    "/tables",
+    "/kds",
+    "/smart-inventory",
+    "/audit-logs",
+    "/royalty",
+    "/support",
+    "/login",
+    "/menu/1",
+    "/menu/delivery",
+    "/menu/AUDIT/1",
+    "/branches",
+    "/order-management"
+  ],
+  "pageChecks": 196,
+  "pageIssues": [],
+  "dialogChecks": 20,
+  "dialogIssues": [],
+  "fixes": [
+    "Menu management content and buttons fit narrow viewports",
+    "GRN panel and pagination fit narrow viewports",
+    "Item and New Order dialogs respect overlay padding",
+    "New Order reset uses the current order-type state setter"
+  ],
+  "limitations": [
+    "Representative mocked data; not every live-data combination or browser/device",
+    "Wide tables intentionally scroll inside their container",
+    "Four primary admin dialogs tested at five widths; not every possible popup state"
+  ]
+}

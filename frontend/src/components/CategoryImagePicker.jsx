@@ -1,12 +1,13 @@
 import { useState } from "react";
 import { ImagePlus } from "lucide-react";
 import { categoryImageSrc } from "../api/productImage";
+import { categoryFoodImages, generatedCategoryImage, generatedImageDataUrl } from "../data/categoryFoodImages";
 
 export default function CategoryImagePicker({ form, setForm, categoryImages }) {
   const [error, setError] = useState("");
   const name = form.category.trim();
   const saved = categoryImages.find((record) => record.name === name);
-  const preview = form.categoryImage ?? categoryImageSrc(saved);
+  const preview = form.categoryImage ?? (categoryImageSrc(saved) || generatedCategoryImage(name));
 
   // Images already saved for other categories, offered for reuse so a shared
   // icon (e.g. one "Beverages" picture) need not be re-uploaded per category.
@@ -65,6 +66,20 @@ export default function CategoryImagePicker({ form, setForm, categoryImages }) {
     }
   };
 
+  const selectGenerated = async (image) => {
+    setError("");
+    setForm((current) => ({ ...current, categoryImageLoading: true }));
+    try {
+      const dataUrl = await generatedImageDataUrl(image);
+      setForm((current) => current.category.trim() === name
+        ? { ...current, categoryImage: dataUrl } : current);
+    } catch {
+      setError("That image could not be loaded. Please try again.");
+    } finally {
+      setForm((current) => ({ ...current, categoryImageLoading: false }));
+    }
+  };
+
   return (
     <div className="category-image-picker">
       <div className="category-image-preview">
@@ -79,10 +94,20 @@ export default function CategoryImagePicker({ form, setForm, categoryImages }) {
             disabled={!name || form.categoryImageLoading}
             onChange={(event) => { upload(event.target.files?.[0]); event.target.value = ""; }} />
         </label>
-        {preview && <button type="button" className="category-image-remove" disabled={form.categoryImageLoading}
+        {(form.categoryImage || saved) && <button type="button" className="category-image-remove" disabled={form.categoryImageLoading}
           onClick={() => setForm((current) => ({ ...current, categoryImage: "" }))}>Remove image</button>}
         {!name && <small>Choose or enter a category first.</small>}
         {error && <p role="alert">{error}</p>}
+
+        {name && <div className="category-image-reuse">
+          <small>Choose a ready-made food image</small>
+          <ul>{categoryFoodImages.map(({ name: label, image }) => (
+            <li key={label}><button type="button" disabled={form.categoryImageLoading}
+              onClick={() => selectGenerated(image)} title={`Use ${label} image`}>
+              <img src={image} alt="" loading="lazy" /><span>{label}</span>
+            </button></li>
+          ))}</ul>
+        </div>}
 
         {name && reusable.length > 0 && (
           <div className="category-image-reuse">

@@ -7,7 +7,8 @@ export function useToast() {
 
   const showToast = useCallback((message, type = "error") => {
     if (timer.current) clearTimeout(timer.current);
-    setToast({ message, type });
+    // id restarts the entrance animation even when the same message repeats.
+    setToast({ message, type, id: Date.now() });
     timer.current = setTimeout(() => setToast(null), 2800);
   }, []);
 

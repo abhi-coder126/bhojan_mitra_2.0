@@ -40,11 +40,11 @@
     "path": "/restaurant-orders",
     "name": "New Order",
     "class": "modal-card large captain-order-modal",
-    "dialogWidth": 307,
+    "dialogWidth": 288,
     "left": 16,
-    "right": 323.1875,
+    "right": 304,
     "overflow": false,
-    "offscreen": true,
+    "offscreen": false,
     "body": false
   },
   {
@@ -88,9 +88,9 @@
     "path": "/restaurant-orders",
     "name": "New Order",
     "class": "modal-card large captain-order-modal",
-    "dialogWidth": 374,
+    "dialogWidth": 358,
     "left": 16,
-    "right": 390.390625,
+    "right": 374,
     "overflow": false,
     "offscreen": false,
     "body": false
@@ -136,9 +136,9 @@
     "path": "/restaurant-orders",
     "name": "New Order",
     "class": "modal-card large captain-order-modal",
-    "dialogWidth": 737,
+    "dialogWidth": 736,
     "left": 16,
-    "right": 753.265625,
+    "right": 752,
     "overflow": false,
     "offscreen": false,
     "body": false

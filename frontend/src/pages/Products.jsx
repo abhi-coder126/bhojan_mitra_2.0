@@ -23,6 +23,7 @@ const emptyForm = {
   itemType: "food",
   foodType: "veg",
   description: "",
+  ingredients: "",
   spiceLevel: "medium",
   isRecommended: false,
   mrp: "",
@@ -148,6 +149,7 @@ export default function Products() {
     itemType: form.itemType || "food",
     foodType: form.foodType || "veg",
     description: form.description.trim(),
+    ingredients: String(form.ingredients || "").split(",").map((part) => part.trim()).filter(Boolean),
     spiceLevel: form.itemType === "food" ? form.spiceLevel || "medium" : "mild",
     isRecommended: Boolean(form.isRecommended),
     mrp: Number(form.mrp || 0),
@@ -190,6 +192,7 @@ export default function Products() {
       itemType: item.itemType || "food",
       foodType: item.foodType || "veg",
       description: item.description || "",
+      ingredients: (item.ingredients || []).join(", "),
       spiceLevel: item.spiceLevel || "medium",
       isRecommended: Boolean(item.isRecommended),
       mrp: item.mrp || item.sellingPrice || "",
@@ -473,6 +476,9 @@ export default function Products() {
               </div>
 
               {selectedItem.description && <p className="menu-item-detail-description">{selectedItem.description}</p>}
+              {selectedItem.ingredients?.length > 0 && (
+                <p className="menu-item-detail-description"><b>Inside:</b> {selectedItem.ingredients.join(", ")}</p>
+              )}
 
               <div className="menu-item-detail-grid">
                 {selectedItem.itemType === "food" && (
@@ -631,6 +637,12 @@ function MenuItemForm({ form, setForm, categories, submit, buttonText }) {
         placeholder="Short item description for customer menu"
         value={form.description}
         onChange={(e) => setForm({ ...form, description: e.target.value })}
+      />
+
+      <input
+        placeholder="What's inside (comma separated) -- e.g. Paneer, Butter, Cream"
+        value={form.ingredients}
+        onChange={(e) => setForm({ ...form, ingredients: e.target.value })}
       />
 
       <div className="category-input-row">

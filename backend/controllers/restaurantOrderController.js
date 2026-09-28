@@ -7,6 +7,7 @@ const mongoose = require("mongoose");
 const Product = require("../models/Product");
 const RestaurantOrder = require("../models/RestaurantOrder");
 const Rating = require("../models/Rating");
+const OrderReview = require("../models/OrderReview");
 const Coupon = require("../models/Coupon");
 const DeletionLog = require("../models/DeletionLog");
 const Otp = require("../models/Otp");
@@ -79,7 +80,7 @@ const restoreOrderInventory = async (order, note = "Order cancelled") => {
 exports.getMenuProducts = async (req, res) => {
   try {
     const products = await Product.find({ stock: { $gt: 0 } })
-      .select("name barcode category itemType foodType description spiceLevel isRecommended hasImage unit sellingPrice mrp gst stock offerPercent ratingAvg ratingCount variants optionGroups")
+      .select("name barcode category itemType foodType description ingredients servingSize spiceLevel isRecommended hasImage unit sellingPrice mrp gst stock offerPercent ratingAvg ratingCount variants optionGroups")
       .sort({ category: 1, name: 1 })
       .lean();
 
@@ -87,7 +88,10 @@ exports.getMenuProducts = async (req, res) => {
       success: true,
       branch: req.branch ? { name: req.branch.name, code: req.branch.code } : null,
       products,
-      categoryImages: await CategoryImage.find().select("name updatedAt").lean(),
+      // Only advertise records that actually contain image bytes. CategoryImage
+      // also stores empty category-registry rows; exposing those made the client
+      // request a guaranteed 404 and render a broken-image icon.
+      categoryImages: await CategoryImage.find({ dataUrl: { $ne: "" } }).select("name updatedAt").lean(),
       menuOffers: await menuOffersForGuests(),
       offers: (await Coupon.find({ showOnMenu: true, status: "Active" }).lean())
         .filter((coupon) => !couponUnavailable(coupon))
@@ -144,6 +148,57 @@ exports.rateOrderItems = async (req, res) => {
     });
 
     res.json({ success: true, message: "Thanks for rating your order!" });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Public (no login): the guest's three-part review of a finished order -- food,
+// restaurant and, for delivery orders, the delivery. Like item ratings it is only
+// accepted once the order is served/delivered, and one review per order (a resend
+// edits it).
+exports.reviewOrder = async (req, res) => {
+  try {
+    const order = await RestaurantOrder.findById(req.params.id);
+    if (!order) return res.status(404).json({ message: "Order not found" });
+    if (order.status !== "served") {
+      return res.status(400).json({ message: "You can review the order once it is delivered" });
+    }
+
+    const readStars = (value) => {
+      const n = Number(value);
+      return Number.isInteger(n) && n >= 1 && n <= 5 ? n : null;
+    };
+    const foodStars = readStars(req.body.foodStars);
+    const restaurantStars = readStars(req.body.restaurantStars);
+    const isDelivery = order.orderType === "delivery";
+    const deliveryStars = isDelivery ? readStars(req.body.deliveryStars) : null;
+
+    if (!foodStars || !restaurantStars || (isDelivery && !deliveryStars)) {
+      return res.status(400).json({
+        message: isDelivery
+          ? "Please rate the order, the restaurant and the delivery"
+          : "Please rate the order and the restaurant",
+      });
+    }
+
+    const review = await runWithBranch(order.branchId, () =>
+      OrderReview.findOneAndUpdate(
+        { orderId: order._id },
+        {
+          orderNo: order.orderNo || "",
+          orderType: order.orderType,
+          customerName: order.customerName || "",
+          foodStars,
+          restaurantStars,
+          deliveryStars,
+          comment: String(req.body.comment || "").trim().slice(0, 500),
+        },
+        { upsert: true, new: true, setDefaultsOnInsert: true }
+      )
+    );
+
+    res.json({ success: true, review, message: "Thanks for your review!" });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -237,7 +292,9 @@ exports.createRestaurantOrder = async (req, res) => {
       // different from the POS sale flow (see saleController.createSale), where `rate`
       // is tax-exclusive and GST is added. Don't "unify" these without also changing
       // whichever channel's price display customers actually see.
-      const selection = resolveMenuSelection(product, item, Boolean(req.user));
+      // A line with no size falls back to the first size. That keeps carts saved
+      // before an item got sizes working -- the first size is its old price.
+      const selection = resolveMenuSelection(product, item, true);
       const rate = selection.rate;
       const gst = Number(product.gst || 0);
       const lineTotal = rate * qty;
@@ -602,7 +659,9 @@ exports.updateRestaurantOrderStatus = async (req, res) => {
 
     const update = { status: next };
     if (next === "accepted" && !before.acceptedAt) update.acceptedAt = new Date();
+    if (next === "ready" && !before.readyAt) update.readyAt = new Date();
     if (next === "served") {
+      if (!before.readyAt) update.readyAt = new Date();
       update["items.$[].itemStatus"] = "SERVED";
       if (!before.servedAt) update.servedAt = new Date();
     }
@@ -701,7 +760,10 @@ exports.updateOrderItemStatus = async (req, res) => {
     }
 
     const allStatuses = order.items.map((item) => item.itemStatus);
-    if (allStatuses.every((s) => s === "READY" || s === "SERVED")) order.status = "ready";
+    if (allStatuses.every((s) => s === "READY" || s === "SERVED")) {
+      order.status = "ready";
+      if (!order.readyAt) order.readyAt = new Date();
+    }
     else if (allStatuses.some((s) => s === "COOKING" || s === "READY")) order.status = "preparing";
     else order.status = "accepted";
 

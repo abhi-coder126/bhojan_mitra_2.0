@@ -16,12 +16,13 @@ const LANES = [
   { key: "ready", title: "Ready - waiting for counter", icon: CheckCircle2 },
 ];
 
+// A KOT that is only accepted (nothing on the stove yet) stays in "New KOTs"
+// until cooking actually starts.
 const laneOf = (order) => {
   const statuses = order.items.map((item) => item.itemStatus);
   if (statuses.every((s) => s === "READY" || s === "SERVED")) return "ready";
   if (statuses.some((s) => s === "COOKING" || s === "READY")) return "cooking";
-  if (statuses.some((s) => s === "NEW")) return "new";
-  return "cooking";
+  return "new";
 };
 
 const minutesSince = (value, now) => Math.max(Math.floor((now - new Date(value).getTime()) / 60000), 0);
@@ -165,9 +166,11 @@ export default function KDS() {
                   <div className="kds-actions">
                     {key === "new" && (
                       <>
-                        <AsyncButton className="kds-btn" onClick={() => setItems(order, "ACCEPTED")}>
-                          Accept KOT
-                        </AsyncButton>
+                        {order.items.some((item) => item.itemStatus === "NEW") && (
+                          <AsyncButton className="kds-btn" onClick={() => setItems(order, "ACCEPTED")}>
+                            Accept KOT
+                          </AsyncButton>
+                        )}
                         <AsyncButton className="kds-btn kds-btn-primary" onClick={() => setItems(order, "COOKING")}>
                           Start cooking
                         </AsyncButton>

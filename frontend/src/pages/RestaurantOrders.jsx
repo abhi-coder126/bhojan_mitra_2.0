@@ -1,6 +1,6 @@
 import AsyncButton from "../components/AsyncButton";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Banknote, Bell, Bike, ChefHat, CheckCircle2, ClipboardList, CreditCard, Gift, LayoutGrid, Minus, Plus, Printer, QrCode, ReceiptText, RefreshCcw, Search, ShoppingBag, Smartphone, Utensils, X } from "lucide-react";
+import { Banknote, Bell, Bike, ChefHat, CheckCircle2, ClipboardList, Clock3, CreditCard, Gift, LayoutGrid, Minus, Plus, Printer, QrCode, RefreshCcw, Search, ShoppingBag, Smartphone, Utensils, X } from "lucide-react";
 import API from "../api/axios";
 import { hasProductImage, productImageSrc } from "../api/productImage";
 import { notifyOrdersUpdated } from "../api/orderAlarm";
@@ -10,6 +10,7 @@ import ConfirmActionModal from "../components/ConfirmActionModal";
 import StatusBadge from "../components/StatusBadge";
 import { KotReceipt, TaxInvoiceReceipt } from "../components/ThermalReceipt";
 import { toInvoiceData } from "../components/receiptData";
+import { formatOrderAge, isOrderPending, orderAgeMs, orderAgeTone } from "../api/orderTimer";
 
 const workflowStatuses = ["new", "accepted", "preparing", "ready", "served"];
 
@@ -84,6 +85,10 @@ export default function RestaurantOrders() {
   const [selectedTable, setSelectedTable] = useState(null);
   const [orderSettings, setOrderSettings] = useState(defaultOrderSettings);
   const [activePopupOrderId, setActivePopupOrderId] = useState(null);
+  // New orders the counter closed the popup for; they stay in "New" on the board.
+  const [hiddenPopupIds, setHiddenPopupIds] = useState(() => new Set());
+  // Running-order card opened in the details popup (looked up live from `orders`).
+  const [detailOrderId, setDetailOrderId] = useState(null);
   const [paymentOrder, setPaymentOrder] = useState(null);
   const [paidInvoice, setPaidInvoice] = useState(null);
   const [kotOrder, setKotOrder] = useState(null);
@@ -209,6 +214,22 @@ export default function RestaurantOrders() {
       ? formatDuration(clockNow - new Date(order.acceptedAt).getTime())
       : "";
 
+  // Placed -> ready clock, coloured green (<15m), orange (15-25m), red (25m+).
+  const renderOrderAge = (order, compact = false) => {
+    const ms = orderAgeMs(order, clockNow);
+    if (ms === null) return null;
+    const pending = isOrderPending(order);
+    return (
+      <span
+        className={`order-age-chip ${orderAgeTone(ms)}${pending ? " live" : ""}`}
+        title={pending ? "Time since the order was placed" : "Time the order took to be ready"}
+      >
+        <Clock3 size={compact ? 11 : 13} />
+        {formatOrderAge(ms)}
+      </span>
+    );
+  };
+
   const updateStatus = async (orderId, status) => {
     const order = orders.find((item) => item._id === orderId);
     setStatusTarget({ orderId, status, orderNo: order?.orderNo || "Order" });
@@ -226,6 +247,10 @@ export default function RestaurantOrders() {
       fetchOrders();
       showToast(accepted ? "Order accepted. Send the KOT to the kitchen next." : "Order status updated", "success");
     } catch (error) {
+      // Close the confirm dialog so the error toast isn't hidden behind it, and
+      // refresh -- the order may have moved on (e.g. the kitchen marked it ready).
+      setStatusTarget(null);
+      fetchOrders();
       showToast(error.response?.data?.message || "Status update failed");
     }
   };
@@ -259,7 +284,7 @@ export default function RestaurantOrders() {
   };
 
   // The counter's steps, in order: Accept -> Send KOT -> (kitchen cooks) -> Serve -> Payment.
-  const renderFlowActions = (order) => (
+  const renderFlowActions = (order, { withCancel = true } = {}) => (
     <>
       {order.status === "new" && (
         <AsyncButton className="accept-order-btn" onClick={() => updateStatus(order._id, "accepted")}>
@@ -291,7 +316,7 @@ export default function RestaurantOrders() {
           Payment
         </button>
       )}
-      {!["served", "cancelled"].includes(order.status) && (
+      {withCancel && !["served", "cancelled"].includes(order.status) && (
         <AsyncButton className="reject-order-btn" onClick={() => updateStatus(order._id, "cancelled")}>
           Cancel
         </AsyncButton>
@@ -550,8 +575,13 @@ export default function RestaurantOrders() {
   };
 
   const popupOrder =
-    orders.find((order) => order._id === activePopupOrderId && order.status === "new") ||
-    orders.find((order) => order.status === "new");
+    orders.find((order) => order._id === activePopupOrderId && order.status === "new" && !hiddenPopupIds.has(order._id)) ||
+    orders.find((order) => order.status === "new" && !hiddenPopupIds.has(order._id));
+  const hidePopup = (orderId) => {
+    setHiddenPopupIds((current) => new Set([...current, orderId]));
+    setActivePopupOrderId(null);
+  };
+  const detailOrder = detailOrderId ? activeOrders.find((order) => order._id === detailOrderId) : null;
   const paidInvoices = orders.filter((order) => order.paymentStatus === "paid");
   const getInvoiceNo = (order) => order.invoiceNo || order.orderNo || `INV-${order._id?.slice(-6) || "ORDER"}`;
   const formatDateTime = (value) =>
@@ -581,6 +611,27 @@ export default function RestaurantOrders() {
   const getWorkflowProgress = (status) => {
     const index = workflowStatuses.indexOf(status);
     return index === -1 ? 0 : index;
+  };
+
+  // New -> Accepted -> Preparing -> Ready -> Served as dots on a line; steps
+  // already passed are filled, the current one is ringed.
+  const renderOrderStepper = (order) => {
+    const current = getWorkflowProgress(order.status);
+    return (
+      <ol className="order-stepper" aria-label={`Order progress: ${statusLabel(order.status, order.orderType)}`}>
+        {workflowStatuses.map((status, index) => (
+          <li
+            key={status}
+            className={index < current ? "done" : index === current ? "current" : ""}
+            aria-current={index === current ? "step" : undefined}
+          >
+            <i>{index < current ? <CheckCircle2 size={12} strokeWidth={3} /> : null}</i>
+            {/* "Cooking" (the KDS word) fits the narrow step better than "Preparing". */}
+            <span>{status === "preparing" ? "Cooking" : statusLabel(status, order.orderType)}</span>
+          </li>
+        ))}
+      </ol>
+    );
   };
 
   return (
@@ -649,13 +700,6 @@ export default function RestaurantOrders() {
           <ShoppingBag size={15} /> Takeaway &amp; Delivery
           {pickupCounts.total > 0 && <b className="section-tab-count">{pickupCounts.total}</b>}
         </button>
-        <button
-          type="button"
-          className={activeSection === "invoices" ? "active" : ""}
-          onClick={() => setActiveSection("invoices")}
-        >
-          <ReceiptText size={15} /> Invoices
-        </button>
       </div>
 
       {activeSection === "tables" && <section className="table-view-panel">
@@ -692,6 +736,10 @@ export default function RestaurantOrders() {
             const idleLabel = { reserved: "Reserved", cleaning: "Cleaning", occupied: "Occupied", billing: "Billing" }[status] || "Blank";
             const tableTotal = tableOrders.reduce((sum, order) => sum + Number(order.grandTotal || 0), 0);
             const hasCoupon = tableOrders.some((order) => order.couponCode);
+            // The oldest order still waiting on the kitchen sets the table's clock.
+            const oldestPending = tableOrders
+              .filter(isOrderPending)
+              .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))[0];
 
             return (
               <button
@@ -708,6 +756,7 @@ export default function RestaurantOrders() {
                     {hasCoupon ? " after coupon" : ""}
                   </small>
                 )}
+                {oldestPending && renderOrderAge(oldestPending, true)}
                 {tableOrders.length > 0 && <Utensils size={17} />}
               </button>
             );
@@ -729,90 +778,51 @@ export default function RestaurantOrders() {
         ) : (
           <div className="current-orders-grid">
             {activeOrders.map((order) => (
-              <article className={`current-order-card ${order.status}`} key={order._id}>
+              <article
+                className={`current-order-card compact ${order.status} age-${isOrderPending(order) ? orderAgeTone(orderAgeMs(order, clockNow)) : "done"}`}
+                key={order._id}
+                onClick={(event) => { if (!event.target.closest("button, a")) setDetailOrderId(order._id); }}
+              >
                 <div className="current-order-top">
                   <div>
                     <span>{order.orderNo}</span>
-                    <h3>{order.orderType === "delivery" ? "Delivery Order" : `Table ${order.tableNo}`}</h3>
-                    <p>{order.customerName || "Customer"} | {order.customerPhone || "No phone"}</p>
-                  </div>
-                  <StatusBadge status={order.status} orderType={order.orderType} />
-                </div>
-
-                <div className="order-workflow-rail">
-                  {workflowStatuses.map((status, index) => (
-                    <span
-                      key={status}
-                      className={index <= getWorkflowProgress(order.status) ? "done" : ""}
-                    >
-                      {statusLabel(status, order.orderType)}
-                    </span>
-                  ))}
-                </div>
-
-                <div className="order-card-meta">
-                  <div>
-                    <span>Items</span>
-                    <b>{order.items?.length || 0}</b>
-                  </div>
-                  <div>
-                    <span>Order Type</span>
-                    <b>{orderTypeLabel(order)}</b>
-                  </div>
-                  {runningFor(order) && (
-                    <div>
-                      <span>Running for</span>
-                      <b className="order-running-clock">{runningFor(order)}</b>
-                    </div>
-                  )}
-                  <div>
-                    <span>Bill</span>
-                    <b>₹{Number(order.grandTotal || 0).toFixed(2)}</b>
-                  </div>
-                </div>
-
-                {order.orderType === "delivery" && (
-                  <div className="delivery-address-box">
-                    <strong>Delivery Address</strong>
-                    <span>{order.deliveryAddress || "N/A"}</span>
-                  </div>
-                )}
-
-                <div className="restaurant-order-items">
-                  {order.items.map((item, index) => (
-                    <p key={`${item.productId}-${index}`}>
-                      <span>{item.qty} x {item.name}</span>
-                      <b>₹{Number(item.total || 0).toFixed(2)}</b>
+                    <h3>{orderTypeLabel(order)}</h3>
+                    <p className="current-order-customer">
+                      <b>{order.customerName || "Customer"}</b>
+                      {order.customerPhone && <small>{order.customerPhone}</small>}
                     </p>
-                  ))}
+                  </div>
+                  <div className="current-order-badges">
+                    <StatusBadge status={order.status} orderType={order.orderType} />
+                    {renderOrderAge(order)}
+                  </div>
                 </div>
 
-                {order.note && <p className="restaurant-note">Note: {order.note}</p>}
+                {renderOrderStepper(order)}
 
-                <div className="restaurant-order-total">
-                  <span>{order.couponCode ? `Total after ${order.couponCode}` : "Total"}</span>
+                <div className="current-order-summary">
+                  <div>
+                    <span>
+                      {(() => {
+                        const count = order.items?.reduce((sum, item) => sum + Number(item.qty || 0), 0) || 0;
+                        return `${count} item${count === 1 ? "" : "s"}`;
+                      })()}
+                    </span>
+                    <p>
+                      {(order.items || []).slice(0, 2).map((item) => `${item.qty}× ${String(item.name || "").split(" — ")[0]}`).join(", ")}
+                      {(order.items || []).length > 2 && <em> +{order.items.length - 2} more</em>}
+                    </p>
+                  </div>
                   <strong>₹{Number(order.grandTotal || 0).toFixed(2)}</strong>
                 </div>
-                {Number(order.discountAmount || 0) > 0 && (
-                  <p className="restaurant-note">Coupon discount: ₹{Number(order.discountAmount || 0).toFixed(2)}</p>
-                )}
 
-                <div className="current-order-actions">
-                  {renderFlowActions(order)}
-                  {!order.isHeld ? (
-                    <AsyncButton onClick={() => holdOrder(order)}>Hold</AsyncButton>
-                  ) : (
-                    <AsyncButton onClick={() => resumeOrder(order)}>Resume</AsyncButton>
-                  )}
-                  {order.kotSentAt && (
-                    <button className="print-kot-btn" onClick={() => setKotOrder(order)}>
-                      <Printer size={16} />
-                      Reprint KOT
-                    </button>
-                  )}
-                  <button onClick={() => openDiscount(order)}>Discount</button>
-                  <button onClick={() => openSplit(order)}>Split Bill</button>
-                  <button onClick={() => openMerge(order)}>Merge Bill</button>
+                {order.isHeld && <p className="current-order-flag">On hold</p>}
+
+                <div className="current-order-primary">
+                  {renderFlowActions(order, { withCancel: false })}
+                  <button type="button" className="current-order-more" onClick={() => setDetailOrderId(order._id)}>
+                    Details
+                  </button>
                 </div>
               </article>
             ))}
@@ -851,7 +861,10 @@ export default function RestaurantOrders() {
                     {order.orderType === "takeaway" ? <ShoppingBag size={16} /> : <Bike size={16} />}
                     <h3>{order.orderNo}</h3>
                   </div>
-                  <StatusBadge status={order.status} orderType={order.orderType} />
+                  <div className="current-order-badges">
+                    <StatusBadge status={order.status} orderType={order.orderType} />
+                    {renderOrderAge(order, true)}
+                  </div>
                 </header>
 
                 <p className="pickup-customer">
@@ -875,19 +888,15 @@ export default function RestaurantOrders() {
 
                 <footer>
                   <b>₹{Number(order.grandTotal || 0).toFixed(2)}</b>
-                  <div className="row-actions">
-                    {workflowStatuses
-                      .slice(workflowStatuses.indexOf(order.status) + 1,
-                        workflowStatuses.indexOf(order.status) + 2)
-                      .map((next) => (
-                        <AsyncButton key={next} className="bm-btn bm-btn-sm bm-btn-primary"
-                          onClick={() => updateStatus(order._id, next)}>
-                          Mark {statusLabel(next, order.orderType)}
-                        </AsyncButton>
-                      ))}
-                    <AsyncButton className="bm-btn bm-btn-sm" onClick={() => setPaymentOrder(order)}>
-                      Bill
-                    </AsyncButton>
+                  {/* Same steps as the counter: Accept -> Send KOT -> (kitchen cooks and
+                      marks ready on the KDS) -> Mark Served/Delivered -> Payment. The old
+                      "Mark Preparing / Mark Ready" buttons always failed -- only the
+                      kitchen can set those. */}
+                  <div className="current-order-primary pickup-flow">
+                    {renderFlowActions(order, { withCancel: false })}
+                    <button type="button" className="current-order-more" onClick={() => setDetailOrderId(order._id)}>
+                      Details
+                    </button>
                   </div>
                 </footer>
               </article>
@@ -1021,59 +1030,180 @@ export default function RestaurantOrders() {
 
       {popupOrder && (
         <div className="order-alert-overlay">
-          <div className="order-alert-card">
-            <button
-              className="order-alert-close"
-              onClick={() => setActivePopupOrderId(null)}
-              title="Hide popup"
-              aria-label="Hide popup"
-            >
-              <X size={18} />
-            </button>
-
-            <div className="order-alert-pulse">
-              <Bell size={28} />
-            </div>
-
-            <div className="order-alert-heading">
-              <span>{popupOrder.orderNo}</span>
-              <h2>
-                New {popupOrder.orderType === "delivery" ? "Delivery" : `Table ${popupOrder.tableNo}`} Order
-              </h2>
-              <p>Accepting the order will stop the alert and notify the customer.</p>
-            </div>
-
-            <div className="popup-customer-box">
-              <b>{popupOrder.customerName}</b>
-              <span>{popupOrder.customerPhone}</span>
-              {popupOrder.orderType === "delivery" && <small>{popupOrder.deliveryAddress}</small>}
-            </div>
-
-            <div className="order-alert-items">
-              {popupOrder.items.map((item, index) => (
-                <div key={`${item.productId}-${index}`}>
-                  <b>{item.qty} x {item.name}</b>
-                  <strong>₹{Number(item.total || 0).toFixed(2)}</strong>
+          <div className="new-order-popup" role="alertdialog" aria-modal="true" aria-labelledby="new-order-title">
+            <header className="new-order-head">
+              <div className="new-order-bell"><Bell size={26} /></div>
+              <div className="new-order-head-text">
+                <span className="new-order-eyebrow">
+                  New order · {popupOrder.orderNo}
+                </span>
+                <h2 id="new-order-title">
+                  {popupOrder.orderType === "delivery" ? "Delivery order" : popupOrder.orderType === "takeaway" ? "Takeaway order" : `Table ${popupOrder.tableNo}`}
+                </h2>
+                <div className="new-order-meta">
+                  <span className={`new-order-type ${popupOrder.orderType}`}>
+                    {popupOrder.orderType === "delivery" ? <Bike size={13} /> : popupOrder.orderType === "takeaway" ? <ShoppingBag size={13} /> : <Utensils size={13} />}
+                    {popupOrder.orderType === "delivery" ? "Delivery" : popupOrder.orderType === "takeaway" ? "Takeaway" : "Dine-in"}
+                  </span>
+                  {renderOrderAge(popupOrder, true)}
+                  <span className="new-order-count">
+                    {popupOrder.items.reduce((sum, item) => sum + Number(item.qty || 0), 0)} items
+                  </span>
                 </div>
-              ))}
+              </div>
+              <button
+                type="button"
+                className="new-order-close"
+                onClick={() => hidePopup(popupOrder._id)}
+                title="Hide popup (the order stays in New)"
+                aria-label="Hide popup"
+              >
+                <X size={18} />
+              </button>
+            </header>
+
+            <div className="new-order-body">
+              <aside className="new-order-customer">
+                <span className="new-order-label">Customer</span>
+                <b>{popupOrder.customerName || "Guest"}</b>
+                {popupOrder.customerPhone && (
+                  <a href={`tel:${popupOrder.customerPhone}`}>{popupOrder.customerPhone}</a>
+                )}
+                {popupOrder.orderType === "delivery" && popupOrder.deliveryAddress && (
+                  <p className="new-order-address">{popupOrder.deliveryAddress}</p>
+                )}
+                {popupOrder.note && (
+                  <p className="new-order-note"><b>Note</b>{popupOrder.note}</p>
+                )}
+                {popupOrder.couponCode && (
+                  <span className="new-order-coupon">Coupon {popupOrder.couponCode}</span>
+                )}
+              </aside>
+
+              <section className="new-order-items" aria-label="Items">
+                {popupOrder.items.map((item, index) => {
+                  // "Veg Biryani — Regular · serves 1" -> dish + size line.
+                  const [dish, ...rest] = String(item.name || "").split(" — ");
+                  return (
+                    <div className="new-order-item" key={`${item.productId}-${index}`}>
+                      <span className="new-order-qty">{item.qty}×</span>
+                      <div>
+                        <b>{dish}</b>
+                        {rest.length > 0 && <small>{rest.join(" — ")}</small>}
+                      </div>
+                      <strong>₹{Number(item.total || 0).toFixed(2)}</strong>
+                    </div>
+                  );
+                })}
+              </section>
             </div>
 
-            {popupOrder.note && <em>Note: {popupOrder.note}</em>}
+            <footer className="new-order-foot">
+              <div className="new-order-total">
+                <span>Total bill</span>
+                <strong>₹{Number(popupOrder.grandTotal || 0).toFixed(2)}</strong>
+              </div>
+              <div className="new-order-actions">
+                <AsyncButton className="new-order-cancel" onClick={() => updateStatus(popupOrder._id, "cancelled")}>
+                  <X size={17} /> Cancel
+                </AsyncButton>
+                <AsyncButton className="new-order-accept" onClick={() => updateStatus(popupOrder._id, "accepted")}>
+                  <CheckCircle2 size={19} /> Accept Order
+                </AsyncButton>
+              </div>
+            </footer>
+          </div>
+        </div>
+      )}
 
-            <div className="order-alert-total">
-              <span>Total Bill</span>
-              <strong>₹{Number(popupOrder.grandTotal || 0).toFixed(2)}</strong>
+      {detailOrder && (
+        <div className="order-detail-overlay" onClick={() => setDetailOrderId(null)}>
+          <div
+            className="order-detail-popup"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="order-detail-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <header className="order-detail-head">
+              <div>
+                <span>{detailOrder.orderNo}{detailOrder.takenByName ? ` · by ${detailOrder.takenByName}` : ""}</span>
+                <h2 id="order-detail-title">{orderTypeLabel(detailOrder)}</h2>
+                <p>{detailOrder.customerName || "Customer"}{detailOrder.customerPhone ? ` · ${detailOrder.customerPhone}` : ""}</p>
+              </div>
+              <div className="order-detail-head-side">
+                <StatusBadge status={detailOrder.status} orderType={detailOrder.orderType} />
+                {renderOrderAge(detailOrder)}
+              </div>
+              <button type="button" className="order-detail-close" aria-label="Close" onClick={() => setDetailOrderId(null)}>
+                <X size={18} />
+              </button>
+            </header>
+
+            <div className="order-detail-body">
+              {renderOrderStepper(detailOrder)}
+
+              {detailOrder.orderType === "delivery" && (
+                <div className="delivery-address-box">
+                  <strong>Delivery Address</strong>
+                  <span>{detailOrder.deliveryAddress || "N/A"}</span>
+                </div>
+              )}
+
+              <div className="order-detail-items">
+                {detailOrder.items.map((item, index) => {
+                  const [dish, ...rest] = String(item.name || "").split(" — ");
+                  return (
+                    <div key={`${item.productId}-${index}`}>
+                      <span className="new-order-qty">{item.qty}×</span>
+                      <p>
+                        <b>{dish}</b>
+                        {rest.length > 0 && <small>{rest.join(" — ")}</small>}
+                      </p>
+                      <strong>₹{Number(item.total || 0).toFixed(2)}</strong>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {detailOrder.note && <p className="restaurant-note">Note: {detailOrder.note}</p>}
+
+              <div className="order-detail-total">
+                <div>
+                  <span>{detailOrder.couponCode ? `Total after ${detailOrder.couponCode}` : "Total bill"}</span>
+                  {Number(detailOrder.discountAmount || 0) > 0 && (
+                    <small>Discount ₹{Number(detailOrder.discountAmount || 0).toFixed(2)}</small>
+                  )}
+                </div>
+                <strong>₹{Number(detailOrder.grandTotal || 0).toFixed(2)}</strong>
+              </div>
             </div>
 
-            <div className="order-alert-actions">
-              <AsyncButton onClick={() => updateStatus(popupOrder._id, "accepted")}>
-                <CheckCircle2 size={18} />
-                Accept Order
-              </AsyncButton>
-              <AsyncButton className="reject-order-btn" onClick={() => updateStatus(popupOrder._id, "cancelled")}>
-                Cancel
-              </AsyncButton>
-            </div>
+            <footer className="order-detail-foot">
+              <div className="order-detail-primary">
+                {renderFlowActions(detailOrder, { withCancel: false })}
+              </div>
+              <div className="order-detail-more">
+                {!detailOrder.isHeld ? (
+                  <AsyncButton onClick={() => holdOrder(detailOrder)}>Hold</AsyncButton>
+                ) : (
+                  <AsyncButton onClick={() => resumeOrder(detailOrder)}>Resume</AsyncButton>
+                )}
+                {detailOrder.kotSentAt && (
+                  <button type="button" onClick={() => setKotOrder(detailOrder)}>
+                    <Printer size={15} /> Reprint KOT
+                  </button>
+                )}
+                <button type="button" onClick={() => openDiscount(detailOrder)}>Discount</button>
+                <button type="button" onClick={() => openSplit(detailOrder)}>Split Bill</button>
+                <button type="button" onClick={() => openMerge(detailOrder)}>Merge Bill</button>
+                {!["served", "cancelled"].includes(detailOrder.status) && (
+                  <AsyncButton className="order-detail-cancel" onClick={() => updateStatus(detailOrder._id, "cancelled")}>
+                    Cancel Order
+                  </AsyncButton>
+                )}
+              </div>
+            </footer>
           </div>
         </div>
       )}

@@ -33,6 +33,22 @@ export default function MenuItemDialog({ product, onClose, onAdd }) {
           {Number(product.ratingCount) > 0 && <p className="menu-detail-rating">★ {Number(product.ratingAvg).toFixed(1)} · {product.ratingCount} ratings</p>}
           <strong>{variants.length ? "Starts from " : ""}₹{(variants.length ? Math.min(...variants.map((v) => v.price)) : basePrice).toFixed(2)}</strong>
           <p>{product.description || "Freshly prepared for you."}</p>
+          {(product.servingSize || variant) && (
+            <p className="menu-detail-serving">
+              <b>Serving</b> {variant ? variant.label : product.servingSize}
+            </p>
+          )}
+          {(product.itemType || "food") === "food" && product.spiceLevel && (
+            <p className={`menu-detail-spice ${product.spiceLevel}`}>
+              {{ mild: "🌶 Mild", medium: "🌶🌶 Medium spicy", spicy: "🌶🌶🌶 Spicy" }[product.spiceLevel]}
+            </p>
+          )}
+          {product.ingredients?.length > 0 && (
+            <div className="menu-detail-inside">
+              <p className="menu-detail-category">WHAT&apos;S INSIDE</p>
+              <ul>{product.ingredients.map((item) => <li key={item}>{item}</li>)}</ul>
+            </div>
+          )}
         </div>
       </section>
       {custom && <section className="menu-detail-options" aria-label="Customize your item">

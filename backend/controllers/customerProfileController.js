@@ -116,14 +116,20 @@ exports.scratchReward = async (req, res) => {
   }
 };
 
-// Delivery-only order history, newest first (per product requirement -- dine-in
-// orders aren't tied to a customer history view).
+// Full order history (dine-in, takeaway, delivery), newest first. Orders placed as a
+// guest before the account existed carry no customerId, so they're matched by the
+// account's phone/email too.
 exports.getMyOrders = async (req, res) => {
   try {
-    const orders = await RestaurantOrder.find({ customerId: req.customer._id, orderType: "delivery" })
+    const { _id, contact, email } = req.customer;
+    const match = [{ customerId: _id }];
+    if (contact) match.push({ customerId: null, customerPhone: contact });
+    if (email) match.push({ customerId: null, customerEmail: email });
+
+    const orders = await RestaurantOrder.find({ $or: match })
       .sort({ createdAt: -1 })
       .limit(50)
-      .select("orderNo invoiceNo status paymentStatus grandTotal items createdAt deliveryAddress");
+      .select("orderNo invoiceNo orderType tableNo status paymentStatus grandTotal items createdAt deliveryAddress");
 
     res.json({ success: true, orders });
   } catch (error) {

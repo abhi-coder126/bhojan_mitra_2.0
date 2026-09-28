@@ -17,6 +17,7 @@ import {
   YAxis,
 } from "recharts";
 import {
+  AlertTriangle,
   Award,
   CalendarRange,
   Clock,
@@ -25,8 +26,10 @@ import {
   Plus,
   Receipt,
   ShoppingBag,
+  Star,
   TrendingDown,
   TrendingUp,
+  Trash2,
   Users,
   Wallet,
 } from "lucide-react";
@@ -58,7 +61,12 @@ const resultColor = (value, maximum) => {
   return ratio >= 2 / 3 ? "#059669" : ratio >= 1 / 3 ? "#d97706" : "#e11d48";
 };
 
-const formatDateInput = (date) => date.toISOString().slice(0, 10);
+const formatDateInput = (date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
 
 const money = (value) =>
   `₹${Number(value || 0).toLocaleString("en-IN", {
@@ -104,6 +112,26 @@ const getLastDays = (count) => {
   return days;
 };
 
+const getDefaultDailyRange = () => {
+  const end = new Date();
+  const start = new Date();
+  start.setDate(end.getDate() - 19);
+  return { start: formatDateInput(start), end: formatDateInput(end) };
+};
+
+const getDaysInRange = (startValue, endValue) => {
+  if (!startValue || !endValue || startValue > endValue) return [];
+  const start = new Date(`${startValue}T00:00:00`);
+  const end = new Date(`${endValue}T00:00:00`);
+  const days = [];
+
+  for (const date = new Date(start); date <= end; date.setDate(date.getDate() + 1)) {
+    days.push(new Date(date));
+  }
+
+  return days;
+};
+
 const rangeLabel = (value) =>
   value ? new Date(value).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }) : "";
 
@@ -129,6 +157,7 @@ export default function Dashboard() {
     start: formatDateInput(new Date()),
     end: formatDateInput(new Date()),
   });
+  const [dailyChartRange, setDailyChartRange] = useState(getDefaultDailyRange);
   const { toast, showToast } = useToast();
   const [analytics, setAnalytics] = useState({
     lowStockRawMaterials: [],
@@ -365,17 +394,26 @@ export default function Dashboard() {
       .filter((entry) => entry.amount > 0);
   }, [paidOrders]);
 
-  const last20Days = useMemo(() => {
-    return getLastDays(20).map((date) => {
+  const dailySalesData = useMemo(() => {
+    return getDaysInRange(dailyChartRange.start, dailyChartRange.end).map((date) => {
       const dayOrders = orders.filter((order) => isSameDay(getOrderDate(order), date));
       const dayPaid = dayOrders.filter((order) => order.paymentStatus === "paid");
       return {
+        date: formatDateInput(date),
         name: date.toLocaleDateString("en-IN", { day: "2-digit", month: "short" }),
         orders: dayOrders.length,
         sale: dayPaid.reduce((sum, order) => sum + Number(order.grandTotal || 0), 0),
       };
     });
-  }, [orders]);
+  }, [dailyChartRange, orders]);
+
+  const dailyChartTitle = useMemo(() => {
+    const defaultRange = getDefaultDailyRange();
+    if (dailyChartRange.start === defaultRange.start && dailyChartRange.end === defaultRange.end) {
+      return "Total Sale & Total Order - Last 20 Days";
+    }
+    return `Total Sale & Total Order - ${rangeLabel(dailyChartRange.start)} to ${rangeLabel(dailyChartRange.end)}`;
+  }, [dailyChartRange]);
 
   const last7Days = useMemo(() => {
     return getLastDays(7).map((date) => {
@@ -738,6 +776,8 @@ export default function Dashboard() {
       </div>
       )}
 
+      <CustomerRatingsCard />
+
       <div className="dashboard-main-grid">
         <div className="dashboard-chart-box dashboard-trend-card">
           <div className="dashboard-trend-head">
@@ -769,7 +809,7 @@ export default function Dashboard() {
           {revenueTrend.length === 0 ? (
             <p>No trend data</p>
           ) : (
-            <ResponsiveContainer width="100%" height={260}>
+            <ResponsiveContainer width="100%" height={460}>
               <ComposedChart data={revenueTrend} margin={{ top: 10, right: 0, bottom: 0, left: 0 }}>
                 <defs>
                   <linearGradient id="revenueFill" x1="0" y1="0" x2="0" y2="1">
@@ -974,6 +1014,8 @@ export default function Dashboard() {
       <div className="dashboard-breakdown-grid restaurant-dashboard-summary">
         <Breakdown
           title="Top Day For Sale"
+          icon={Award}
+          tone="amber"
           rows={[
             ["Day", topDay?.name || "-"],
             ["Sale", money(topDay?.sale || 0)],
@@ -982,6 +1024,8 @@ export default function Dashboard() {
         />
         <Breakdown
           title="Total Sale"
+          icon={TrendingUp}
+          tone="emerald"
           rows={[
             ["Selected Sale", money(stats.totalSale)],
             ["Average Bill", money(stats.averageBill)],
@@ -990,17 +1034,42 @@ export default function Dashboard() {
         />
         <Breakdown
           title="Payment Section"
+          icon={Wallet}
+          tone="violet"
           rows={paymentData.length ? paymentData.map((entry) => [entry.name, money(entry.amount)]) : [["No payment", "₹0"]]}
         />
       </div>
 
       <div className="dashboard-chart-box restaurant-wide-chart">
-        <h2>Total Sale & Total Order - Last 20 Days</h2>
+        <div className="dashboard-daily-chart-head">
+          <h2>{dailyChartTitle}</h2>
+          <div className="dashboard-daily-date-filters">
+            <label>
+              <span>From Date</span>
+              <input
+                type="date"
+                value={dailyChartRange.start}
+                max={dailyChartRange.end}
+                onChange={(event) => setDailyChartRange((range) => ({ ...range, start: event.target.value }))}
+              />
+            </label>
+            <label>
+              <span>To Date</span>
+              <input
+                type="date"
+                value={dailyChartRange.end}
+                min={dailyChartRange.start}
+                max={formatDateInput(new Date())}
+                onChange={(event) => setDailyChartRange((range) => ({ ...range, end: event.target.value }))}
+              />
+            </label>
+          </div>
+        </div>
         <ResultLegend />
-        <div className="dashboard-daily-chart-scroll" role="region" aria-label="Sales and orders for every date in the last 20 days" tabIndex={0}>
-        <div className="dashboard-daily-chart-inner">
+        <div className="dashboard-daily-chart-scroll" role="region" aria-label={`Sales and orders from ${dailyChartRange.start} to ${dailyChartRange.end}`} tabIndex={0}>
+        <div className="dashboard-daily-chart-inner" style={{ minWidth: Math.max(820, dailySalesData.length * 48) }}>
         <ResponsiveContainer width="100%" height={330}>
-          <ComposedChart data={last20Days} margin={{ top: 12, right: 4, bottom: 8, left: 0 }}>
+          <ComposedChart data={dailySalesData} margin={{ top: 12, right: 4, bottom: 8, left: 0 }}>
             <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} vertical={false} />
             <XAxis
               dataKey="name"
@@ -1021,7 +1090,7 @@ export default function Dashboard() {
               cursor={tooltipCursor}
             />
             <Bar yAxisId="sales" dataKey="sale" radius={[6, 6, 0, 0]} maxBarSize={30}>
-              {last20Days.map((day) => <Cell key={day.name} fill={resultColor(day.sale, Math.max(...last20Days.map((row) => row.sale)))} />)}
+              {dailySalesData.map((day) => <Cell key={day.date} fill={resultColor(day.sale, Math.max(0, ...dailySalesData.map((row) => row.sale)))} />)}
             </Bar>
             <Line yAxisId="orders" dataKey="orders" type="linear" stroke="#2563eb" strokeWidth={2.5} dot={{ r: 3 }} activeDot={{ r: 5 }} />
           </ComposedChart>
@@ -1058,34 +1127,50 @@ export default function Dashboard() {
       </div>
 
       <div className="important-notices dashboard-delete-notices">
-        <h2>Low Stock Raw Materials</h2>
+        <div className="notice-section-head stock-head">
+          <span className="notice-section-icon"><AlertTriangle size={21} /></span>
+          <div><small>Inventory alert</small><h2>Low Stock Raw Materials</h2></div>
+          <b>{analytics.lowStockRawMaterials.length} items</b>
+        </div>
         {analytics.lowStockRawMaterials.length === 0 ? (
-          <p>No raw material below threshold.</p>
+          <p className="notice-empty">All raw materials are above their stock threshold.</p>
         ) : (
-          <div className="delete-notice-list">
+          <div className="low-stock-list">
             {analytics.lowStockRawMaterials.map((m) => (
-              <div key={m._id}>
-                <span>{m.unit}</span>
-                <b>{m.name}</b>
-                <p>Stock: {m.stock} (threshold {m.lowStockThreshold})</p>
-              </div>
+              <article key={m._id}>
+                <div className="low-stock-main">
+                  <span className="stock-unit">{m.unit}</span>
+                  <div><b>{m.name}</b><small>Reorder recommended</small></div>
+                  <strong>{m.stock} <small>/ {m.lowStockThreshold}</small></strong>
+                </div>
+                <div className="stock-progress" aria-label={`${m.name}: ${m.stock} remaining, threshold ${m.lowStockThreshold}`}>
+                  <i style={{ width: `${Math.min(100, (Number(m.stock || 0) / Math.max(1, Number(m.lowStockThreshold || 0))) * 100)}%` }} />
+                </div>
+              </article>
             ))}
           </div>
         )}
       </div>
 
       <div className="important-notices dashboard-delete-notices">
-        <h2>Delete Notifications</h2>
+        <div className="notice-section-head deletion-head">
+          <span className="notice-section-icon"><Trash2 size={21} /></span>
+          <div><small>Recent activity</small><h2>Delete Notifications</h2></div>
+          <b>{deletionLogs.length} records</b>
+        </div>
         {deletionLogs.length === 0 ? (
-          <p>No delete activity yet.</p>
+          <p className="notice-empty">No delete activity recorded yet.</p>
         ) : (
           <div className="delete-notice-list">
             {deletionLogs.map((log) => (
-              <div key={log._id}>
-                <span>{new Date(log.createdAt).toLocaleString("en-IN")}</span>
-                <b>{log.recordType}: {log.recordNo}</b>
-                <p>{log.title} deleted by {log.deletedBy}. {log.details}</p>
-              </div>
+              <article key={log._id}>
+                <span className="delete-activity-icon"><Trash2 size={16} /></span>
+                <div>
+                  <span>{new Date(log.createdAt).toLocaleString("en-IN")}</span>
+                  <b>{log.recordType}: {log.recordNo}</b>
+                  <p>{log.title} deleted by <strong>{log.deletedBy}</strong>. {log.details}</p>
+                </div>
+              </article>
             ))}
           </div>
         )}
@@ -1291,16 +1376,140 @@ function PaymentChart({ data }) {
   );
 }
 
-function Breakdown({ title, rows }) {
+function Breakdown({ title, rows, icon: Icon, tone = "slate" }) {
   return (
-    <div className="dashboard-breakdown-card">
-      <h2>{title}</h2>
-      {rows.map(([label, value]) => (
-        <p key={label}>
-          <span>{label}</span>
-          <b>{value}</b>
-        </p>
-      ))}
+    <div className={`dashboard-breakdown-card tone-${tone}`}>
+      <div className="dashboard-breakdown-head">
+        {Icon && <span className="dashboard-breakdown-icon"><Icon size={20} /></span>}
+        <div>
+          <small>Performance summary</small>
+          <h2>{title}</h2>
+        </div>
+      </div>
+      <div className="dashboard-breakdown-rows">
+        {rows.map(([label, value]) => (
+          <p key={label}>
+            <span>{label}</span>
+            <b>{value}</b>
+          </p>
+        ))}
+      </div>
     </div>
+  );
+}
+
+// Guest reviews (food / restaurant / delivery) left after an order is served.
+function RatingStars({ value, size = 16 }) {
+  return (
+    <span className="rating-stars" aria-label={`${value} out of 5`}>
+      {[1, 2, 3, 4, 5].map((star) => {
+        const fill = Math.max(0, Math.min(1, value - (star - 1)));
+        return (
+          <span className="rating-star" key={star} style={{ width: size, height: size }}>
+            <Star size={size} className="rating-star-empty" />
+            <span className="rating-star-fill" style={{ width: `${fill * 100}%` }}>
+              <Star size={size} fill="currentColor" />
+            </span>
+          </span>
+        );
+      })}
+    </span>
+  );
+}
+
+function CustomerRatingsCard() {
+  const [data, setData] = useState(null);
+
+  useEffect(() => {
+    let alive = true;
+    const load = () =>
+      API.get("/dashboard/reviews")
+        .then((res) => alive && setData(res.data))
+        .catch(() => alive && setData((current) => current || { count: 0 }));
+    load();
+    const timer = window.setInterval(load, 60000);
+    return () => {
+      alive = false;
+      window.clearInterval(timer);
+    };
+  }, []);
+
+  if (!data) return null;
+
+  const count = data.count || 0;
+  const maxBucket = Math.max(1, ...(data.distribution || []).map((row) => row.count));
+  const parts = [
+    { key: "food", label: "Order & food", value: data.food, count },
+    { key: "restaurant", label: "Restaurant", value: data.restaurant, count },
+    { key: "delivery", label: "Delivery", value: data.delivery, count: data.deliveryCount || 0 },
+  ];
+
+  return (
+    <section className="dashboard-chart-box dashboard-ratings-card">
+      <div className="dashboard-trend-head">
+        <h2>Customer Ratings</h2>
+        <span className="dashboard-ratings-total">{count} review{count === 1 ? "" : "s"}</span>
+      </div>
+
+      {count === 0 ? (
+        <p className="dashboard-ratings-empty">
+          No reviews yet. Guests can rate the order, the restaurant and the delivery once their order is served.
+        </p>
+      ) : (
+        <div className="dashboard-ratings-grid">
+          <div className="dashboard-ratings-score">
+            <strong>{Number(data.overall || 0).toFixed(1)}<small>/ 5.0</small></strong>
+            <RatingStars value={data.overall || 0} size={20} />
+            <span>Based on {count} review{count === 1 ? "" : "s"}</span>
+            <div className="dashboard-ratings-bars">
+              {(data.distribution || []).map((row) => (
+                <div key={row.star}>
+                  <span>{row.star}★</span>
+                  <i><b style={{ width: `${(row.count / maxBucket) * 100}%` }} /></i>
+                  <small>{row.count}</small>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="dashboard-ratings-parts">
+            {parts.map((part) => (
+              <div className="dashboard-ratings-part" key={part.key}>
+                <div>
+                  <b>{part.label}</b>
+                  <small>{part.count} rating{part.count === 1 ? "" : "s"}</small>
+                </div>
+                <div className="dashboard-ratings-part-score">
+                  <strong>{part.count ? Number(part.value || 0).toFixed(1) : "-"}</strong>
+                  <RatingStars value={part.count ? part.value || 0 : 0} size={14} />
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="dashboard-ratings-recent">
+            <h3>Latest reviews</h3>
+            {(data.recent || []).map((review) => {
+              const values = [review.foodStars, review.restaurantStars, review.deliveryStars].filter(Boolean);
+              const overall = values.reduce((sum, v) => sum + v, 0) / values.length;
+              return (
+                <article key={review._id}>
+                  <header>
+                    <b>{review.customerName || "Guest"}</b>
+                    <span className="dashboard-ratings-chip">{overall.toFixed(1)} ★</span>
+                  </header>
+                  <small>
+                    {review.orderNo} · {review.orderType === "delivery" ? "Delivery" : review.orderType === "takeaway" ? "Takeaway" : "Dine-in"}
+                    {" · "}Food {review.foodStars} · Restaurant {review.restaurantStars}
+                    {review.deliveryStars ? ` · Delivery ${review.deliveryStars}` : ""}
+                  </small>
+                  {review.comment && <p>&ldquo;{review.comment}&rdquo;</p>}
+                </article>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </section>
   );
 }

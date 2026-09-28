@@ -17,6 +17,7 @@ const {
   splitRestaurantOrder,
   applyRestaurantOrderDiscount,
   rateOrderItems,
+  reviewOrder,
 } = require("../controllers/restaurantOrderController");
 const { protect, requireRole, requireBranch, denyMasterBilling } = require("../middleware/authMiddleware");
 const { attachCustomerIfPresent } = require("../utils/customerAuth");
@@ -35,6 +36,7 @@ router.get("/menu", publicBranch, getMenuProducts);
 router.post("/", staffOrPublicBranch, denyMasterBilling, attachCustomerIfPresent, createRestaurantOrder);
 router.get("/:id", unscopedContext, getRestaurantOrderById);
 router.post("/:id/rate", unscopedContext, rateOrderItems);
+router.post("/:id/review", unscopedContext, reviewOrder);
 
 // Everything else is staff-only. Counter staff run the order (accept, KOT, serve,
 // bill); the kitchen only moves sent KOTs through cooking -> ready.

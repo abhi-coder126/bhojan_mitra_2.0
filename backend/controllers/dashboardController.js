@@ -8,6 +8,7 @@ const DeletionLog = require("../models/DeletionLog");
 const RawMaterial = require("../models/RawMaterial");
 const Table = require("../models/Table");
 const RestaurantOrder = require("../models/RestaurantOrder");
+const OrderReview = require("../models/OrderReview");
 const Branch = require("../models/Branch");
 const Setting = require("../models/Setting");
 const { customerBranchFilter } = require("../utils/customerUpsert");
@@ -341,6 +342,60 @@ exports.getRoyalty = async (req, res) => {
         royaltyBase: branch.royaltyBase,
       },
       periods: await royaltyPeriods(branch),
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// "Customer Ratings" card: every guest review of this branch. A review's overall
+// score is the average of the parts it has (food, restaurant, delivery), so the
+// branch score can never exceed 5.0.
+const round1 = (value) => (value ? Math.round(value * 10) / 10 : 0);
+
+exports.getReviewSummary = async (req, res) => {
+  try {
+    const [totals] = await OrderReview.aggregate([
+      { $addFields: { overall: { $avg: ["$foodStars", "$restaurantStars", "$deliveryStars"] } } },
+      {
+        $group: {
+          _id: null,
+          count: { $sum: 1 },
+          overall: { $avg: "$overall" },
+          food: { $avg: "$foodStars" },
+          restaurant: { $avg: "$restaurantStars" },
+          delivery: { $avg: "$deliveryStars" },
+          deliveryCount: { $sum: { $cond: [{ $gt: ["$deliveryStars", null] }, 1, 0] } },
+        },
+      },
+    ]);
+
+    // How many reviews landed on each whole star (overall rounded).
+    const buckets = await OrderReview.aggregate([
+      { $project: { star: { $round: [{ $avg: ["$foodStars", "$restaurantStars", "$deliveryStars"] }, 0] } } },
+      { $group: { _id: "$star", count: { $sum: 1 } } },
+    ]);
+    const distribution = [5, 4, 3, 2, 1].map((star) => ({
+      star,
+      count: buckets.find((row) => row._id === star)?.count || 0,
+    }));
+
+    const recent = await OrderReview.find()
+      .sort({ updatedAt: -1 })
+      .limit(6)
+      .select("orderNo orderType customerName foodStars restaurantStars deliveryStars comment updatedAt")
+      .lean();
+
+    res.json({
+      success: true,
+      count: totals?.count || 0,
+      overall: Math.min(round1(totals?.overall), 5),
+      food: round1(totals?.food),
+      restaurant: round1(totals?.restaurant),
+      delivery: round1(totals?.delivery),
+      deliveryCount: totals?.deliveryCount || 0,
+      distribution,
+      recent,
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });

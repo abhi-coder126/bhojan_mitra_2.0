@@ -87,6 +87,8 @@ const restaurantOrderSchema = new mongoose.Schema(
     // acceptedAt drives the "running for 12m" clock on the order board;
     // servedAt closes it, giving the total time the guest waited.
     acceptedAt: Date,
+    // readyAt stops the "order age" clock (placed -> ready) and the late alert.
+    readyAt: Date,
     servedAt: Date,
     holdAt: Date,
     isHeld: { type: Boolean, default: false },
